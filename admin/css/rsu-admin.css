@@ -260,7 +260,7 @@
 	border-radius: 6px;
 	margin-bottom: 10px;
 	background: #fff;
-	overflow: hidden;
+	overflow: visible;
 	transition: border-color 0.15s;
 }
 
@@ -340,9 +340,11 @@
 	color: #374151;
 	overflow: hidden;
 	min-height: 56px;
+	height: auto;
 	box-sizing: border-box;
 	background: #fff;
 	transition: background 0.15s;
+	field-sizing: content;
 }
 
 .rsu-block__content:focus {
@@ -407,12 +409,14 @@
 	color: #374151;
 	padding: 8px 10px;
 	resize: none;
-	overflow: visible;
+	overflow: hidden;
 	overflow-wrap: break-word;
 	word-break: break-word;
 	min-height: 36px;
+	height: auto;
 	box-sizing: border-box;
 	transition: background 0.15s;
+	field-sizing: content;
 }
 
 .rsu-bullet-row__input:focus {
