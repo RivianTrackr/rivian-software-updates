@@ -48,6 +48,15 @@ class RSU_Settings {
 				$('.rsu-color-picker').wpColorPicker();
 			});
 		" );
+
+		wp_add_inline_style( 'wp-color-picker', '
+			.rsu-platforms-table { max-width: 800px; }
+			.rsu-platforms-table th { font-size: 13px; font-weight: 600; }
+			.rsu-platforms-table td { vertical-align: middle; }
+			.rsu-platforms-table input[type="text"],
+			.rsu-platforms-table input[type="number"] { font-size: 13px; padding: 4px 8px; }
+			.rsu-remove-platform .dashicons { font-size: 18px; width: 18px; height: 18px; }
+		' );
 	}
 
 	/**
@@ -106,6 +115,27 @@ class RSU_Settings {
 			'type'              => 'array',
 			'sanitize_callback' => array( $this, 'sanitize_settings' ),
 		) );
+
+		register_setting( 'rsu_settings_group', RSU_Platforms::OPTION_KEY, array(
+			'type'              => 'array',
+			'sanitize_callback' => array( $this, 'sanitize_platforms' ),
+		) );
+
+		// ── Platforms section ──
+		add_settings_section(
+			'rsu_platforms',
+			'Platforms',
+			array( $this, 'render_section_platforms' ),
+			'rsu-settings'
+		);
+
+		add_settings_field(
+			'platforms_manager',
+			'Vehicle Platforms',
+			array( $this, 'render_field_platforms_manager' ),
+			'rsu-settings',
+			'rsu_platforms'
+		);
 
 		// ── General section ──
 		add_settings_section(
@@ -198,6 +228,10 @@ class RSU_Settings {
 
 	// ── Section descriptions ──
 
+	public function render_section_platforms() {
+		echo '<p>Manage vehicle platforms. Each platform gets its own editor tab and frontend tab. The slug is used internally and cannot be changed after creation.</p>';
+	}
+
 	public function render_section_general() {
 		echo '<p>Configure default behavior for the release notes editor.</p>';
 	}
@@ -211,6 +245,113 @@ class RSU_Settings {
 	}
 
 	// ── Field renderers ──
+
+	public function render_field_platforms_manager() {
+		$platforms = RSU_Platforms::get_all();
+		?>
+		<table class="widefat rsu-platforms-table" id="rsu-platforms-table">
+			<thead>
+				<tr>
+					<th style="width: 30px;"></th>
+					<th style="width: 120px;">Slug</th>
+					<th>Label</th>
+					<th>Description</th>
+					<th style="width: 70px;">Order</th>
+					<th style="width: 50px;"></th>
+				</tr>
+			</thead>
+			<tbody id="rsu-platforms-body">
+				<?php
+				$index = 0;
+				foreach ( $platforms as $slug => $platform ) :
+					$this->render_platform_row( $index, $slug, $platform );
+					$index++;
+				endforeach;
+				?>
+			</tbody>
+		</table>
+		<p>
+			<button type="button" class="button" id="rsu-add-platform">+ Add Platform</button>
+		</p>
+		<template id="rsu-platform-row-template">
+			<?php $this->render_platform_row( '__INDEX__', '', array( 'label' => '', 'description' => '', 'sort' => '' ) ); ?>
+		</template>
+		<script>
+		(function() {
+			var body = document.getElementById('rsu-platforms-body');
+			var template = document.getElementById('rsu-platform-row-template');
+			var addBtn = document.getElementById('rsu-add-platform');
+
+			addBtn.addEventListener('click', function() {
+				var index = body.querySelectorAll('tr').length;
+				var html = template.innerHTML.replace(/__INDEX__/g, index);
+				var temp = document.createElement('tbody');
+				temp.innerHTML = html;
+				var row = temp.querySelector('tr');
+				body.appendChild(row);
+				row.querySelector('.rsu-platform-slug').focus();
+			});
+
+			document.addEventListener('click', function(e) {
+				if (e.target.closest('.rsu-remove-platform')) {
+					var row = e.target.closest('tr');
+					if (body.querySelectorAll('tr').length <= 1) {
+						alert('You must have at least one platform.');
+						return;
+					}
+					if (confirm('Remove this platform? Existing post data for this platform will not be deleted.')) {
+						row.remove();
+					}
+				}
+			});
+		})();
+		</script>
+		<?php
+	}
+
+	/**
+	 * Render a single platform row in the manager table.
+	 */
+	private function render_platform_row( $index, $slug, $platform ) {
+		$name_prefix = RSU_Platforms::OPTION_KEY . '[' . $index . ']';
+		$is_existing = ! empty( $slug );
+		?>
+		<tr>
+			<td><span class="dashicons dashicons-menu" style="color: #c3c4c7; cursor: grab;"></span></td>
+			<td>
+				<?php if ( $is_existing ) : ?>
+					<code><?php echo esc_html( $slug ); ?></code>
+					<input type="hidden" name="<?php echo esc_attr( $name_prefix ); ?>[slug]" value="<?php echo esc_attr( $slug ); ?>" />
+				<?php else : ?>
+					<input type="text" name="<?php echo esc_attr( $name_prefix ); ?>[slug]"
+						class="rsu-platform-slug" style="width: 100%;"
+						placeholder="e.g. r3" pattern="[a-z0-9_]+" title="Lowercase letters, numbers, underscores only"
+						value="" />
+				<?php endif; ?>
+			</td>
+			<td>
+				<input type="text" name="<?php echo esc_attr( $name_prefix ); ?>[label]"
+					value="<?php echo esc_attr( $platform['label'] ); ?>"
+					style="width: 100%;" placeholder="e.g. R3" />
+			</td>
+			<td>
+				<input type="text" name="<?php echo esc_attr( $name_prefix ); ?>[description]"
+					value="<?php echo esc_attr( $platform['description'] ); ?>"
+					style="width: 100%;" placeholder="e.g. R3 (2027+)" />
+			</td>
+			<td>
+				<input type="number" name="<?php echo esc_attr( $name_prefix ); ?>[sort]"
+					value="<?php echo esc_attr( isset( $platform['sort'] ) ? $platform['sort'] : '' ); ?>"
+					style="width: 100%;" min="0" step="10" />
+			</td>
+			<td>
+				<button type="button" class="button-link rsu-remove-platform" title="Remove" style="color: #b32d2e;">
+					<span class="dashicons dashicons-trash"></span>
+				</button>
+			</td>
+		</tr>
+		<?php
+	}
 
 	public function render_field_default_platforms() {
 		$settings  = self::get_all();
@@ -315,6 +456,52 @@ class RSU_Settings {
 	}
 
 	/**
+	 * Sanitize platforms on save.
+	 *
+	 * @param array $input Raw platforms array from form.
+	 * @return array Sanitized platforms keyed by slug.
+	 */
+	public function sanitize_platforms( $input ) {
+		if ( ! is_array( $input ) || empty( $input ) ) {
+			return RSU_Platforms::get_defaults();
+		}
+
+		$clean = array();
+		$sort_counter = 10;
+
+		foreach ( $input as $row ) {
+			if ( ! is_array( $row ) ) {
+				continue;
+			}
+
+			$slug = isset( $row['slug'] ) ? sanitize_key( $row['slug'] ) : '';
+			if ( empty( $slug ) ) {
+				continue;
+			}
+
+			// Prevent duplicate slugs.
+			if ( isset( $clean[ $slug ] ) ) {
+				continue;
+			}
+
+			$clean[ $slug ] = array(
+				'label'       => isset( $row['label'] ) ? sanitize_text_field( $row['label'] ) : $slug,
+				'description' => isset( $row['description'] ) ? sanitize_text_field( $row['description'] ) : '',
+				'sort'        => isset( $row['sort'] ) && is_numeric( $row['sort'] ) ? intval( $row['sort'] ) : $sort_counter,
+			);
+
+			$sort_counter += 10;
+		}
+
+		// Must have at least one platform.
+		if ( empty( $clean ) ) {
+			return RSU_Platforms::get_defaults();
+		}
+
+		return $clean;
+	}
+
+	/**
 	 * Sanitize settings on save.
 	 *
 	 * @param array $input Raw input from form.
@@ -323,15 +510,16 @@ class RSU_Settings {
 	public function sanitize_settings( $input ) {
 		$clean = array();
 
-		// Default platforms.
+		// Default platforms — validate against current platform slugs.
+		// Use the platforms being saved in the same request if available.
 		$valid_slugs = array_keys( RSU_Platforms::get_all() );
 		$clean['default_platforms'] = isset( $input['default_platforms'] ) && is_array( $input['default_platforms'] )
-			? array_intersect( array_map( 'sanitize_text_field', $input['default_platforms'] ), $valid_slugs )
+			? array_values( array_map( 'sanitize_text_field', $input['default_platforms'] ) )
 			: array();
 
 		// Default tab.
-		$clean['default_tab'] = isset( $input['default_tab'] ) && in_array( $input['default_tab'], $valid_slugs, true )
-			? $input['default_tab']
+		$clean['default_tab'] = isset( $input['default_tab'] )
+			? sanitize_text_field( $input['default_tab'] )
 			: self::$defaults['default_tab'];
 
 		// Heading level.

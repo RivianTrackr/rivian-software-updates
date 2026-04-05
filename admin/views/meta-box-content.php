@@ -107,7 +107,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 					<div class="rsu-sections-list">
 						<!-- Sections rendered by JS -->
 					</div>
-					<button type="button" class="button rsu-add-section">+ Add Section</button>
+					<button type="button" class="button rsu-add-section" onclick="RSUSectionBuilder.addSection(this)">+ Add Section</button>
 				</div>
 
 				<!-- Hidden input stores the JSON -->
@@ -125,3 +125,386 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 		?>
 	</div>
 </div>
+
+<script>
+/**
+ * Section Builder — inline vanilla JS.
+ * No jQuery dependency. Runs immediately in the meta box context.
+ */
+var RSUSectionBuilder = (function () {
+	'use strict';
+
+	// ── DOM helpers ──
+	function qs(sel, ctx) { return (ctx || document).querySelector(sel); }
+	function qsa(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
+	function closest(el, sel) { while (el && !el.matches(sel)) { el = el.parentElement; } return el; }
+
+	function createElement(html) {
+		var div = document.createElement('div');
+		div.innerHTML = html.trim();
+		return div.firstChild;
+	}
+
+	// ── Get builder and its data ──
+	function getBuilder(el) {
+		var builder = closest(el, '.rsu-section-builder');
+		if (!builder) return null;
+		if (!builder._sections) {
+			var platform = builder.getAttribute('data-platform');
+			var panel = closest(builder, '.rsu-editor-panel');
+			var jsonInput = qs('.rsu-sections-json[data-platform="' + platform + '"]', panel);
+			builder._jsonInput = jsonInput;
+			var raw = jsonInput ? jsonInput.value : '[]';
+			try { builder._sections = JSON.parse(raw) || []; } catch (e) { builder._sections = []; }
+		}
+		return builder;
+	}
+
+	// ── Sync data to hidden input ──
+	function syncJSON(builder) {
+		if (builder._jsonInput) {
+			builder._jsonInput.value = JSON.stringify(builder._sections || []);
+		}
+	}
+
+	// ── Read current DOM state back into data ──
+	function readFromDOM(builder) {
+		var sections = [];
+		qsa('.rsu-sections-list .rsu-section', builder).forEach(function (sEl) {
+			var headingInput = qs('.rsu-section__heading', sEl);
+			var section = {
+				heading: headingInput ? headingInput.value.trim() : '',
+				blocks: []
+			};
+
+			qsa('.rsu-blocks-list .rsu-block', sEl).forEach(function (bEl) {
+				var type = bEl.getAttribute('data-type');
+				var textarea = qs('.rsu-block__content', bEl);
+				var raw = textarea ? textarea.value : '';
+
+				if (type === 'list') {
+					section.blocks.push({
+						type: 'list',
+						items: raw.split('\n').filter(function (l) { return l.trim() !== ''; })
+					});
+				} else {
+					section.blocks.push({ type: type, content: raw.trim() });
+				}
+			});
+
+			sections.push(section);
+		});
+
+		builder._sections = sections;
+		syncJSON(builder);
+	}
+
+	// ── Render sections ──
+	function renderSections(builder) {
+		var sections = builder._sections || [];
+		var list = qs('.rsu-sections-list', builder);
+		list.innerHTML = '';
+
+		if (!sections.length) {
+			list.innerHTML = '<div class="rsu-sections-empty">No sections yet. Click "+ Add Section" to get started.</div>';
+			syncJSON(builder);
+			return;
+		}
+
+		sections.forEach(function (section, si) {
+			list.appendChild(buildSectionEl(section, si));
+		});
+
+		syncJSON(builder);
+	}
+
+	// ── Build section element ──
+	function buildSectionEl(section, si) {
+		var el = createElement(
+			'<div class="rsu-section" data-index="' + si + '">' +
+				'<div class="rsu-section__header">' +
+					'<span class="rsu-section__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
+					'<input type="text" class="rsu-section__heading" placeholder="Section heading (e.g. Cold Weather Improvements)" />' +
+					'<button type="button" class="rsu-section__remove" title="Remove section" onclick="RSUSectionBuilder.removeSection(this)">&times;</button>' +
+				'</div>' +
+				'<div class="rsu-blocks-list"></div>' +
+				'<div class="rsu-section__footer">' +
+					'<div class="rsu-add-block-group">' +
+						'<button type="button" class="button button-small rsu-add-block" onclick="RSUSectionBuilder.addBlock(this, \'paragraph\')">+ Paragraph</button>' +
+						'<button type="button" class="button button-small rsu-add-block" onclick="RSUSectionBuilder.addBlock(this, \'list\')">+ Bullet List</button>' +
+						'<button type="button" class="button button-small rsu-add-block" onclick="RSUSectionBuilder.addBlock(this, \'note\')">+ Note</button>' +
+					'</div>' +
+				'</div>' +
+			'</div>'
+		);
+
+		qs('.rsu-section__heading', el).value = section.heading || '';
+
+		// Live sync heading changes.
+		qs('.rsu-section__heading', el).addEventListener('input', function () {
+			readFromDOM(getBuilder(this));
+		});
+
+		var blocksList = qs('.rsu-blocks-list', el);
+		if (section.blocks && section.blocks.length) {
+			section.blocks.forEach(function (block, bi) {
+				blocksList.appendChild(buildBlockEl(block, bi));
+			});
+		}
+
+		return el;
+	}
+
+	// ── Build block element ──
+	function buildBlockEl(block, bi) {
+		var type = block.type || 'paragraph';
+		var label = type === 'list' ? 'Bullet List' : type === 'note' ? 'Note' : 'Paragraph';
+		var placeholder, content;
+
+		if (type === 'list') {
+			placeholder = 'One bullet point per line';
+			content = Array.isArray(block.items) ? block.items.join('\n') : '';
+		} else {
+			placeholder = type === 'note' ? 'Note text...' : 'Paragraph text...';
+			content = block.content || '';
+		}
+
+		var el = createElement(
+			'<div class="rsu-block" data-index="' + bi + '" data-type="' + type + '">' +
+				'<div class="rsu-block__header">' +
+					'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
+					'<span class="rsu-block__label">' + label + '</span>' +
+					'<button type="button" class="rsu-block__remove" title="Remove block" onclick="RSUSectionBuilder.removeBlock(this)">&times;</button>' +
+				'</div>' +
+				'<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="3"></textarea>' +
+			'</div>'
+		);
+
+		var textarea = qs('.rsu-block__content', el);
+		textarea.value = content;
+
+		// Live sync and auto-resize.
+		textarea.addEventListener('input', function () {
+			this.style.height = 'auto';
+			this.style.height = this.scrollHeight + 'px';
+			readFromDOM(getBuilder(this));
+		});
+
+		return el;
+	}
+
+	// ── Auto-resize existing textareas on load ──
+	function autoResize() {
+		qsa('.rsu-block__content').forEach(function (ta) {
+			ta.style.height = 'auto';
+			ta.style.height = ta.scrollHeight + 'px';
+		});
+	}
+
+	// ══════════════════════════════════════════════
+	// Public API (called via onclick attributes)
+	// ══════════════════════════════════════════════
+
+	function addSection(btn) {
+		var builder = getBuilder(btn);
+		if (!builder) return;
+
+		readFromDOM(builder);
+		builder._sections.push({
+			heading: '',
+			blocks: [{ type: 'paragraph', content: '' }]
+		});
+
+		renderSections(builder);
+
+		var lastHeading = builder.querySelectorAll('.rsu-section__heading');
+		if (lastHeading.length) {
+			lastHeading[lastHeading.length - 1].focus();
+		}
+	}
+
+	function addBlock(btn, type) {
+		var builder = getBuilder(btn);
+		var sectionEl = closest(btn, '.rsu-section');
+		if (!builder || !sectionEl) return;
+
+		readFromDOM(builder);
+
+		var sectionIndex = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
+		var newBlock = type === 'list' ? { type: 'list', items: [] } : { type: type, content: '' };
+
+		builder._sections[sectionIndex].blocks.push(newBlock);
+		renderSections(builder);
+
+		var sectionEls = qsa('.rsu-section', builder);
+		if (sectionEls[sectionIndex]) {
+			var blocks = qsa('.rsu-block__content', sectionEls[sectionIndex]);
+			if (blocks.length) blocks[blocks.length - 1].focus();
+		}
+	}
+
+	function removeSection(btn) {
+		if (!confirm('Remove this section?')) return;
+
+		var builder = getBuilder(btn);
+		var sectionEl = closest(btn, '.rsu-section');
+		if (!builder || !sectionEl) return;
+
+		readFromDOM(builder);
+		var idx = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
+		builder._sections.splice(idx, 1);
+		renderSections(builder);
+	}
+
+	function removeBlock(btn) {
+		var builder = getBuilder(btn);
+		var sectionEl = closest(btn, '.rsu-section');
+		var blockEl = closest(btn, '.rsu-block');
+		if (!builder || !sectionEl || !blockEl) return;
+
+		readFromDOM(builder);
+		var si = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
+		var bi = qsa('.rsu-blocks-list .rsu-block', sectionEl).indexOf(blockEl);
+		builder._sections[si].blocks.splice(bi, 1);
+		renderSections(builder);
+	}
+
+	// ══════════════════════════════════════════════
+	// Initialization
+	// ══════════════════════════════════════════════
+
+	function init() {
+		qsa('.rsu-section-builder').forEach(function (builder) {
+			if (builder._initialized) return;
+			getBuilder(builder);
+			renderSections(builder);
+			builder._initialized = true;
+		});
+
+		// Tab: ensure first active tab is shown.
+		var tabs = document.getElementById('rsu-editor-tabs');
+		if (tabs) {
+			var visibleTabs = qsa('.rsu-editor-tab', tabs).filter(function (t) { return t.style.display !== 'none'; });
+			var hasActive = visibleTabs.some(function (t) { return t.classList.contains('rsu-editor-tab--active'); });
+			if (visibleTabs.length && !hasActive) {
+				activateTab(visibleTabs[0].getAttribute('data-platform'));
+			}
+		}
+
+		setTimeout(autoResize, 100);
+	}
+
+	// Tab switching.
+	function activateTab(platform) {
+		var tabs = document.getElementById('rsu-editor-tabs');
+		if (!tabs) return;
+
+		qsa('.rsu-editor-tab', tabs).forEach(function (t) {
+			t.classList.remove('rsu-editor-tab--active');
+			t.setAttribute('aria-selected', 'false');
+		});
+		qsa('.rsu-editor-panel').forEach(function (p) {
+			p.classList.add('rsu-editor-panel--hidden');
+		});
+
+		var tab = qs('[data-platform="' + platform + '"]', tabs);
+		if (tab) {
+			tab.classList.add('rsu-editor-tab--active');
+			tab.setAttribute('aria-selected', 'true');
+		}
+
+		var panel = document.getElementById('rsu-editor-panel-' + platform);
+		if (panel) {
+			panel.classList.remove('rsu-editor-panel--hidden');
+			panel.style.display = '';
+		}
+	}
+
+	// Toggle field.
+	document.addEventListener('change', function (e) {
+		if (e.target.id === 'rsu-is-update') {
+			var fields = document.getElementById('rsu-fields');
+			if (fields) fields.style.display = e.target.checked ? '' : 'none';
+		}
+
+		// Platform checkboxes.
+		if (e.target.classList.contains('rsu-platform-checkbox')) {
+			var plat = e.target.getAttribute('data-platform');
+			var tabsEl = document.getElementById('rsu-editor-tabs');
+			var tabEl = qs('[data-platform="' + plat + '"]', tabsEl);
+			var panelEl = document.getElementById('rsu-editor-panel-' + plat);
+
+			if (e.target.checked) {
+				if (tabEl) tabEl.style.display = '';
+				var visActive = qsa('.rsu-editor-tab', tabsEl).filter(function (t) {
+					return t.style.display !== 'none' && t.classList.contains('rsu-editor-tab--active');
+				});
+				if (!visActive.length) activateTab(plat);
+			} else {
+				if (tabEl) { tabEl.style.display = 'none'; tabEl.classList.remove('rsu-editor-tab--active'); }
+				if (panelEl) { panelEl.classList.add('rsu-editor-panel--hidden'); panelEl.style.display = 'none'; }
+				var firstVis = qsa('.rsu-editor-tab', tabsEl).filter(function (t) { return t.style.display !== 'none'; });
+				if (firstVis.length) activateTab(firstVis[0].getAttribute('data-platform'));
+			}
+		}
+	});
+
+	// Tab clicks.
+	document.addEventListener('click', function (e) {
+		var tab = closest(e.target, '.rsu-editor-tab');
+		if (tab) {
+			e.preventDefault();
+			activateTab(tab.getAttribute('data-platform'));
+		}
+	});
+
+	// Copy from.
+	document.addEventListener('change', function (e) {
+		if (!e.target.classList.contains('rsu-copy-from-select')) return;
+
+		var sourceSlug = e.target.value;
+		var targetSlug = e.target.getAttribute('data-target');
+		if (!sourceSlug) return;
+
+		if (!confirm('Copy sections from ' + sourceSlug + '? This will overwrite the current sections.')) {
+			e.target.value = '';
+			return;
+		}
+
+		var srcBuilder = qs('.rsu-section-builder[data-platform="' + sourceSlug + '"]');
+		var tgtBuilder = qs('.rsu-section-builder[data-platform="' + targetSlug + '"]');
+		if (!srcBuilder || !tgtBuilder) { e.target.value = ''; return; }
+
+		getBuilder(srcBuilder);
+		getBuilder(tgtBuilder);
+		readFromDOM(srcBuilder);
+
+		tgtBuilder._sections = JSON.parse(JSON.stringify(srcBuilder._sections));
+		renderSections(tgtBuilder);
+		e.target.value = '';
+	});
+
+	// Run init immediately, plus retry for Block Editor.
+	init();
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	}
+	var retryCount = 0;
+	var retryTimer = setInterval(function () {
+		retryCount++;
+		var builders = qsa('.rsu-section-builder');
+		var uninitialized = builders.filter(function (b) { return !b._initialized; });
+		if (uninitialized.length) init();
+		if (retryCount >= 10 || !uninitialized.length) clearInterval(retryTimer);
+	}, 500);
+
+	return {
+		addSection: addSection,
+		addBlock: addBlock,
+		removeSection: removeSection,
+		removeBlock: removeBlock,
+		activateTab: activateTab,
+		init: init
+	};
+})();
+</script>
