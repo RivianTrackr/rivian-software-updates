@@ -70,7 +70,16 @@ class RSU_Platforms {
 	 * @return string
 	 */
 	public static function get_default() {
-		return RSU_Settings::get( 'default_tab', 'gen2' );
+		$default = RSU_Settings::get( 'default_tab', 'gen2' );
+		$all     = self::get_all();
+
+		// Ensure the default is a valid platform.
+		if ( ! isset( $all[ $default ] ) ) {
+			$slugs = array_keys( $all );
+			$default = ! empty( $slugs ) ? $slugs[0] : 'gen2';
+		}
+
+		return $default;
 	}
 
 	/**

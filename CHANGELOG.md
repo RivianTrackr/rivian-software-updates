@@ -2,6 +2,13 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.5.1] - 2026-04-05
+
+### Fixed
+- Default Platforms setting now pre-checks platforms when creating a new post (was ignored, leaving all unchecked).
+- Default Frontend Tab validated against available platforms to prevent invalid slug from breaking tab selection.
+- Clarified settings description: default tab applies to first-time visitors; returning visitors see their last-selected tab.
+
 ## [1.5.0] - 2026-04-05
 
 ### Changed
