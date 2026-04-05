@@ -267,15 +267,17 @@ var RSUSectionBuilder = (function () {
 
 			qsa('.rsu-blocks-list .rsu-block', sEl).forEach(function (bEl) {
 				var type = bEl.getAttribute('data-type');
-				var textarea = qs('.rsu-block__content', bEl);
-				var raw = textarea ? textarea.value : '';
 
 				if (type === 'list') {
-					section.blocks.push({
-						type: 'list',
-						items: raw.split('\n').filter(function (l) { return l.trim() !== ''; })
+					var items = [];
+					qsa('.rsu-bullet-row__input', bEl).forEach(function (input) {
+						var val = input.value.trim();
+						if (val !== '') items.push(val);
 					});
+					section.blocks.push({ type: 'list', items: items });
 				} else {
+					var textarea = qs('.rsu-block__content', bEl);
+					var raw = textarea ? textarea.value : '';
 					section.blocks.push({ type: type, content: raw.trim() });
 				}
 			});
@@ -304,6 +306,9 @@ var RSUSectionBuilder = (function () {
 		});
 
 		syncJSON(builder);
+
+		// Auto-resize all textareas after rendering.
+		setTimeout(autoResize, 10);
 	}
 
 	// ── Build section element ──
@@ -347,15 +352,32 @@ var RSUSectionBuilder = (function () {
 	function buildBlockEl(block, bi) {
 		var type = block.type || 'paragraph';
 		var label = type === 'list' ? 'Bullet List' : type === 'note' ? 'Note' : 'Paragraph';
-		var placeholder, content;
 
 		if (type === 'list') {
-			placeholder = 'One bullet point per line';
-			content = Array.isArray(block.items) ? block.items.join('\n') : '';
-		} else {
-			placeholder = type === 'note' ? 'Note text...' : 'Paragraph text...';
-			content = block.content || '';
+			var items = Array.isArray(block.items) ? block.items : [];
+			var el = createElement(
+				'<div class="rsu-block" data-index="' + bi + '" data-type="list">' +
+					'<div class="rsu-block__header">' +
+						'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
+						'<span class="rsu-block__label">' + label + '</span>' +
+						'<button type="button" class="rsu-block__remove" title="Remove block" onclick="RSUSectionBuilder.removeBlock(this)">&times;</button>' +
+					'</div>' +
+					'<div class="rsu-bullet-list"></div>' +
+					'<button type="button" class="rsu-bullet-add" onclick="RSUSectionBuilder.addBullet(this)" title="Add bullet point">+ Add bullet</button>' +
+				'</div>'
+			);
+
+			var listContainer = qs('.rsu-bullet-list', el);
+			if (items.length === 0) items = ['']; // start with one empty bullet
+			items.forEach(function (item) {
+				listContainer.appendChild(buildBulletRow(item));
+			});
+
+			return el;
 		}
+
+		var placeholder = type === 'note' ? 'Note text...' : 'Paragraph text...';
+		var content = block.content || '';
 
 		var el = createElement(
 			'<div class="rsu-block" data-index="' + bi + '" data-type="' + type + '">' +
@@ -364,7 +386,7 @@ var RSUSectionBuilder = (function () {
 					'<span class="rsu-block__label">' + label + '</span>' +
 					'<button type="button" class="rsu-block__remove" title="Remove block" onclick="RSUSectionBuilder.removeBlock(this)">&times;</button>' +
 				'</div>' +
-				'<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="3"></textarea>' +
+				'<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="1"></textarea>' +
 			'</div>'
 		);
 
@@ -373,19 +395,44 @@ var RSUSectionBuilder = (function () {
 
 		// Live sync and auto-resize.
 		textarea.addEventListener('input', function () {
-			this.style.height = 'auto';
-			this.style.height = this.scrollHeight + 'px';
+			autoResizeTextarea(this);
 			readFromDOM(getBuilder(this));
 		});
 
 		return el;
 	}
 
+	// ── Build a single bullet row ──
+	function buildBulletRow(value) {
+		var row = createElement(
+			'<div class="rsu-bullet-row">' +
+				'<span class="rsu-bullet-row__marker">&bull;</span>' +
+				'<textarea class="rsu-bullet-row__input" placeholder="Bullet point text..." rows="1"></textarea>' +
+				'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet" onclick="RSUSectionBuilder.removeBullet(this)">&times;</button>' +
+			'</div>'
+		);
+
+		var input = qs('.rsu-bullet-row__input', row);
+		input.value = value || '';
+
+		input.addEventListener('input', function () {
+			autoResizeTextarea(this);
+			readFromDOM(getBuilder(this));
+		});
+
+		return row;
+	}
+
+	// ── Auto-resize a single textarea ──
+	function autoResizeTextarea(ta) {
+		ta.style.height = 'auto';
+		ta.style.height = ta.scrollHeight + 'px';
+	}
+
 	// ── Auto-resize existing textareas on load ──
 	function autoResize() {
-		qsa('.rsu-block__content').forEach(function (ta) {
-			ta.style.height = 'auto';
-			ta.style.height = ta.scrollHeight + 'px';
+		qsa('.rsu-block__content, .rsu-bullet-row__input').forEach(function (ta) {
+			autoResizeTextarea(ta);
 		});
 	}
 
@@ -426,8 +473,8 @@ var RSUSectionBuilder = (function () {
 
 		var sectionEls = qsa('.rsu-section', builder);
 		if (sectionEls[sectionIndex]) {
-			var blocks = qsa('.rsu-block__content', sectionEls[sectionIndex]);
-			if (blocks.length) blocks[blocks.length - 1].focus();
+			var inputs = qsa('.rsu-block__content, .rsu-bullet-row__input', sectionEls[sectionIndex]);
+			if (inputs.length) inputs[inputs.length - 1].focus();
 		}
 	}
 
@@ -455,6 +502,31 @@ var RSUSectionBuilder = (function () {
 		var bi = qsa('.rsu-blocks-list .rsu-block', sectionEl).indexOf(blockEl);
 		builder._sections[si].blocks.splice(bi, 1);
 		renderSections(builder);
+	}
+
+	function addBullet(btn) {
+		var blockEl = closest(btn, '.rsu-block');
+		if (!blockEl) return;
+		var listContainer = qs('.rsu-bullet-list', blockEl);
+		var row = buildBulletRow('');
+		listContainer.appendChild(row);
+		qs('.rsu-bullet-row__input', row).focus();
+		readFromDOM(getBuilder(btn));
+	}
+
+	function removeBullet(btn) {
+		var row = closest(btn, '.rsu-bullet-row');
+		var blockEl = closest(btn, '.rsu-block');
+		if (!row || !blockEl) return;
+		var listContainer = qs('.rsu-bullet-list', blockEl);
+		row.remove();
+		// Ensure at least one bullet row remains
+		if (!qs('.rsu-bullet-row', listContainer)) {
+			var newRow = buildBulletRow('');
+			listContainer.appendChild(newRow);
+			qs('.rsu-bullet-row__input', newRow).focus();
+		}
+		readFromDOM(getBuilder(btn));
 	}
 
 	// ══════════════════════════════════════════════
@@ -505,6 +577,8 @@ var RSUSectionBuilder = (function () {
 		if (panel) {
 			panel.classList.remove('rsu-editor-panel--hidden');
 			panel.style.display = '';
+			// Auto-resize textareas now that the panel is visible.
+			setTimeout(autoResize, 10);
 		}
 	}
 
@@ -591,6 +665,8 @@ var RSUSectionBuilder = (function () {
 		addBlock: addBlock,
 		removeSection: removeSection,
 		removeBlock: removeBlock,
+		addBullet: addBullet,
+		removeBullet: removeBullet,
 		activateTab: activateTab,
 		init: init
 	};
