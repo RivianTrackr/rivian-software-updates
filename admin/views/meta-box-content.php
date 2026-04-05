@@ -1,6 +1,6 @@
 <?php
 /**
- * Meta box: Release Notes content editors.
+ * Meta box: Release Notes section builder.
  *
  * @package Rivian_Software_Updates
  * @var WP_Post $post
@@ -8,9 +8,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$is_update      = get_post_meta( $post->ID, '_rsu_is_update', true );
+$is_update        = get_post_meta( $post->ID, '_rsu_is_update', true );
 $active_platforms = RSU_Platforms::get_active( $post->ID );
-$all_platforms   = RSU_Platforms::get_all();
+$all_platforms    = RSU_Platforms::get_all();
 
 wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 ?>
@@ -66,9 +66,11 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 		$first_visible = true;
 		foreach ( $all_platforms as $slug => $platform ) :
 			$is_active = in_array( $slug, $active_platforms, true );
-			$content   = get_post_meta( $post->ID, $platform['meta_key'], true );
 
-			// Determine other platforms for "Copy from" dropdown.
+			// Load structured sections JSON if available.
+			$sections_json = get_post_meta( $post->ID, '_rsu_sections_' . $slug, true );
+
+			// Other platforms for "Copy from" dropdown.
 			$other_platforms = array_diff_key( $all_platforms, array( $slug => true ) );
 			?>
 			<div class="rsu-editor-panel <?php echo $first_visible && $is_active ? '' : 'rsu-editor-panel--hidden'; ?>"
@@ -91,19 +93,20 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 					</label>
 				</div>
 
-				<?php
-				wp_editor(
-					$content ? $content : '',
-					'rsu_content_' . $slug,
-					array(
-						'textarea_name' => 'rsu_content_' . $slug,
-						'textarea_rows' => 15,
-						'media_buttons' => false,
-						'teeny'         => false,
-						'quicktags'     => true,
-					)
-				);
-				?>
+				<!-- Section builder -->
+				<div class="rsu-section-builder" data-platform="<?php echo esc_attr( $slug ); ?>">
+					<div class="rsu-sections-list">
+						<!-- Sections rendered by JS -->
+					</div>
+					<button type="button" class="button rsu-add-section">+ Add Section</button>
+				</div>
+
+				<!-- Hidden input stores the JSON -->
+				<input type="hidden"
+					name="rsu_sections_<?php echo esc_attr( $slug ); ?>"
+					class="rsu-sections-json"
+					data-platform="<?php echo esc_attr( $slug ); ?>"
+					value="<?php echo esc_attr( $sections_json ? $sections_json : '[]' ); ?>" />
 			</div>
 			<?php
 			if ( $is_active ) {

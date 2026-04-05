@@ -105,14 +105,29 @@ class RSU_Admin {
 			delete_post_meta( $post_id, '_rsu_platforms' );
 		}
 
-		// Platform content.
+		// Platform content via section builder.
 		foreach ( RSU_Platforms::get_all() as $slug => $platform ) {
-			$field = 'rsu_content_' . $slug;
-			if ( isset( $_POST[ $field ] ) ) {
-				$content = wp_kses_post( wp_unslash( $_POST[ $field ] ) );
-				if ( $content ) {
-					update_post_meta( $post_id, $platform['meta_key'], $content );
+			$json_field = 'rsu_sections_' . $slug;
+			if ( isset( $_POST[ $json_field ] ) ) {
+				$raw_json = wp_unslash( $_POST[ $json_field ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.
+				$sections = json_decode( $raw_json, true );
+
+				if ( is_array( $sections ) && ! empty( $sections ) ) {
+					// Sanitize section data.
+					$sections = self::sanitize_sections( $sections );
+
+					// Store structured JSON.
+					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
+
+					// Render to HTML for frontend display.
+					$html = self::render_sections_to_html( $sections );
+					if ( $html ) {
+						update_post_meta( $post_id, $platform['meta_key'], wp_kses_post( $html ) );
+					} else {
+						delete_post_meta( $post_id, $platform['meta_key'] );
+					}
 				} else {
+					delete_post_meta( $post_id, '_rsu_sections_' . $slug );
 					delete_post_meta( $post_id, $platform['meta_key'] );
 				}
 			}
@@ -134,6 +149,119 @@ class RSU_Admin {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Sanitize sections data from user input.
+	 *
+	 * @param array $sections Raw sections array.
+	 * @return array Sanitized sections.
+	 */
+	private static function sanitize_sections( $sections ) {
+		$clean = array();
+
+		foreach ( $sections as $section ) {
+			if ( ! is_array( $section ) ) {
+				continue;
+			}
+
+			$clean_section = array(
+				'heading' => isset( $section['heading'] ) ? sanitize_text_field( $section['heading'] ) : '',
+				'blocks'  => array(),
+			);
+
+			if ( ! empty( $section['blocks'] ) && is_array( $section['blocks'] ) ) {
+				foreach ( $section['blocks'] as $block ) {
+					if ( ! is_array( $block ) ) {
+						continue;
+					}
+
+					$type = isset( $block['type'] ) ? sanitize_text_field( $block['type'] ) : 'paragraph';
+
+					if ( 'list' === $type ) {
+						$items = isset( $block['items'] ) && is_array( $block['items'] )
+							? array_map( 'sanitize_text_field', $block['items'] )
+							: array();
+						$clean_section['blocks'][] = array(
+							'type'  => 'list',
+							'items' => $items,
+						);
+					} else {
+						$clean_section['blocks'][] = array(
+							'type'    => $type,
+							'content' => isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '',
+						);
+					}
+				}
+			}
+
+			$clean[] = $clean_section;
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Render structured sections array to HTML for frontend display.
+	 *
+	 * @param array $sections Sections array.
+	 * @return string HTML content.
+	 */
+	public static function render_sections_to_html( $sections ) {
+		if ( ! is_array( $sections ) ) {
+			return '';
+		}
+
+		$html = '';
+
+		foreach ( $sections as $section ) {
+			$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
+			if ( $heading ) {
+				$html .= '<h3>' . esc_html( $heading ) . '</h3>' . "\n";
+			}
+
+			if ( empty( $section['blocks'] ) || ! is_array( $section['blocks'] ) ) {
+				continue;
+			}
+
+			foreach ( $section['blocks'] as $block ) {
+				$type = isset( $block['type'] ) ? $block['type'] : 'paragraph';
+
+				switch ( $type ) {
+					case 'paragraph':
+						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
+						if ( $content ) {
+							// Convert line breaks to <br> within a paragraph.
+							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p>' . "\n";
+						}
+						break;
+
+					case 'list':
+						$items = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
+						if ( ! empty( $items ) ) {
+							$html .= "<ul>\n";
+							foreach ( $items as $item ) {
+								$item = trim( $item );
+								if ( '' !== $item ) {
+									$html .= '<li>' . esc_html( $item ) . '</li>' . "\n";
+								}
+							}
+							$html .= "</ul>\n";
+						}
+						break;
+
+					case 'note':
+						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
+						if ( $content ) {
+							$html .= '<blockquote><p><strong>NOTE</strong></p>' . "\n";
+							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p></blockquote>' . "\n";
+						}
+						break;
+				}
+			}
+		}
+
+		return $html;
 	}
 
 	/**
@@ -166,7 +294,7 @@ class RSU_Admin {
 		wp_enqueue_script(
 			'rsu-admin',
 			RSU_PLUGIN_URL . 'admin/js/rsu-admin' . $suffix . '.js',
-			array( 'jquery' ),
+			array( 'jquery', 'jquery-ui-sortable' ),
 			RSU_VERSION,
 			true
 		);
