@@ -15,6 +15,88 @@ $all_platforms    = RSU_Platforms::get_all();
 wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 ?>
 
+<style>
+/* RSU Admin — inlined for Block Editor compatibility */
+.rsu-admin-wrap { margin: -6px -12px -12px; padding: 0; }
+
+.rsu-toggle-row { padding: 14px 20px; background: linear-gradient(to bottom, #f9fafb, #f3f4f6); border-bottom: 1px solid #dcdcde; }
+.rsu-toggle-label { font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; color: #1d2327; }
+.rsu-toggle-label input[type="checkbox"] { margin: 0; width: 16px; height: 16px; }
+
+.rsu-platform-checks { padding: 14px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px; border-bottom: 1px solid #e5e7eb; background: #fff; }
+.rsu-platform-checks__label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; }
+.rsu-platform-check { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; cursor: pointer; color: #374151; }
+.rsu-platform-check input[type="checkbox"] { margin: 0; }
+.rsu-platform-desc { color: #9ca3af; font-size: 11px; font-weight: 400; }
+
+.rsu-editor-tabs { display: flex; gap: 0; padding: 0 20px; background: #f9fafb; border-bottom: 1px solid #dcdcde; }
+.rsu-editor-tab { padding: 10px 24px; border: none; border-bottom: 2px solid transparent; background: transparent; color: #6b7280; font-size: 13px; font-weight: 500; cursor: pointer; transition: color 0.15s, border-color 0.15s; margin-bottom: -1px; }
+.rsu-editor-tab:hover { color: #1d2327; }
+.rsu-editor-tab--active { color: #2271b1; font-weight: 600; border-bottom-color: #2271b1; }
+
+.rsu-editor-panel { padding: 20px; background: #fff; }
+.rsu-editor-panel--hidden { position: absolute; left: -9999px; visibility: hidden; }
+
+.rsu-editor-toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+.rsu-copy-from { font-size: 12px; color: #9ca3af; display: inline-flex; align-items: center; gap: 6px; }
+.rsu-copy-from-select { font-size: 12px; padding: 3px 8px; border-radius: 4px; border: 1px solid #d1d5db; }
+
+.rsu-sections-empty { padding: 40px 24px; text-align: center; color: #9ca3af; font-size: 14px; background: #fafafa; border: 2px dashed #e5e7eb; border-radius: 8px; margin-bottom: 16px; }
+
+.rsu-section-builder .rsu-add-section { display: block; width: 100%; padding: 12px 16px; font-size: 13px; font-weight: 600; border: 2px dashed #d1d5db !important; background: #fafafa !important; color: #2271b1 !important; border-radius: 8px !important; cursor: pointer; transition: all 0.15s ease; text-align: center; box-shadow: none !important; }
+.rsu-section-builder .rsu-add-section:hover { border-color: #2271b1 !important; background: #eff6ff !important; }
+
+.rsu-section { border: 1px solid #e5e7eb; border-radius: 8px; margin-bottom: 16px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+.rsu-section__header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: #f9fafb; border-bottom: 1px solid #e5e7eb; border-radius: 8px 8px 0 0; }
+.rsu-section__drag { cursor: grab; color: #d1d5db; font-size: 16px; flex-shrink: 0; }
+.rsu-section__drag:hover { color: #6b7280; }
+
+.rsu-section__heading { flex: 1; font-size: 14px !important; font-weight: 600; padding: 8px 12px !important; border: 1px solid #e5e7eb !important; border-radius: 6px !important; background: #fff !important; color: #1d2327; box-shadow: none !important; }
+.rsu-section__heading:focus { border-color: #2271b1 !important; box-shadow: 0 0 0 2px rgba(34,113,177,0.15) !important; outline: none; }
+.rsu-section__heading::placeholder { font-weight: 400; color: #c3c4c7; font-size: 13px; }
+
+.rsu-section__remove { background: none; border: none; font-size: 18px; line-height: 1; color: #d1d5db; cursor: pointer; padding: 4px 8px; border-radius: 4px; flex-shrink: 0; }
+.rsu-section__remove:hover { color: #dc2626; background: #fef2f2; }
+
+.rsu-blocks-list { padding: 12px 14px 4px; }
+
+.rsu-block { border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 10px; background: #fff; overflow: hidden; }
+.rsu-block:focus-within { border-color: #93c5fd; }
+.rsu-block[data-type="list"] { border-left: 3px solid #3b82f6; }
+.rsu-block[data-type="note"] { border-left: 3px solid #f59e0b; }
+
+.rsu-block__header { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: #f9fafb; border-bottom: 1px solid #f0f0f0; }
+.rsu-block__drag { cursor: grab; color: #d1d5db; font-size: 13px; flex-shrink: 0; }
+.rsu-block__label { flex: 1; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #9ca3af; }
+.rsu-block[data-type="list"] .rsu-block__label { color: #2563eb; }
+.rsu-block[data-type="note"] .rsu-block__label { color: #d97706; }
+
+.rsu-block__remove { background: none; border: none; font-size: 15px; line-height: 1; color: #d1d5db; cursor: pointer; padding: 2px 4px; border-radius: 3px; }
+.rsu-block__remove:hover { color: #dc2626; background: #fef2f2; }
+
+.rsu-block__content { display: block; width: 100%; padding: 10px 12px; border: none !important; resize: none; font-size: 13px; line-height: 1.65; font-family: inherit; color: #374151; overflow: hidden; min-height: 56px; box-sizing: border-box; background: #fff; box-shadow: none !important; outline: none !important; }
+.rsu-block__content:focus { background: #fafbff; }
+.rsu-block__content::placeholder { color: #c3c4c7; }
+.rsu-block[data-type="list"] .rsu-block__content { background: #f8faff; }
+.rsu-block[data-type="list"] .rsu-block__content:focus { background: #eff6ff; }
+.rsu-block[data-type="note"] .rsu-block__content { background: #fffbeb; }
+.rsu-block[data-type="note"] .rsu-block__content:focus { background: #fef3c7; }
+
+.rsu-section__footer { padding: 8px 14px 12px; border-top: 1px solid #f3f4f6; }
+.rsu-add-block-group { display: flex; gap: 8px; }
+.rsu-add-block-group .button { font-size: 11px !important; font-weight: 600; color: #6b7280 !important; padding: 4px 12px !important; border: 1px solid #e5e7eb !important; border-radius: 4px !important; background: #f9fafb !important; cursor: pointer; box-shadow: none !important; line-height: 1.5; }
+.rsu-add-block-group .button:hover { color: #2271b1 !important; border-color: #bfdbfe !important; background: #eff6ff !important; }
+
+@media (max-width: 782px) {
+	.rsu-platform-checks { flex-direction: column; align-items: flex-start; gap: 10px; }
+	.rsu-editor-tabs { flex-wrap: wrap; }
+	.rsu-editor-tab { padding: 8px 16px; font-size: 12px; }
+	.rsu-editor-panel { padding: 14px; }
+	.rsu-add-block-group { flex-wrap: wrap; }
+}
+</style>
+
 <div class="rsu-admin-wrap" data-rsu-active="<?php echo $is_update ? '1' : '0'; ?>">
 	<div class="rsu-toggle-row">
 		<label class="rsu-toggle-label">
