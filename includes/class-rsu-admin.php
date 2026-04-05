@@ -212,12 +212,14 @@ class RSU_Admin {
 			return '';
 		}
 
-		$html = '';
+		$heading_tag = RSU_Settings::get( 'heading_level', 'h3' );
+		$note_label  = RSU_Settings::get( 'note_label', 'NOTE' );
+		$html        = '';
 
 		foreach ( $sections as $section ) {
 			$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
 			if ( $heading ) {
-				$html .= '<h3>' . esc_html( $heading ) . '</h3>' . "\n";
+				$html .= '<' . $heading_tag . '>' . esc_html( $heading ) . '</' . $heading_tag . '>' . "\n";
 			}
 
 			if ( empty( $section['blocks'] ) || ! is_array( $section['blocks'] ) ) {
@@ -231,7 +233,6 @@ class RSU_Admin {
 					case 'paragraph':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							// Convert line breaks to <br> within a paragraph.
 							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p>' . "\n";
 						}
 						break;
@@ -253,7 +254,7 @@ class RSU_Admin {
 					case 'note':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							$html .= '<blockquote><p><strong>NOTE</strong></p>' . "\n";
+							$html .= '<blockquote><p><strong>' . esc_html( $note_label ) . '</strong></p>' . "\n";
 							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p></blockquote>' . "\n";
 						}
 						break;

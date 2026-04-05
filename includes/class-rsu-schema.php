@@ -17,6 +17,10 @@ class RSU_Schema {
 	 * Output JSON-LD for software update posts.
 	 */
 	public function output_structured_data() {
+		if ( ! RSU_Settings::get( 'schema_enabled', true ) ) {
+			return;
+		}
+
 		if ( ! is_singular( 'post' ) ) {
 			return;
 		}
@@ -43,6 +47,8 @@ class RSU_Schema {
 			}
 		}
 
+		$org_name = RSU_Settings::get( 'organization_name', 'RivianTrackr' );
+
 		$description = sprintf(
 			'Release notes for Rivian software update %s covering %s vehicles.',
 			$version ? $version : get_the_title( $post_id ),
@@ -60,12 +66,12 @@ class RSU_Schema {
 			'dateModified'  => get_the_modified_date( 'Y-m-d', $post_id ),
 			'author'        => array(
 				'@type' => 'Organization',
-				'name'  => 'RivianTrackr',
+				'name'  => $org_name,
 				'url'   => home_url( '/' ),
 			),
 			'publisher'     => array(
 				'@type' => 'Organization',
-				'name'  => 'RivianTrackr',
+				'name'  => $org_name,
 				'url'   => home_url( '/' ),
 			),
 			'url'           => get_permalink( $post_id ),
@@ -88,6 +94,8 @@ class RSU_Schema {
 
 		$graph[] = $article;
 
+		$archive_slug = RSU_Settings::get( 'archive_slug', '/software-updates/' );
+
 		// BreadcrumbList.
 		$graph[] = array(
 			'@type'           => 'BreadcrumbList',
@@ -102,7 +110,7 @@ class RSU_Schema {
 					'@type'    => 'ListItem',
 					'position' => 2,
 					'name'     => 'Software Updates',
-					'item'     => home_url( '/software-updates/' ),
+					'item'     => home_url( $archive_slug ),
 				),
 				array(
 					'@type'    => 'ListItem',
