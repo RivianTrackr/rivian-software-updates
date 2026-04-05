@@ -23,6 +23,13 @@
 
     syncJSON($builder);
     initSortable($builder);
+
+    // Auto-resize all textareas after rendering.
+    setTimeout(function () {
+      $builder.find('.rsu-block__content, .rsu-bullet-row__input').each(function () {
+        autoResizeTextarea(this);
+      });
+    }, 10);
   }
 
   // ── Build a single section DOM element ──
@@ -61,16 +68,32 @@
   function buildBlockEl(block, bi) {
     var type = block.type || 'paragraph';
     var label = type === 'list' ? 'Bullet List' : type === 'note' ? 'Note' : 'Paragraph';
-    var placeholder = '';
-    var content = '';
 
     if (type === 'list') {
-      placeholder = 'One bullet point per line';
-      content = Array.isArray(block.items) ? block.items.join('\n') : '';
-    } else {
-      placeholder = type === 'note' ? 'Note text...' : 'Paragraph text...';
-      content = block.content || '';
+      var items = Array.isArray(block.items) ? block.items : [];
+      var $block = $(
+        '<div class="rsu-block" data-index="' + bi + '" data-type="list">' +
+          '<div class="rsu-block__header">' +
+            '<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
+            '<span class="rsu-block__label">' + label + '</span>' +
+            '<button type="button" class="rsu-block__remove" title="Remove block">&times;</button>' +
+          '</div>' +
+          '<div class="rsu-bullet-list"></div>' +
+          '<button type="button" class="rsu-bullet-add" title="Add bullet point">+ Add bullet</button>' +
+        '</div>'
+      );
+
+      var $listContainer = $block.find('.rsu-bullet-list');
+      if (items.length === 0) items = [''];
+      items.forEach(function (item) {
+        $listContainer.append(buildBulletRow(item));
+      });
+
+      return $block;
     }
+
+    var placeholder = type === 'note' ? 'Note text...' : 'Paragraph text...';
+    var content = block.content || '';
 
     var $block = $(
       '<div class="rsu-block" data-index="' + bi + '" data-type="' + type + '">' +
@@ -79,13 +102,34 @@
           '<span class="rsu-block__label">' + label + '</span>' +
           '<button type="button" class="rsu-block__remove" title="Remove block">&times;</button>' +
         '</div>' +
-        '<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="3"></textarea>' +
+        '<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="1"></textarea>' +
       '</div>'
     );
 
     $block.find('.rsu-block__content').val(content);
 
     return $block;
+  }
+
+  // ── Build a single bullet row ──
+  function buildBulletRow(value) {
+    var $row = $(
+      '<div class="rsu-bullet-row">' +
+        '<span class="rsu-bullet-row__marker">&bull;</span>' +
+        '<textarea class="rsu-bullet-row__input" placeholder="Bullet point text..." rows="1"></textarea>' +
+        '<button type="button" class="rsu-bullet-row__remove" title="Remove bullet">&times;</button>' +
+      '</div>'
+    );
+
+    $row.find('.rsu-bullet-row__input').val(value || '');
+
+    return $row;
+  }
+
+  // ── Auto-resize a single textarea ──
+  function autoResizeTextarea(el) {
+    el.style.height = 'auto';
+    el.style.height = el.scrollHeight + 'px';
   }
 
   // ── Sync the in-memory sections to the hidden JSON input ──
@@ -109,14 +153,16 @@
       $s.find('.rsu-blocks-list .rsu-block').each(function () {
         var $b = $(this);
         var type = $b.data('type');
-        var raw = $b.find('.rsu-block__content').val();
 
         if (type === 'list') {
-          section.blocks.push({
-            type: 'list',
-            items: raw.split('\n').filter(function (line) { return line.trim() !== ''; })
+          var items = [];
+          $b.find('.rsu-bullet-row__input').each(function () {
+            var val = $(this).val().trim();
+            if (val !== '') items.push(val);
           });
+          section.blocks.push({ type: 'list', items: items });
         } else {
+          var raw = $b.find('.rsu-block__content').val();
           section.blocks.push({
             type: type,
             content: raw.trim()
@@ -186,16 +232,6 @@
   // they work regardless of when the DOM renders
   // ══════════════════════════════════════════════
 
-  // ── Toggle software update fields ──
-  $(document).on('change', '#rsu-is-update', function () {
-    var $fields = $('#rsu-fields');
-    if (this.checked) {
-      $fields.slideDown(200);
-    } else {
-      $fields.slideUp(200);
-    }
-  });
-
   // ── Platform checkbox: show/hide tabs and panels ──
   $(document).on('change', '.rsu-platform-checkbox', function () {
     var $tabs = $('#rsu-editor-tabs');
@@ -236,8 +272,15 @@
       .addClass('rsu-editor-tab--active')
       .attr('aria-selected', 'true');
 
-    $('#rsu-editor-panel-' + platform)
+    var $panel = $('#rsu-editor-panel-' + platform)
       .removeClass('rsu-editor-panel--hidden').show();
+
+    // Auto-resize textareas now that the panel is visible.
+    setTimeout(function () {
+      $panel.find('.rsu-block__content, .rsu-bullet-row__input').each(function () {
+        autoResizeTextarea(this);
+      });
+    }, 10);
   }
 
   // ── Add Section ──
@@ -287,7 +330,7 @@
     renderSections($builder);
 
     $builder.find('.rsu-section').eq(sectionIndex)
-      .find('.rsu-block:last .rsu-block__content').focus();
+      .find('.rsu-block:last').find('.rsu-block__content, .rsu-bullet-row__input').last().focus();
   });
 
   // ── Remove Section ──
@@ -325,15 +368,43 @@
   });
 
   // ── Live sync on input ──
-  $(document).on('input', '.rsu-section__heading, .rsu-block__content', function () {
+  $(document).on('input', '.rsu-section__heading, .rsu-block__content, .rsu-bullet-row__input', function () {
     var $builder = $(this).closest('.rsu-section-builder');
     readFromDOM($builder);
   });
 
   // ── Auto-resize textareas ──
-  $(document).on('input', '.rsu-block__content', function () {
-    this.style.height = 'auto';
-    this.style.height = (this.scrollHeight) + 'px';
+  $(document).on('input', '.rsu-block__content, .rsu-bullet-row__input', function () {
+    autoResizeTextarea(this);
+  });
+
+  // ── Add bullet ──
+  $(document).on('click', '.rsu-bullet-add', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var $block = $(this).closest('.rsu-block');
+    var $row = buildBulletRow('');
+    $block.find('.rsu-bullet-list').append($row);
+    $row.find('.rsu-bullet-row__input').focus();
+    var $builder = $(this).closest('.rsu-section-builder');
+    readFromDOM($builder);
+  });
+
+  // ── Remove bullet ──
+  $(document).on('click', '.rsu-bullet-row__remove', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var $row = $(this).closest('.rsu-bullet-row');
+    var $block = $(this).closest('.rsu-block');
+    var $builder = $(this).closest('.rsu-section-builder');
+    $row.remove();
+    // Ensure at least one bullet row remains
+    if (!$block.find('.rsu-bullet-row').length) {
+      var $newRow = buildBulletRow('');
+      $block.find('.rsu-bullet-list').append($newRow);
+      $newRow.find('.rsu-bullet-row__input').focus();
+    }
+    readFromDOM($builder);
   });
 
   // ── Copy from: copy sections from one platform to another ──
@@ -391,9 +462,8 @@
 
     // Auto-resize textareas with existing content.
     setTimeout(function () {
-      $('.rsu-block__content').each(function () {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
+      $('.rsu-block__content, .rsu-bullet-row__input').each(function () {
+        autoResizeTextarea(this);
       });
     }, 100);
 

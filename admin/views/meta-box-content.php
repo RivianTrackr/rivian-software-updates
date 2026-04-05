@@ -8,7 +8,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$is_update        = get_post_meta( $post->ID, '_rsu_is_update', true );
 $active_platforms = RSU_Platforms::get_active( $post->ID );
 $all_platforms    = RSU_Platforms::get_all();
 
@@ -24,10 +23,6 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 <style>
 /* RSU Admin — inlined for Block Editor compatibility */
 .rsu-admin-wrap { margin: -6px -12px -12px; padding: 0; }
-
-.rsu-toggle-row { padding: 14px 20px; background: linear-gradient(to bottom, #f9fafb, #f3f4f6); border-bottom: 1px solid #dcdcde; }
-.rsu-toggle-label { font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; color: #1d2327; }
-.rsu-toggle-label input[type="checkbox"] { margin: 0; width: 16px; height: 16px; }
 
 .rsu-platform-checks { padding: 14px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px; border-bottom: 1px solid #e5e7eb; background: #fff; }
 .rsu-platform-checks__label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; }
@@ -103,16 +98,10 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 }
 </style>
 
-<div class="rsu-admin-wrap" data-rsu-active="<?php echo $is_update ? '1' : '0'; ?>">
-	<div class="rsu-toggle-row">
-		<label class="rsu-toggle-label">
-			<input type="checkbox" name="rsu_is_update" value="1" id="rsu-is-update"
-				<?php checked( $is_update, '1' ); ?> />
-			This is a Software Update post
-		</label>
-	</div>
+<div class="rsu-admin-wrap" data-rsu-active="1">
+	<input type="hidden" name="rsu_is_update" value="1" />
 
-	<div class="rsu-fields" id="rsu-fields" style="<?php echo $is_update ? '' : 'display:none;'; ?>">
+	<div class="rsu-fields" id="rsu-fields">
 		<div class="rsu-platform-checks">
 			<span class="rsu-platform-checks__label">Platforms:</span>
 			<?php foreach ( $all_platforms as $slug => $platform ) : ?>
@@ -267,15 +256,17 @@ var RSUSectionBuilder = (function () {
 
 			qsa('.rsu-blocks-list .rsu-block', sEl).forEach(function (bEl) {
 				var type = bEl.getAttribute('data-type');
-				var textarea = qs('.rsu-block__content', bEl);
-				var raw = textarea ? textarea.value : '';
 
 				if (type === 'list') {
-					section.blocks.push({
-						type: 'list',
-						items: raw.split('\n').filter(function (l) { return l.trim() !== ''; })
+					var items = [];
+					qsa('.rsu-bullet-row__input', bEl).forEach(function (input) {
+						var val = input.value.trim();
+						if (val !== '') items.push(val);
 					});
+					section.blocks.push({ type: 'list', items: items });
 				} else {
+					var textarea = qs('.rsu-block__content', bEl);
+					var raw = textarea ? textarea.value : '';
 					section.blocks.push({ type: type, content: raw.trim() });
 				}
 			});
@@ -304,6 +295,9 @@ var RSUSectionBuilder = (function () {
 		});
 
 		syncJSON(builder);
+
+		// Auto-resize all textareas after rendering.
+		setTimeout(autoResize, 10);
 	}
 
 	// ── Build section element ──
@@ -347,15 +341,32 @@ var RSUSectionBuilder = (function () {
 	function buildBlockEl(block, bi) {
 		var type = block.type || 'paragraph';
 		var label = type === 'list' ? 'Bullet List' : type === 'note' ? 'Note' : 'Paragraph';
-		var placeholder, content;
 
 		if (type === 'list') {
-			placeholder = 'One bullet point per line';
-			content = Array.isArray(block.items) ? block.items.join('\n') : '';
-		} else {
-			placeholder = type === 'note' ? 'Note text...' : 'Paragraph text...';
-			content = block.content || '';
+			var items = Array.isArray(block.items) ? block.items : [];
+			var el = createElement(
+				'<div class="rsu-block" data-index="' + bi + '" data-type="list">' +
+					'<div class="rsu-block__header">' +
+						'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
+						'<span class="rsu-block__label">' + label + '</span>' +
+						'<button type="button" class="rsu-block__remove" title="Remove block" onclick="RSUSectionBuilder.removeBlock(this)">&times;</button>' +
+					'</div>' +
+					'<div class="rsu-bullet-list"></div>' +
+					'<button type="button" class="rsu-bullet-add" onclick="RSUSectionBuilder.addBullet(this)" title="Add bullet point">+ Add bullet</button>' +
+				'</div>'
+			);
+
+			var listContainer = qs('.rsu-bullet-list', el);
+			if (items.length === 0) items = ['']; // start with one empty bullet
+			items.forEach(function (item) {
+				listContainer.appendChild(buildBulletRow(item));
+			});
+
+			return el;
 		}
+
+		var placeholder = type === 'note' ? 'Note text...' : 'Paragraph text...';
+		var content = block.content || '';
 
 		var el = createElement(
 			'<div class="rsu-block" data-index="' + bi + '" data-type="' + type + '">' +
@@ -364,7 +375,7 @@ var RSUSectionBuilder = (function () {
 					'<span class="rsu-block__label">' + label + '</span>' +
 					'<button type="button" class="rsu-block__remove" title="Remove block" onclick="RSUSectionBuilder.removeBlock(this)">&times;</button>' +
 				'</div>' +
-				'<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="3"></textarea>' +
+				'<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="1"></textarea>' +
 			'</div>'
 		);
 
@@ -373,19 +384,44 @@ var RSUSectionBuilder = (function () {
 
 		// Live sync and auto-resize.
 		textarea.addEventListener('input', function () {
-			this.style.height = 'auto';
-			this.style.height = this.scrollHeight + 'px';
+			autoResizeTextarea(this);
 			readFromDOM(getBuilder(this));
 		});
 
 		return el;
 	}
 
+	// ── Build a single bullet row ──
+	function buildBulletRow(value) {
+		var row = createElement(
+			'<div class="rsu-bullet-row">' +
+				'<span class="rsu-bullet-row__marker">&bull;</span>' +
+				'<textarea class="rsu-bullet-row__input" placeholder="Bullet point text..." rows="1"></textarea>' +
+				'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet" onclick="RSUSectionBuilder.removeBullet(this)">&times;</button>' +
+			'</div>'
+		);
+
+		var input = qs('.rsu-bullet-row__input', row);
+		input.value = value || '';
+
+		input.addEventListener('input', function () {
+			autoResizeTextarea(this);
+			readFromDOM(getBuilder(this));
+		});
+
+		return row;
+	}
+
+	// ── Auto-resize a single textarea ──
+	function autoResizeTextarea(ta) {
+		ta.style.height = 'auto';
+		ta.style.height = ta.scrollHeight + 'px';
+	}
+
 	// ── Auto-resize existing textareas on load ──
 	function autoResize() {
-		qsa('.rsu-block__content').forEach(function (ta) {
-			ta.style.height = 'auto';
-			ta.style.height = ta.scrollHeight + 'px';
+		qsa('.rsu-block__content, .rsu-bullet-row__input').forEach(function (ta) {
+			autoResizeTextarea(ta);
 		});
 	}
 
@@ -426,8 +462,8 @@ var RSUSectionBuilder = (function () {
 
 		var sectionEls = qsa('.rsu-section', builder);
 		if (sectionEls[sectionIndex]) {
-			var blocks = qsa('.rsu-block__content', sectionEls[sectionIndex]);
-			if (blocks.length) blocks[blocks.length - 1].focus();
+			var inputs = qsa('.rsu-block__content, .rsu-bullet-row__input', sectionEls[sectionIndex]);
+			if (inputs.length) inputs[inputs.length - 1].focus();
 		}
 	}
 
@@ -455,6 +491,31 @@ var RSUSectionBuilder = (function () {
 		var bi = qsa('.rsu-blocks-list .rsu-block', sectionEl).indexOf(blockEl);
 		builder._sections[si].blocks.splice(bi, 1);
 		renderSections(builder);
+	}
+
+	function addBullet(btn) {
+		var blockEl = closest(btn, '.rsu-block');
+		if (!blockEl) return;
+		var listContainer = qs('.rsu-bullet-list', blockEl);
+		var row = buildBulletRow('');
+		listContainer.appendChild(row);
+		qs('.rsu-bullet-row__input', row).focus();
+		readFromDOM(getBuilder(btn));
+	}
+
+	function removeBullet(btn) {
+		var row = closest(btn, '.rsu-bullet-row');
+		var blockEl = closest(btn, '.rsu-block');
+		if (!row || !blockEl) return;
+		var listContainer = qs('.rsu-bullet-list', blockEl);
+		row.remove();
+		// Ensure at least one bullet row remains
+		if (!qs('.rsu-bullet-row', listContainer)) {
+			var newRow = buildBulletRow('');
+			listContainer.appendChild(newRow);
+			qs('.rsu-bullet-row__input', newRow).focus();
+		}
+		readFromDOM(getBuilder(btn));
 	}
 
 	// ══════════════════════════════════════════════
@@ -505,17 +566,13 @@ var RSUSectionBuilder = (function () {
 		if (panel) {
 			panel.classList.remove('rsu-editor-panel--hidden');
 			panel.style.display = '';
+			// Auto-resize textareas now that the panel is visible.
+			setTimeout(autoResize, 10);
 		}
 	}
 
-	// Toggle field.
+	// Platform checkboxes.
 	document.addEventListener('change', function (e) {
-		if (e.target.id === 'rsu-is-update') {
-			var fields = document.getElementById('rsu-fields');
-			if (fields) fields.style.display = e.target.checked ? '' : 'none';
-		}
-
-		// Platform checkboxes.
 		if (e.target.classList.contains('rsu-platform-checkbox')) {
 			var plat = e.target.getAttribute('data-platform');
 			var tabsEl = document.getElementById('rsu-editor-tabs');
@@ -591,6 +648,8 @@ var RSUSectionBuilder = (function () {
 		addBlock: addBlock,
 		removeSection: removeSection,
 		removeBlock: removeBlock,
+		addBullet: addBullet,
+		removeBullet: removeBullet,
 		activateTab: activateTab,
 		init: init
 	};
