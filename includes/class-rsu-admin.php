@@ -442,12 +442,6 @@ class RSU_Admin {
 			RSU_VERSION
 		);
 
-		wp_enqueue_script(
-			'rsu-admin',
-			RSU_PLUGIN_URL . 'admin/js/rsu-admin' . $suffix . '.js',
-			array( 'jquery', 'jquery-ui-sortable' ),
-			RSU_VERSION,
-			true
-		);
+		// Section builder JS is inline in meta-box-content.php (no external JS needed).
 	}
 }
