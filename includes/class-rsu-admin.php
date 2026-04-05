@@ -83,16 +83,6 @@ class RSU_Admin {
 			delete_post_meta( $post_id, '_rsu_is_update' );
 		}
 
-		// Version.
-		if ( isset( $_POST['rsu_version'] ) ) {
-			$version = sanitize_text_field( wp_unslash( $_POST['rsu_version'] ) );
-			if ( $version ) {
-				update_post_meta( $post_id, '_rsu_version', $version );
-			} else {
-				delete_post_meta( $post_id, '_rsu_version' );
-			}
-		}
-
 		// Platforms.
 		$valid_slugs = array_keys( RSU_Platforms::get_all() );
 		if ( isset( $_POST['rsu_platforms'] ) && is_array( $_POST['rsu_platforms'] ) ) {

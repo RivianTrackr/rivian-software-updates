@@ -88,7 +88,7 @@ class RSU_Frontend {
 
 		$all_platforms  = RSU_Platforms::get_all();
 		$default        = RSU_Platforms::get_default();
-		$version        = get_post_meta( $post_id, '_rsu_version', true );
+		$version        = get_the_title( $post_id );
 		$date_noticed   = get_post_meta( $post_id, '_rsu_date_noticed', true );
 		$date_released  = get_post_meta( $post_id, '_rsu_date_released', true );
 

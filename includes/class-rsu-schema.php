@@ -33,7 +33,7 @@ class RSU_Schema {
 			return $schema;
 		}
 
-		$version           = get_post_meta( $post_id, '_rsu_version', true );
+		$version           = get_the_title( $post_id );
 		$active_platforms  = RSU_Platforms::get_active( $post_id );
 		$all_platforms     = RSU_Platforms::get_all();
 		$sections          = $this->extract_sections( $post_id, $active_platforms, $all_platforms );
@@ -112,7 +112,7 @@ class RSU_Schema {
 		}
 
 		$post    = get_post( $post_id );
-		$version = get_post_meta( $post_id, '_rsu_version', true );
+		$version = get_the_title( $post_id );
 		$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
 		$active_platforms = RSU_Platforms::get_active( $post_id );
 		$all_platforms    = RSU_Platforms::get_all();
