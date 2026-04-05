@@ -19,6 +19,53 @@ class RSU_Frontend {
 	public function __construct() {
 		add_filter( 'the_content', array( $this, 'render_update_content' ), 20 );
 		add_action( 'wp_footer', array( $this, 'maybe_enqueue_assets' ) );
+
+		// Give AIOSEO clean content from the default platform for SEO analysis.
+		add_filter( 'aioseo_description_context', array( $this, 'aioseo_clean_content' ) );
+		add_filter( 'aioseo_og_description_context', array( $this, 'aioseo_clean_content' ) );
+		add_filter( 'aioseo_twitter_description_context', array( $this, 'aioseo_clean_content' ) );
+	}
+
+	/**
+	 * Provide AIOSEO with clean content from the default platform.
+	 *
+	 * When AIOSEO auto-generates descriptions, it pulls from the_content
+	 * which has tabbed HTML with hidden panels. This gives it the plain
+	 * release notes text instead.
+	 *
+	 * @param string $content Current content for description generation.
+	 * @return string Clean platform content.
+	 */
+	public function aioseo_clean_content( $content ) {
+		if ( ! is_singular( 'post' ) ) {
+			return $content;
+		}
+
+		$post_id = get_the_ID();
+		if ( ! get_post_meta( $post_id, '_rsu_is_update', true ) ) {
+			return $content;
+		}
+
+		$active_platforms = RSU_Platforms::get_active( $post_id );
+		if ( empty( $active_platforms ) ) {
+			return $content;
+		}
+
+		$all_platforms = RSU_Platforms::get_all();
+		$default       = RSU_Platforms::get_default();
+
+		if ( ! in_array( $default, $active_platforms, true ) ) {
+			$default = $active_platforms[0];
+		}
+
+		if ( isset( $all_platforms[ $default ] ) ) {
+			$platform_content = get_post_meta( $post_id, $all_platforms[ $default ]['meta_key'], true );
+			if ( $platform_content ) {
+				return wp_strip_all_tags( $platform_content );
+			}
+		}
+
+		return $content;
 	}
 
 	/**

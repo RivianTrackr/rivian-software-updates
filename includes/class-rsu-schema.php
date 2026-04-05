@@ -11,13 +11,94 @@ class RSU_Schema {
 
 	public function __construct() {
 		add_action( 'wp_footer', array( $this, 'output_structured_data' ) );
+		add_filter( 'aioseo_schema_output', array( $this, 'enrich_aioseo_schema' ), 10, 1 );
+	}
+
+	/**
+	 * Enrich AIOSEO schema with software update details.
+	 *
+	 * Instead of outputting duplicate schema, we hook into AIOSEO's
+	 * schema output and enhance it with software-specific data.
+	 *
+	 * @param array $schema AIOSEO's schema graph.
+	 * @return array Modified schema.
+	 */
+	public function enrich_aioseo_schema( $schema ) {
+		if ( ! is_singular( 'post' ) ) {
+			return $schema;
+		}
+
+		$post_id = get_the_ID();
+		if ( ! get_post_meta( $post_id, '_rsu_is_update', true ) ) {
+			return $schema;
+		}
+
+		$version           = get_post_meta( $post_id, '_rsu_version', true );
+		$active_platforms  = RSU_Platforms::get_active( $post_id );
+		$all_platforms     = RSU_Platforms::get_all();
+		$sections          = $this->extract_sections( $post_id, $active_platforms, $all_platforms );
+
+		// Build platform description.
+		$platform_labels = array();
+		foreach ( $active_platforms as $slug ) {
+			if ( isset( $all_platforms[ $slug ] ) ) {
+				$platform_labels[] = $all_platforms[ $slug ]['label'];
+			}
+		}
+
+		$description = sprintf(
+			'Release notes for Rivian software update %s covering %s vehicles.',
+			$version ? $version : get_the_title( $post_id ),
+			implode( ' and ', $platform_labels )
+		);
+
+		// Walk the @graph and enhance any Article-type node.
+		if ( isset( $schema['@graph'] ) && is_array( $schema['@graph'] ) ) {
+			foreach ( $schema['@graph'] as &$node ) {
+				if ( ! isset( $node['@type'] ) ) {
+					continue;
+				}
+
+				$type = is_array( $node['@type'] ) ? $node['@type'] : array( $node['@type'] );
+
+				// Upgrade Article to TechArticle and add software details.
+				if ( array_intersect( $type, array( 'Article', 'BlogPosting', 'WebPage' ) ) ) {
+					$node['@type']       = 'TechArticle';
+					$node['description'] = $description;
+
+					if ( $version ) {
+						$node['about'] = array(
+							'@type'               => 'SoftwareApplication',
+							'name'                => 'Rivian Vehicle Software',
+							'softwareVersion'     => $version,
+							'operatingSystem'     => 'Rivian OS',
+							'applicationCategory' => 'DriverApplication',
+						);
+					}
+
+					if ( ! empty( $sections ) ) {
+						$node['articleSection'] = $sections;
+					}
+				}
+			}
+			unset( $node );
+		}
+
+		return $schema;
 	}
 
 	/**
 	 * Output JSON-LD for software update posts.
+	 *
+	 * Only outputs when AIOSEO is not active, to avoid duplicate schema.
 	 */
 	public function output_structured_data() {
 		if ( ! RSU_Settings::get( 'schema_enabled', true ) ) {
+			return;
+		}
+
+		// Skip if AIOSEO is handling schema — we enhance it via the filter instead.
+		if ( function_exists( 'aioseo' ) ) {
 			return;
 		}
 
