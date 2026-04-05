@@ -2,6 +2,17 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.6.0] - 2026-04-05
+
+### Added
+- Bullet list blocks now use individual input rows instead of a single textarea, each with an auto-expanding text area and a remove button on hover.
+- "+ Add bullet" button at the bottom of each bullet list block for easily adding new items.
+
+### Changed
+- All textareas (paragraph, note, bullet items) auto-expand to fit content as you type — no more fixed-height boxes that cut off text or require scrolling.
+- Textareas start at one row and grow dynamically; auto-resize also triggers on initial load and tab switches.
+- Removed the "This is a Software Update post" toggle checkbox — the release notes editor now shows immediately since all posts are software updates.
+
 ## [1.5.2] - 2026-04-05
 
 ### Fixed
