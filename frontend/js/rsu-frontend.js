@@ -17,25 +17,13 @@
     var tabs = tablist.querySelectorAll('.rsu-tab');
     if (tabs.length < 2) return;
 
-    // Determine initial platform: URL hash > localStorage > data-rsu-default.
+    // URL hash overrides the server-rendered default tab.
+    // The PHP already renders the correct default from settings,
+    // so JS only intervenes if a hash is present.
     var hash = window.location.hash.replace('#', '');
-    var stored = getPreferred();
-    var defaultPlatform = container.dataset.rsuDefault || 'gen2';
-    var initial = null;
 
-    // Check hash first.
     if (hash && container.querySelector('[data-platform="' + hash + '"]')) {
-      initial = hash;
-    } else if (stored && container.querySelector('[data-platform="' + stored + '"]')) {
-      initial = stored;
-    } else {
-      initial = defaultPlatform;
-    }
-
-    // Activate initial tab if not already.
-    var activeTab = tablist.querySelector('.rsu-tab--active');
-    if (!activeTab || activeTab.dataset.platform !== initial) {
-      activateTab(container, initial, false);
+      activateTab(container, hash, false);
     }
 
     // Click handler.

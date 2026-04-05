@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.5.2] - 2026-04-05
+
+### Fixed
+- Default Frontend Tab setting now works correctly. Previously, localStorage from a prior tab click always overrode the admin setting. The server-rendered default tab is now the source of truth on page load; only a URL hash can override it.
+
 ## [1.5.1] - 2026-04-05
 
 ### Fixed
