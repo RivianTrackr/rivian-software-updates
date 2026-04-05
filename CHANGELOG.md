@@ -2,6 +2,19 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.5.0] - 2026-04-05
+
+### Changed
+- Frontend release notes are now full-width, filling the parent container instead of capped at 800px.
+- Three responsive breakpoints: desktop (32px padding), tablet ≤768px (24px), mobile ≤480px (16px).
+- Larger body text (16px → 15px on mobile) with increased line-height (1.75) for readability.
+- Tabs scroll horizontally on small screens instead of wrapping/breaking.
+- Date badges stack vertically on mobile.
+- Blockquotes/notes styled with accent left border and tinted background.
+- Reduced border-radius on mobile (12px → 8px) for tighter fit.
+- Links use `word-break: break-word` to prevent overflow on narrow screens.
+- Added `box-sizing: border-box` to all RSU elements for consistent sizing.
+
 ## [1.4.1] - 2026-04-05
 
 ### Fixed
