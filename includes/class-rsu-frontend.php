@@ -190,6 +190,19 @@ class RSU_Frontend {
 			RSU_VERSION
 		);
 
+		// Widen theme content containers that hold release notes.
+		wp_add_inline_style( 'rsu-frontend',
+			'.entry-content:has(.rsu-update), ' .
+			'.post-content:has(.rsu-update), ' .
+			'.article-content:has(.rsu-update), ' .
+			'.single-content:has(.rsu-update), ' .
+			'.content-area:has(.rsu-update), ' .
+			'.site-content:has(.rsu-update) > *, ' .
+			'.wp-block-post-content:has(.rsu-update) { ' .
+				'max-width: none !important; width: 100% !important; ' .
+			'}'
+		);
+
 		// Override accent color from settings.
 		$accent = RSU_Settings::get( 'accent_color', '#fba919' );
 		if ( '#fba919' !== $accent ) {
