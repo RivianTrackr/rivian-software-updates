@@ -385,7 +385,7 @@ class RSU_Settings {
 			);
 		}
 		echo '</select>';
-		echo '<p class="description">The platform tab shown by default on the frontend.</p>';
+		echo '<p class="description">The platform tab shown by default on the frontend for first-time visitors. Returning visitors who have previously selected a tab will see their last choice instead.</p>';
 	}
 
 	public function render_field_heading_level() {

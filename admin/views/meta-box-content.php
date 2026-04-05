@@ -12,6 +12,12 @@ $is_update        = get_post_meta( $post->ID, '_rsu_is_update', true );
 $active_platforms = RSU_Platforms::get_active( $post->ID );
 $all_platforms    = RSU_Platforms::get_all();
 
+// For new posts with no platforms saved, use the default platforms setting.
+if ( empty( $active_platforms ) && 'auto-draft' === get_post_status( $post->ID ) ) {
+	$active_platforms = (array) RSU_Settings::get( 'default_platforms', array( 'gen1', 'gen2' ) );
+	$active_platforms = array_intersect( $active_platforms, array_keys( $all_platforms ) );
+}
+
 wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 ?>
 
