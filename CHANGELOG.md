@@ -2,6 +2,13 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.2.1] - 2026-04-05
+
+### Fixed
+- Section builder fully compatible with the Block Editor (Gutenberg) by delegating all event handlers from `document` instead of a wrapper element that may not exist during async meta box rendering.
+- Initialization retries up to 10 times for delayed meta box rendering in the Block Editor.
+- Button clicks use `stopPropagation()` to prevent Block Editor event interference.
+
 ## [1.2.0] - 2026-04-05
 
 ### Added
