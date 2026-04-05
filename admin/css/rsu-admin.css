@@ -361,51 +361,61 @@
 
 /* Bullet list container */
 .rsu-bullet-list {
-	padding: 6px 12px 0;
+	padding: 8px 12px 4px;
 }
 
 .rsu-bullet-row {
 	display: flex;
 	align-items: flex-start;
-	gap: 6px;
-	margin-bottom: 4px;
-	background: #f8faff;
-	border-radius: 4px;
-	padding: 2px 4px;
-	transition: background 0.15s;
+	gap: 0;
+	margin-bottom: 6px;
+	background: #fff;
+	border: 1px solid #e5e7eb;
+	border-radius: 6px;
+	padding: 0;
+	overflow: hidden;
+	transition: border-color 0.15s;
 }
 
-.rsu-bullet-row:hover {
-	background: #eff6ff;
+.rsu-bullet-row:focus-within {
+	border-color: #93c5fd;
 }
 
 .rsu-bullet-row__marker {
 	flex-shrink: 0;
+	width: 32px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	color: #3b82f6;
-	font-size: 16px;
-	line-height: 1.65;
-	padding-top: 6px;
+	font-size: 18px;
+	line-height: 1;
+	padding-top: 8px;
 	user-select: none;
+	background: #f8faff;
+	align-self: stretch;
+	border-right: 1px solid #f0f0f0;
 }
 
 .rsu-bullet-row__input {
 	flex: 1;
 	border: none;
-	background: transparent;
+	background: #fff;
 	font-size: 13px;
 	line-height: 1.65;
 	font-family: inherit;
 	color: #374151;
-	padding: 6px 4px;
+	padding: 8px 10px;
 	resize: none;
 	overflow: hidden;
-	min-height: 34px;
+	min-height: 36px;
 	box-sizing: border-box;
+	transition: background 0.15s;
 }
 
 .rsu-bullet-row__input:focus {
 	outline: none;
-	background: rgba(59, 130, 246, 0.04);
+	background: #fafbff;
 }
 
 .rsu-bullet-row__input::placeholder {
@@ -416,13 +426,16 @@
 	flex-shrink: 0;
 	background: none;
 	border: none;
-	font-size: 16px;
+	border-left: 1px solid #f0f0f0;
+	font-size: 15px;
+	line-height: 1;
 	color: #d1d5db;
 	cursor: pointer;
-	padding: 4px 4px;
-	border-radius: 3px;
-	line-height: 1;
-	margin-top: 4px;
+	padding: 0 8px;
+	border-radius: 0;
+	align-self: stretch;
+	display: flex;
+	align-items: center;
 	transition: all 0.15s;
 	visibility: hidden;
 }
@@ -437,22 +450,27 @@
 }
 
 .rsu-bullet-add {
-	display: block;
+	display: flex;
+	align-items: center;
+	gap: 4px;
 	width: 100%;
-	padding: 6px 12px;
-	background: none;
+	padding: 7px 12px;
+	margin: 0;
+	background: #f9fafb;
 	border: none;
-	border-top: 1px dashed #e5e7eb;
-	color: #6b7280;
-	font-size: 12px;
+	border-top: 1px solid #f0f0f0;
+	color: #9ca3af;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.01em;
 	cursor: pointer;
 	text-align: left;
 	transition: all 0.15s;
 }
 
 .rsu-bullet-add:hover {
-	background: #f0f9ff;
-	color: #3b82f6;
+	background: #eff6ff;
+	color: #2271b1;
 }
 
 /* Note block accent */
