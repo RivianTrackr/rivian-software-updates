@@ -2,6 +2,13 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.4.1] - 2026-04-05
+
+### Fixed
+- Inlined all admin CSS directly in the meta box template to fix styles not loading in the Block Editor.
+- Added `!important` overrides on key properties to prevent WordPress admin CSS from stripping card borders, input styling, and button appearance.
+- External CSS file retained as fallback but no longer the primary source.
+
 ## [1.4.0] - 2026-04-05
 
 ### Changed
