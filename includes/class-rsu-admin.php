@@ -105,14 +105,29 @@ class RSU_Admin {
 			delete_post_meta( $post_id, '_rsu_platforms' );
 		}
 
-		// Platform content.
+		// Platform content via section builder.
 		foreach ( RSU_Platforms::get_all() as $slug => $platform ) {
-			$field = 'rsu_content_' . $slug;
-			if ( isset( $_POST[ $field ] ) ) {
-				$content = wp_kses_post( wp_unslash( $_POST[ $field ] ) );
-				if ( $content ) {
-					update_post_meta( $post_id, $platform['meta_key'], $content );
+			$json_field = 'rsu_sections_' . $slug;
+			if ( isset( $_POST[ $json_field ] ) ) {
+				$raw_json = wp_unslash( $_POST[ $json_field ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.
+				$sections = json_decode( $raw_json, true );
+
+				if ( is_array( $sections ) && ! empty( $sections ) ) {
+					// Sanitize section data.
+					$sections = self::sanitize_sections( $sections );
+
+					// Store structured JSON.
+					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
+
+					// Render to HTML for frontend display.
+					$html = self::render_sections_to_html( $sections );
+					if ( $html ) {
+						update_post_meta( $post_id, $platform['meta_key'], wp_kses_post( $html ) );
+					} else {
+						delete_post_meta( $post_id, $platform['meta_key'] );
+					}
 				} else {
+					delete_post_meta( $post_id, '_rsu_sections_' . $slug );
 					delete_post_meta( $post_id, $platform['meta_key'] );
 				}
 			}
@@ -133,6 +148,269 @@ class RSU_Admin {
 					delete_post_meta( $post_id, $meta_key );
 				}
 			}
+		}
+	}
+
+	/**
+	 * Sanitize sections data from user input.
+	 *
+	 * @param array $sections Raw sections array.
+	 * @return array Sanitized sections.
+	 */
+	private static function sanitize_sections( $sections ) {
+		$clean = array();
+
+		foreach ( $sections as $section ) {
+			if ( ! is_array( $section ) ) {
+				continue;
+			}
+
+			$clean_section = array(
+				'heading' => isset( $section['heading'] ) ? sanitize_text_field( $section['heading'] ) : '',
+				'blocks'  => array(),
+			);
+
+			if ( ! empty( $section['blocks'] ) && is_array( $section['blocks'] ) ) {
+				foreach ( $section['blocks'] as $block ) {
+					if ( ! is_array( $block ) ) {
+						continue;
+					}
+
+					$type = isset( $block['type'] ) ? sanitize_text_field( $block['type'] ) : 'paragraph';
+
+					if ( 'list' === $type ) {
+						$items = isset( $block['items'] ) && is_array( $block['items'] )
+							? array_map( 'sanitize_text_field', $block['items'] )
+							: array();
+						$clean_section['blocks'][] = array(
+							'type'  => 'list',
+							'items' => $items,
+						);
+					} else {
+						$clean_section['blocks'][] = array(
+							'type'    => $type,
+							'content' => isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '',
+						);
+					}
+				}
+			}
+
+			$clean[] = $clean_section;
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * Render structured sections array to HTML for frontend display.
+	 *
+	 * @param array $sections Sections array.
+	 * @return string HTML content.
+	 */
+	public static function render_sections_to_html( $sections ) {
+		if ( ! is_array( $sections ) ) {
+			return '';
+		}
+
+		$html = '';
+
+		foreach ( $sections as $section ) {
+			$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
+			if ( $heading ) {
+				$html .= '<h3>' . esc_html( $heading ) . '</h3>' . "\n";
+			}
+
+			if ( empty( $section['blocks'] ) || ! is_array( $section['blocks'] ) ) {
+				continue;
+			}
+
+			foreach ( $section['blocks'] as $block ) {
+				$type = isset( $block['type'] ) ? $block['type'] : 'paragraph';
+
+				switch ( $type ) {
+					case 'paragraph':
+						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
+						if ( $content ) {
+							// Convert line breaks to <br> within a paragraph.
+							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p>' . "\n";
+						}
+						break;
+
+					case 'list':
+						$items = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
+						if ( ! empty( $items ) ) {
+							$html .= "<ul>\n";
+							foreach ( $items as $item ) {
+								$item = trim( $item );
+								if ( '' !== $item ) {
+									$html .= '<li>' . esc_html( $item ) . '</li>' . "\n";
+								}
+							}
+							$html .= "</ul>\n";
+						}
+						break;
+
+					case 'note':
+						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
+						if ( $content ) {
+							$html .= '<blockquote><p><strong>NOTE</strong></p>' . "\n";
+							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p></blockquote>' . "\n";
+						}
+						break;
+				}
+			}
+		}
+
+		return $html;
+	}
+
+	/**
+	 * Parse existing HTML content into structured sections array.
+	 *
+	 * Converts HTML with h3/h4 headings, p, ul/li, and blockquote elements
+	 * into the sections JSON format used by the section builder.
+	 *
+	 * @param string $html HTML content to parse.
+	 * @return array Sections array.
+	 */
+	public static function parse_html_to_sections( $html ) {
+		$html = trim( $html );
+		if ( empty( $html ) ) {
+			return array();
+		}
+
+		// Wrap in a root element for DOMDocument parsing.
+		$doc = new DOMDocument();
+		libxml_use_internal_errors( true );
+		$doc->loadHTML(
+			'<html><body>' . mb_convert_encoding( $html, 'HTML-ENTITIES', 'UTF-8' ) . '</body></html>',
+			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+		);
+		libxml_clear_errors();
+
+		$body     = $doc->getElementsByTagName( 'body' )->item( 0 );
+		$sections = array();
+		$current  = null;
+
+		if ( ! $body ) {
+			return array();
+		}
+
+		foreach ( $body->childNodes as $node ) {
+			if ( XML_ELEMENT_NODE !== $node->nodeType ) {
+				// Skip whitespace text nodes.
+				if ( XML_TEXT_NODE === $node->nodeType && '' !== trim( $node->textContent ) ) {
+					// Stray text — treat as paragraph.
+					self::ensure_section( $sections, $current );
+					$current['blocks'][] = array(
+						'type'    => 'paragraph',
+						'content' => trim( $node->textContent ),
+					);
+				}
+				continue;
+			}
+
+			$tag = strtolower( $node->nodeName );
+
+			// Heading starts a new section.
+			if ( in_array( $tag, array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ), true ) ) {
+				// Save previous section if it exists.
+				if ( null !== $current ) {
+					$sections[] = $current;
+				}
+				$current = array(
+					'heading' => trim( $node->textContent ),
+					'blocks'  => array(),
+				);
+				continue;
+			}
+
+			// Everything else goes into the current section.
+			self::ensure_section( $sections, $current );
+
+			if ( 'ul' === $tag || 'ol' === $tag ) {
+				$items = array();
+				foreach ( $node->getElementsByTagName( 'li' ) as $li ) {
+					$text = trim( $li->textContent );
+					if ( '' !== $text ) {
+						$items[] = $text;
+					}
+				}
+				if ( ! empty( $items ) ) {
+					$current['blocks'][] = array(
+						'type'  => 'list',
+						'items' => $items,
+					);
+				}
+			} elseif ( 'blockquote' === $tag ) {
+				// Extract text, stripping "NOTE" prefix if present.
+				$text = trim( $node->textContent );
+				$text = preg_replace( '/^\s*NOTE\s*/i', '', $text );
+				if ( '' !== $text ) {
+					$current['blocks'][] = array(
+						'type'    => 'note',
+						'content' => $text,
+					);
+				}
+			} elseif ( 'p' === $tag ) {
+				$text = trim( $node->textContent );
+				if ( '' !== $text ) {
+					$current['blocks'][] = array(
+						'type'    => 'paragraph',
+						'content' => $text,
+					);
+				}
+			} elseif ( 'div' === $tag ) {
+				// Divs may wrap inner content (e.g. from Essential Blocks).
+				// Recursively parse inner HTML.
+				$inner_html = '';
+				foreach ( $node->childNodes as $child ) {
+					$inner_html .= $doc->saveHTML( $child );
+				}
+				$inner_sections = self::parse_html_to_sections( $inner_html );
+				if ( ! empty( $inner_sections ) ) {
+					// Merge: if current section has no heading and inner starts with one, just append.
+					if ( null !== $current && ! empty( $current['blocks'] ) ) {
+						$sections[] = $current;
+						$current = null;
+					}
+					foreach ( $inner_sections as $is ) {
+						$sections[] = $is;
+					}
+					$current = null;
+				}
+			} else {
+				// Unknown element — treat text content as paragraph.
+				$text = trim( $node->textContent );
+				if ( '' !== $text ) {
+					$current['blocks'][] = array(
+						'type'    => 'paragraph',
+						'content' => $text,
+					);
+				}
+			}
+		}
+
+		// Don't forget the last section.
+		if ( null !== $current ) {
+			$sections[] = $current;
+		}
+
+		return $sections;
+	}
+
+	/**
+	 * Ensure a current section exists. Creates one with empty heading if needed.
+	 *
+	 * @param array      $sections Sections array (passed by reference).
+	 * @param array|null $current  Current section (passed by reference).
+	 */
+	private static function ensure_section( &$sections, &$current ) {
+		if ( null === $current ) {
+			$current = array(
+				'heading' => '',
+				'blocks'  => array(),
+			);
 		}
 	}
 
@@ -166,7 +444,7 @@ class RSU_Admin {
 		wp_enqueue_script(
 			'rsu-admin',
 			RSU_PLUGIN_URL . 'admin/js/rsu-admin' . $suffix . '.js',
-			array( 'jquery' ),
+			array( 'jquery', 'jquery-ui-sortable' ),
 			RSU_VERSION,
 			true
 		);

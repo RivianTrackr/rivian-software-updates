@@ -23,8 +23,16 @@ $nonce = wp_create_nonce( 'rsu_migration' );
 			<button type="button" id="rsu-migrate-selected-btn" class="button" style="display:none;">
 				Migrate Selected
 			</button>
+			<button type="button" id="rsu-backfill-btn" class="button">
+				Backfill Sections
+			</button>
 			<span id="rsu-status" style="margin-left: 12px;"></span>
 		</div>
+
+		<p class="description" style="margin-bottom: 16px;">
+			<strong>Backfill Sections</strong> converts existing HTML release notes into the structured section builder format.
+			Already-converted posts are skipped. Safe to run multiple times.
+		</p>
 
 		<div id="rsu-migration-options" style="display:none; margin-bottom: 20px; padding: 12px 16px; background: #f6f7f7; border: 1px solid #dcdcde;">
 			<h3 style="margin-top: 0;">Migration Settings</h3>
@@ -65,6 +73,7 @@ $nonce = wp_create_nonce( 'rsu_migration' );
 	var nonce = document.getElementById('rsu-migration-app').dataset.nonce;
 	var scanBtn = document.getElementById('rsu-scan-btn');
 	var migrateBtn = document.getElementById('rsu-migrate-selected-btn');
+	var backfillBtn = document.getElementById('rsu-backfill-btn');
 	var statusEl = document.getElementById('rsu-status');
 	var tableEl = document.getElementById('rsu-posts-table');
 	var tbody = document.getElementById('rsu-posts-body');
@@ -119,6 +128,34 @@ $nonce = wp_create_nonce( 'rsu_migration' );
 	selectAll.addEventListener('change', function () {
 		var cbs = tbody.querySelectorAll('.rsu-post-cb:not(:disabled)');
 		cbs.forEach(function (cb) { cb.checked = selectAll.checked; });
+	});
+
+	backfillBtn.addEventListener('click', function () {
+		if (!confirm('Convert existing HTML release notes to structured sections for all migrated posts?')) {
+			return;
+		}
+
+		backfillBtn.disabled = true;
+		statusEl.textContent = 'Backfilling sections...';
+
+		var fd = new FormData();
+		fd.append('action', 'rsu_backfill_sections');
+		fd.append('nonce', nonce);
+
+		fetch(ajaxurl, { method: 'POST', body: fd })
+			.then(function (r) { return r.json(); })
+			.then(function (resp) {
+				backfillBtn.disabled = false;
+				if (!resp.success) {
+					statusEl.textContent = 'Error: ' + (resp.data || 'Unknown');
+					return;
+				}
+				statusEl.textContent = 'Backfill complete: ' + resp.data.updated + ' platform editor(s) converted across ' + resp.data.total_posts + ' post(s). ' + resp.data.skipped + ' already had sections.';
+			})
+			.catch(function (err) {
+				backfillBtn.disabled = false;
+				statusEl.textContent = 'Error: ' + err.message;
+			});
 	});
 
 	migrateBtn.addEventListener('click', function () {
