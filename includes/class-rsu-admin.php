@@ -23,7 +23,7 @@ class RSU_Admin {
 			'rsu_release_notes',
 			'Release Notes',
 			array( $this, 'render_content_meta_box' ),
-			RSU_Post_Type::SLUG,
+			'post',
 			'normal',
 			'high'
 		);
@@ -32,7 +32,7 @@ class RSU_Admin {
 			'rsu_update_details',
 			'Update Details',
 			array( $this, 'render_details_meta_box' ),
-			RSU_Post_Type::SLUG,
+			'post',
 			'side',
 			'high'
 		);
@@ -68,7 +68,7 @@ class RSU_Admin {
 			return;
 		}
 
-		if ( RSU_Post_Type::SLUG !== $post->post_type ) {
+		if ( 'post' !== $post->post_type ) {
 			return;
 		}
 
@@ -424,7 +424,7 @@ class RSU_Admin {
 		}
 
 		$screen = get_current_screen();
-		if ( ! $screen || RSU_Post_Type::SLUG !== $screen->post_type ) {
+		if ( ! $screen || 'post' !== $screen->post_type ) {
 			return;
 		}
 

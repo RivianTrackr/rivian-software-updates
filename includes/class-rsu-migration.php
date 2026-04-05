@@ -47,7 +47,7 @@ class RSU_Migration {
 		}
 
 		$posts = get_posts( array(
-			'post_type'      => array( 'post', RSU_Post_Type::SLUG ),
+			'post_type'      => 'post',
 			'post_status'    => 'publish',
 			'posts_per_page' => -1,
 			'orderby'        => 'date',
@@ -188,7 +188,7 @@ class RSU_Migration {
 
 		// Find all posts flagged as software updates.
 		$post_ids = get_posts( array(
-			'post_type'      => array( 'post', RSU_Post_Type::SLUG ),
+			'post_type'      => 'post',
 			'post_status'    => 'any',
 			'posts_per_page' => -1,
 			'fields'         => 'ids',

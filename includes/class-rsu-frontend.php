@@ -25,7 +25,7 @@ class RSU_Frontend {
 	 * Inject tabbed release notes content into the post.
 	 */
 	public function render_update_content( $content ) {
-		if ( ! is_singular( RSU_Post_Type::SLUG ) || ! is_main_query() ) {
+		if ( ! is_singular( 'post' ) || ! is_main_query() ) {
 			return $content;
 		}
 

@@ -10,6 +10,29 @@
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
+/* Toggle row */
+.rsu-toggle-row {
+	padding: 14px 20px;
+	background: linear-gradient(to bottom, #f9fafb, #f3f4f6);
+	border-bottom: 1px solid #dcdcde;
+}
+
+.rsu-toggle-label {
+	font-size: 14px;
+	font-weight: 600;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	color: #1d2327;
+}
+
+.rsu-toggle-label input[type="checkbox"] {
+	margin: 0;
+	width: 16px;
+	height: 16px;
+}
+
 /* ═══════════════════════════════════════
    Platform Checkboxes
    ═══════════════════════════════════════ */

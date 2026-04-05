@@ -232,6 +232,16 @@
   // they work regardless of when the DOM renders
   // ══════════════════════════════════════════════
 
+  // ── Toggle software update fields ──
+  $(document).on('change', '#rsu-is-update', function () {
+    var $fields = $('#rsu-fields');
+    if (this.checked) {
+      $fields.slideDown(200);
+    } else {
+      $fields.slideUp(200);
+    }
+  });
+
   // ── Platform checkbox: show/hide tabs and panels ──
   $(document).on('change', '.rsu-platform-checkbox', function () {
     var $tabs = $('#rsu-editor-tabs');
