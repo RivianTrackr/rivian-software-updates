@@ -25,11 +25,14 @@
     initSortable($builder);
 
     // Auto-resize all textareas after rendering.
-    setTimeout(function () {
+    // Run twice: once soon for fast layout, once later to catch late reflows.
+    var resizeFn = function () {
       $builder.find('.rsu-block__content, .rsu-bullet-row__input').each(function () {
         autoResizeTextarea(this);
       });
-    }, 10);
+    };
+    setTimeout(resizeFn, 10);
+    setTimeout(resizeFn, 150);
   }
 
   // ── Build a single section DOM element ──
@@ -374,7 +377,7 @@
   });
 
   // ── Auto-resize textareas ──
-  $(document).on('input', '.rsu-block__content, .rsu-bullet-row__input', function () {
+  $(document).on('input focus', '.rsu-block__content, .rsu-bullet-row__input', function () {
     autoResizeTextarea(this);
   });
 
