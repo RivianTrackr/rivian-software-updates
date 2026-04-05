@@ -36,6 +36,8 @@ spl_autoload_register( function ( $class ) {
 add_action( 'plugins_loaded', 'rsu_init' );
 
 function rsu_init() {
+	new RSU_Post_Type();
+
 	if ( is_admin() ) {
 		new RSU_Admin();
 		new RSU_Migration();

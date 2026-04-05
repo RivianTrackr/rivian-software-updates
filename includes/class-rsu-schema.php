@@ -21,7 +21,7 @@ class RSU_Schema {
 			return;
 		}
 
-		if ( ! is_singular( 'post' ) ) {
+		if ( ! is_singular( RSU_Post_Type::SLUG ) ) {
 			return;
 		}
 

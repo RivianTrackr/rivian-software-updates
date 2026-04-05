@@ -8,7 +8,6 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$is_update        = get_post_meta( $post->ID, '_rsu_is_update', true );
 $active_platforms = RSU_Platforms::get_active( $post->ID );
 $all_platforms    = RSU_Platforms::get_all();
 
@@ -24,10 +23,6 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 <style>
 /* RSU Admin — inlined for Block Editor compatibility */
 .rsu-admin-wrap { margin: -6px -12px -12px; padding: 0; }
-
-.rsu-toggle-row { padding: 14px 20px; background: linear-gradient(to bottom, #f9fafb, #f3f4f6); border-bottom: 1px solid #dcdcde; }
-.rsu-toggle-label { font-size: 14px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 10px; color: #1d2327; }
-.rsu-toggle-label input[type="checkbox"] { margin: 0; width: 16px; height: 16px; }
 
 .rsu-platform-checks { padding: 14px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px; border-bottom: 1px solid #e5e7eb; background: #fff; }
 .rsu-platform-checks__label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; }
@@ -103,16 +98,9 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 }
 </style>
 
-<div class="rsu-admin-wrap" data-rsu-active="<?php echo $is_update ? '1' : '0'; ?>">
-	<div class="rsu-toggle-row">
-		<label class="rsu-toggle-label">
-			<input type="checkbox" name="rsu_is_update" value="1" id="rsu-is-update"
-				<?php checked( $is_update, '1' ); ?> />
-			This is a Software Update post
-		</label>
-	</div>
-
-	<div class="rsu-fields" id="rsu-fields" style="<?php echo $is_update ? '' : 'display:none;'; ?>">
+<div class="rsu-admin-wrap" data-rsu-active="1">
+	<input type="hidden" name="rsu_is_update" value="1" />
+	<div class="rsu-fields" id="rsu-fields">
 		<div class="rsu-platform-checks">
 			<span class="rsu-platform-checks__label">Platforms:</span>
 			<?php foreach ( $all_platforms as $slug => $platform ) : ?>
@@ -582,14 +570,8 @@ var RSUSectionBuilder = (function () {
 		}
 	}
 
-	// Toggle field.
+	// Platform checkboxes.
 	document.addEventListener('change', function (e) {
-		if (e.target.id === 'rsu-is-update') {
-			var fields = document.getElementById('rsu-fields');
-			if (fields) fields.style.display = e.target.checked ? '' : 'none';
-		}
-
-		// Platform checkboxes.
 		if (e.target.classList.contains('rsu-platform-checkbox')) {
 			var plat = e.target.getAttribute('data-platform');
 			var tabsEl = document.getElementById('rsu-editor-tabs');
