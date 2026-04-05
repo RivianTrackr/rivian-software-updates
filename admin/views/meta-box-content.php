@@ -67,8 +67,17 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 		foreach ( $all_platforms as $slug => $platform ) :
 			$is_active = in_array( $slug, $active_platforms, true );
 
-			// Load structured sections JSON if available.
+			// Load structured sections JSON if available, otherwise parse from HTML.
 			$sections_json = get_post_meta( $post->ID, '_rsu_sections_' . $slug, true );
+			if ( empty( $sections_json ) ) {
+				$html_content = get_post_meta( $post->ID, $platform['meta_key'], true );
+				if ( ! empty( $html_content ) ) {
+					$parsed = RSU_Admin::parse_html_to_sections( $html_content );
+					if ( ! empty( $parsed ) ) {
+						$sections_json = wp_json_encode( $parsed );
+					}
+				}
+			}
 
 			// Other platforms for "Copy from" dropdown.
 			$other_platforms = array_diff_key( $all_platforms, array( $slug => true ) );

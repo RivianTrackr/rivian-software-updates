@@ -265,6 +265,156 @@ class RSU_Admin {
 	}
 
 	/**
+	 * Parse existing HTML content into structured sections array.
+	 *
+	 * Converts HTML with h3/h4 headings, p, ul/li, and blockquote elements
+	 * into the sections JSON format used by the section builder.
+	 *
+	 * @param string $html HTML content to parse.
+	 * @return array Sections array.
+	 */
+	public static function parse_html_to_sections( $html ) {
+		$html = trim( $html );
+		if ( empty( $html ) ) {
+			return array();
+		}
+
+		// Wrap in a root element for DOMDocument parsing.
+		$doc = new DOMDocument();
+		libxml_use_internal_errors( true );
+		$doc->loadHTML(
+			'<html><body>' . mb_convert_encoding( $html, 'HTML-ENTITIES', 'UTF-8' ) . '</body></html>',
+			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
+		);
+		libxml_clear_errors();
+
+		$body     = $doc->getElementsByTagName( 'body' )->item( 0 );
+		$sections = array();
+		$current  = null;
+
+		if ( ! $body ) {
+			return array();
+		}
+
+		foreach ( $body->childNodes as $node ) {
+			if ( XML_ELEMENT_NODE !== $node->nodeType ) {
+				// Skip whitespace text nodes.
+				if ( XML_TEXT_NODE === $node->nodeType && '' !== trim( $node->textContent ) ) {
+					// Stray text — treat as paragraph.
+					self::ensure_section( $sections, $current );
+					$current['blocks'][] = array(
+						'type'    => 'paragraph',
+						'content' => trim( $node->textContent ),
+					);
+				}
+				continue;
+			}
+
+			$tag = strtolower( $node->nodeName );
+
+			// Heading starts a new section.
+			if ( in_array( $tag, array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ), true ) ) {
+				// Save previous section if it exists.
+				if ( null !== $current ) {
+					$sections[] = $current;
+				}
+				$current = array(
+					'heading' => trim( $node->textContent ),
+					'blocks'  => array(),
+				);
+				continue;
+			}
+
+			// Everything else goes into the current section.
+			self::ensure_section( $sections, $current );
+
+			if ( 'ul' === $tag || 'ol' === $tag ) {
+				$items = array();
+				foreach ( $node->getElementsByTagName( 'li' ) as $li ) {
+					$text = trim( $li->textContent );
+					if ( '' !== $text ) {
+						$items[] = $text;
+					}
+				}
+				if ( ! empty( $items ) ) {
+					$current['blocks'][] = array(
+						'type'  => 'list',
+						'items' => $items,
+					);
+				}
+			} elseif ( 'blockquote' === $tag ) {
+				// Extract text, stripping "NOTE" prefix if present.
+				$text = trim( $node->textContent );
+				$text = preg_replace( '/^\s*NOTE\s*/i', '', $text );
+				if ( '' !== $text ) {
+					$current['blocks'][] = array(
+						'type'    => 'note',
+						'content' => $text,
+					);
+				}
+			} elseif ( 'p' === $tag ) {
+				$text = trim( $node->textContent );
+				if ( '' !== $text ) {
+					$current['blocks'][] = array(
+						'type'    => 'paragraph',
+						'content' => $text,
+					);
+				}
+			} elseif ( 'div' === $tag ) {
+				// Divs may wrap inner content (e.g. from Essential Blocks).
+				// Recursively parse inner HTML.
+				$inner_html = '';
+				foreach ( $node->childNodes as $child ) {
+					$inner_html .= $doc->saveHTML( $child );
+				}
+				$inner_sections = self::parse_html_to_sections( $inner_html );
+				if ( ! empty( $inner_sections ) ) {
+					// Merge: if current section has no heading and inner starts with one, just append.
+					if ( null !== $current && ! empty( $current['blocks'] ) ) {
+						$sections[] = $current;
+						$current = null;
+					}
+					foreach ( $inner_sections as $is ) {
+						$sections[] = $is;
+					}
+					$current = null;
+				}
+			} else {
+				// Unknown element — treat text content as paragraph.
+				$text = trim( $node->textContent );
+				if ( '' !== $text ) {
+					$current['blocks'][] = array(
+						'type'    => 'paragraph',
+						'content' => $text,
+					);
+				}
+			}
+		}
+
+		// Don't forget the last section.
+		if ( null !== $current ) {
+			$sections[] = $current;
+		}
+
+		return $sections;
+	}
+
+	/**
+	 * Ensure a current section exists. Creates one with empty heading if needed.
+	 *
+	 * @param array      $sections Sections array (passed by reference).
+	 * @param array|null $current  Current section (passed by reference).
+	 */
+	private static function ensure_section( &$sections, &$current ) {
+		if ( null === $current ) {
+			$current = array(
+				'heading' => '',
+				'blocks'  => array(),
+			);
+		}
+	}
+
+	/**
 	 * Enqueue admin assets on post editor screens.
 	 */
 	public function enqueue_assets( $hook ) {

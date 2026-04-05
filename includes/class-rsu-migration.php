@@ -13,6 +13,7 @@ class RSU_Migration {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 		add_action( 'wp_ajax_rsu_migrate_post', array( $this, 'ajax_migrate_post' ) );
 		add_action( 'wp_ajax_rsu_scan_posts', array( $this, 'ajax_scan_posts' ) );
+		add_action( 'wp_ajax_rsu_backfill_sections', array( $this, 'ajax_backfill_sections' ) );
 	}
 
 	/**
@@ -116,16 +117,31 @@ class RSU_Migration {
 		if ( $parsed ) {
 			// Parsed Gen 1 and Gen 2 content from toggle blocks.
 			if ( ! empty( $parsed['gen1'] ) && in_array( 'gen1', $platforms, true ) ) {
-				update_post_meta( $post_id, $all_platforms['gen1']['meta_key'], wp_kses_post( $parsed['gen1'] ) );
+				$gen1_html = wp_kses_post( $parsed['gen1'] );
+				update_post_meta( $post_id, $all_platforms['gen1']['meta_key'], $gen1_html );
+				$gen1_sections = RSU_Admin::parse_html_to_sections( $gen1_html );
+				if ( ! empty( $gen1_sections ) ) {
+					update_post_meta( $post_id, '_rsu_sections_gen1', wp_json_encode( $gen1_sections ) );
+				}
 			}
 			if ( ! empty( $parsed['gen2'] ) && in_array( 'gen2', $platforms, true ) ) {
-				update_post_meta( $post_id, $all_platforms['gen2']['meta_key'], wp_kses_post( $parsed['gen2'] ) );
+				$gen2_html = wp_kses_post( $parsed['gen2'] );
+				update_post_meta( $post_id, $all_platforms['gen2']['meta_key'], $gen2_html );
+				$gen2_sections = RSU_Admin::parse_html_to_sections( $gen2_html );
+				if ( ! empty( $gen2_sections ) ) {
+					update_post_meta( $post_id, '_rsu_sections_gen2', wp_json_encode( $gen2_sections ) );
+				}
 			}
 		} else {
 			// No toggle block found: copy full content to all selected platforms.
 			foreach ( $platforms as $slug ) {
 				if ( isset( $all_platforms[ $slug ] ) ) {
-					update_post_meta( $post_id, $all_platforms[ $slug ]['meta_key'], wp_kses_post( $content ) );
+					$platform_html = wp_kses_post( $content );
+					update_post_meta( $post_id, $all_platforms[ $slug ]['meta_key'], $platform_html );
+					$platform_sections = RSU_Admin::parse_html_to_sections( $platform_html );
+					if ( ! empty( $platform_sections ) ) {
+						update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $platform_sections ) );
+					}
 				}
 			}
 		}
@@ -152,6 +168,68 @@ class RSU_Migration {
 		wp_send_json_success( array(
 			'post_id' => $post_id,
 			'parsed'  => ! empty( $parsed ),
+		) );
+	}
+
+	/**
+	 * AJAX: Backfill sections JSON for already-migrated posts.
+	 *
+	 * Finds posts that have _rsu_is_update but no _rsu_sections_* meta,
+	 * parses their HTML content into structured sections.
+	 */
+	public function ajax_backfill_sections() {
+		check_ajax_referer( 'rsu_migration', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions.' );
+		}
+
+		$all_platforms = RSU_Platforms::get_all();
+
+		// Find all posts flagged as software updates.
+		$post_ids = get_posts( array(
+			'post_type'      => 'post',
+			'post_status'    => 'any',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'   => '_rsu_is_update',
+					'value' => '1',
+				),
+			),
+		) );
+
+		$updated = 0;
+		$skipped = 0;
+
+		foreach ( $post_ids as $post_id ) {
+			foreach ( $all_platforms as $slug => $platform ) {
+				$existing_sections = get_post_meta( $post_id, '_rsu_sections_' . $slug, true );
+
+				// Skip if sections JSON already exists.
+				if ( ! empty( $existing_sections ) ) {
+					$skipped++;
+					continue;
+				}
+
+				$html = get_post_meta( $post_id, $platform['meta_key'], true );
+				if ( empty( $html ) ) {
+					continue;
+				}
+
+				$sections = RSU_Admin::parse_html_to_sections( $html );
+				if ( ! empty( $sections ) ) {
+					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
+					$updated++;
+				}
+			}
+		}
+
+		wp_send_json_success( array(
+			'total_posts' => count( $post_ids ),
+			'updated'     => $updated,
+			'skipped'     => $skipped,
 		) );
 	}
 
