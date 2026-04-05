@@ -206,7 +206,7 @@ var RSUSectionBuilder = (function () {
 		list.innerHTML = '';
 
 		if (!sections.length) {
-			list.innerHTML = '<div class="rsu-sections-empty">No sections yet. Click "+ Add Section" to get started.</div>';
+			list.innerHTML = '<div class="rsu-sections-empty"><span class="dashicons dashicons-text-page" style="font-size:28px;width:28px;height:28px;color:#d1d5db;display:block;margin:0 auto 8px;"></span>No sections yet.<br><span style="font-size:12px;color:#c3c4c7;">Click "+ Add Section" below to start building release notes.</span></div>';
 			syncJSON(builder);
 			return;
 		}
