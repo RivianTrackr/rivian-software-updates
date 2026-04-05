@@ -2,6 +2,14 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.1.1] - 2026-04-05
+
+### Fixed
+- Add Section button not responding to clicks due to event handlers being registered after the initialization loop.
+- Added guard and try/catch around jQuery UI Sortable initialization to prevent failures on hidden panels from breaking the UI.
+- Changed sortable `connectWith` from jQuery object to CSS selector string for proper jQuery UI compatibility.
+- Added defensive fallback in Add Section handler to bootstrap builder data if initialization was skipped.
+
 ## [1.1.0] - 2026-04-05
 
 ### Added

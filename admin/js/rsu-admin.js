@@ -67,40 +67,12 @@
     }
 
     // ══════════════════════════════════════════════
-    // Section Builder
+    // Section Builder — functions
     // ══════════════════════════════════════════════
-
-    var blockTypes = [
-      { value: 'paragraph', label: 'Paragraph' },
-      { value: 'list', label: 'Bullet List' },
-      { value: 'note', label: 'Note' }
-    ];
-
-    // ── Initialize each platform's section builder ──
-    $('.rsu-section-builder').each(function () {
-      var $builder = $(this);
-      var platform = $builder.data('platform');
-      var $jsonInput = $builder.closest('.rsu-editor-panel')
-        .find('.rsu-sections-json[data-platform="' + platform + '"]');
-      var sections = [];
-
-      try {
-        sections = JSON.parse($jsonInput.val()) || [];
-      } catch (e) {
-        sections = [];
-      }
-
-      // Store references on the builder element.
-      $builder.data('_sections', sections);
-      $builder.data('_jsonInput', $jsonInput);
-
-      renderSections($builder);
-      initSortable($builder);
-    });
 
     // ── Render all sections for a builder ──
     function renderSections($builder) {
-      var sections = $builder.data('_sections');
+      var sections = $builder.data('_sections') || [];
       var $list = $builder.find('.rsu-sections-list');
       $list.empty();
 
@@ -184,8 +156,9 @@
     // ── Sync the in-memory sections to the hidden JSON input ──
     function syncJSON($builder) {
       var $jsonInput = $builder.data('_jsonInput');
-      var sections = $builder.data('_sections');
-      $jsonInput.val(JSON.stringify(sections));
+      if ($jsonInput && $jsonInput.length) {
+        $jsonInput.val(JSON.stringify($builder.data('_sections') || []));
+      }
     }
 
     // ── Read DOM state back into sections data ──
@@ -226,31 +199,53 @@
 
     // ── Initialize jQuery UI sortable ──
     function initSortable($builder) {
-      $builder.find('.rsu-sections-list').sortable({
-        handle: '.rsu-section__drag',
-        items: '> .rsu-section',
-        axis: 'y',
-        tolerance: 'pointer',
-        update: function () {
-          readFromDOM($builder);
-        }
-      });
+      if (!$.fn.sortable) return;
 
-      $builder.find('.rsu-blocks-list').sortable({
-        handle: '.rsu-block__drag',
-        items: '> .rsu-block',
-        axis: 'y',
-        tolerance: 'pointer',
-        connectWith: $builder.find('.rsu-blocks-list'),
-        update: function () {
-          readFromDOM($builder);
-        }
-      });
+      try {
+        $builder.find('.rsu-sections-list').sortable({
+          handle: '.rsu-section__drag',
+          items: '> .rsu-section',
+          axis: 'y',
+          tolerance: 'pointer',
+          update: function () {
+            readFromDOM($builder);
+          }
+        });
+
+        $builder.find('.rsu-blocks-list').sortable({
+          handle: '.rsu-block__drag',
+          items: '> .rsu-block',
+          axis: 'y',
+          tolerance: 'pointer',
+          connectWith: '.rsu-blocks-list',
+          update: function () {
+            readFromDOM($builder);
+          }
+        });
+      } catch (e) {
+        // Sortable may fail on hidden elements; non-critical.
+      }
     }
+
+    // ══════════════════════════════════════════════
+    // Section Builder — event handlers
+    // (registered BEFORE init so they work even if init fails)
+    // ══════════════════════════════════════════════
 
     // ── Add Section ──
     $wrap.on('click', '.rsu-add-section', function () {
       var $builder = $(this).closest('.rsu-section-builder');
+
+      // Ensure builder data exists.
+      if (!$builder.data('_sections')) {
+        var $jsonInput = $builder.closest('.rsu-editor-panel')
+          .find('.rsu-sections-json[data-platform="' + $builder.data('platform') + '"]');
+        var initial = [];
+        try { initial = JSON.parse($jsonInput.val()) || []; } catch (e) { initial = []; }
+        $builder.data('_sections', initial);
+        $builder.data('_jsonInput', $jsonInput);
+      }
+
       readFromDOM($builder);
 
       var sections = $builder.data('_sections');
@@ -272,7 +267,6 @@
       var $section = $(this).closest('.rsu-section');
       var type = $(this).data('type');
 
-      // Read current state first.
       readFromDOM($builder);
 
       var sectionIndex = $section.index();
@@ -330,14 +324,6 @@
       this.style.height = (this.scrollHeight) + 'px';
     });
 
-    // Trigger initial resize for loaded content.
-    setTimeout(function () {
-      $('.rsu-block__content').each(function () {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-      });
-    }, 100);
-
     // ── Copy from: copy sections from one platform to another ──
     $('.rsu-copy-from-select').on('change', function () {
       var sourceSlug = $(this).val();
@@ -361,5 +347,37 @@
 
       $(this).val('');
     });
+
+    // ══════════════════════════════════════════════
+    // Section Builder — initialization
+    // (runs after handlers are registered)
+    // ══════════════════════════════════════════════
+
+    $('.rsu-section-builder').each(function () {
+      var $builder = $(this);
+      var platform = $builder.data('platform');
+      var $jsonInput = $builder.closest('.rsu-editor-panel')
+        .find('.rsu-sections-json[data-platform="' + platform + '"]');
+      var sections = [];
+
+      try {
+        sections = JSON.parse($jsonInput.val()) || [];
+      } catch (e) {
+        sections = [];
+      }
+
+      $builder.data('_sections', sections);
+      $builder.data('_jsonInput', $jsonInput);
+
+      renderSections($builder);
+    });
+
+    // Trigger initial resize for loaded content.
+    setTimeout(function () {
+      $('.rsu-block__content').each(function () {
+        this.style.height = 'auto';
+        this.style.height = (this.scrollHeight) + 'px';
+      });
+    }, 100);
   });
 })(jQuery);
