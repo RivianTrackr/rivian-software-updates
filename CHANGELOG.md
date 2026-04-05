@@ -2,6 +2,19 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.3.0] - 2026-04-05
+
+### Added
+- Platform manager on the settings page to add, edit, and remove vehicle platforms.
+- Each platform has configurable label, description, and sort order.
+- Platform slugs are locked after creation to prevent breaking existing post data.
+- New platforms auto-generate `_rsu_content_{slug}` meta keys.
+
+### Changed
+- Platforms are now stored in the database (`rsu_platforms` option) instead of hardcoded in PHP.
+- Built-in Gen 1, Gen 2, and R2 platforms are used as fallback if no custom platforms are saved.
+- Default Platforms and Default Frontend Tab settings now validate against dynamic platform list.
+
 ## [1.2.1] - 2026-04-05
 
 ### Fixed

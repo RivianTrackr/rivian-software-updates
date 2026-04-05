@@ -9,33 +9,57 @@ defined( 'ABSPATH' ) || exit;
 
 class RSU_Platforms {
 
+	const OPTION_KEY = 'rsu_platforms';
+
 	/**
-	 * Get all registered platforms.
+	 * Built-in platforms used as fallback when no custom platforms are saved.
 	 *
-	 * @return array Keyed by slug.
+	 * @return array
 	 */
-	public static function get_all() {
-		$platforms = array(
+	public static function get_defaults() {
+		return array(
 			'gen1' => array(
 				'label'       => 'Gen 1 R1',
-				'description' => 'R1T & R1S (2021\u20132024)',
-				'meta_key'    => '_rsu_content_gen1',
+				'description' => 'R1T & R1S (2021–2024)',
 				'sort'        => 10,
 			),
 			'gen2' => array(
 				'label'       => 'Gen 2 R1',
 				'description' => 'R1T & R1S (2025+)',
-				'meta_key'    => '_rsu_content_gen2',
 				'sort'        => 20,
-				'default'     => true,
 			),
 			'r2' => array(
 				'label'       => 'R2',
 				'description' => 'R2 (2026+)',
-				'meta_key'    => '_rsu_content_r2',
 				'sort'        => 30,
 			),
 		);
+	}
+
+	/**
+	 * Get all registered platforms.
+	 *
+	 * @return array Keyed by slug, each with label, description, meta_key, sort.
+	 */
+	public static function get_all() {
+		$saved = get_option( self::OPTION_KEY, null );
+
+		if ( is_array( $saved ) && ! empty( $saved ) ) {
+			$platforms = $saved;
+		} else {
+			$platforms = self::get_defaults();
+		}
+
+		// Ensure meta_key is set for each platform and sort.
+		foreach ( $platforms as $slug => &$platform ) {
+			$platform['meta_key'] = '_rsu_content_' . $slug;
+		}
+		unset( $platform );
+
+		// Sort by sort value.
+		uasort( $platforms, function ( $a, $b ) {
+			return ( isset( $a['sort'] ) ? $a['sort'] : 99 ) - ( isset( $b['sort'] ) ? $b['sort'] : 99 );
+		} );
 
 		return apply_filters( 'rsu_platforms', $platforms );
 	}
