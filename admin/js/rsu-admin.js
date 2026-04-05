@@ -25,14 +25,15 @@
     initSortable($builder);
 
     // Auto-resize all textareas after rendering.
-    // Run twice: once soon for fast layout, once later to catch late reflows.
+    // Multiple passes to catch late DOM reflows in the Block Editor.
     var resizeFn = function () {
       $builder.find('.rsu-block__content, .rsu-bullet-row__input').each(function () {
         autoResizeTextarea(this);
       });
     };
-    setTimeout(resizeFn, 10);
-    setTimeout(resizeFn, 150);
+    setTimeout(resizeFn, 0);
+    setTimeout(resizeFn, 100);
+    setTimeout(resizeFn, 500);
   }
 
   // ── Build a single section DOM element ──
@@ -131,8 +132,8 @@
 
   // ── Auto-resize a single textarea ──
   function autoResizeTextarea(el) {
-    el.style.height = 'auto';
-    el.style.height = el.scrollHeight + 'px';
+    el.style.height = '0';
+    el.style.height = Math.max(el.scrollHeight, 36) + 'px';
   }
 
   // ── Sync the in-memory sections to the hidden JSON input ──
