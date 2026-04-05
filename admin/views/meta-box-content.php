@@ -86,7 +86,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-bullet-row { display: flex; align-items: flex-start; gap: 0; margin-bottom: 6px; background: #fff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 0; overflow: hidden; }
 .rsu-bullet-row:focus-within { border-color: #93c5fd; }
 .rsu-bullet-row__marker { flex-shrink: 0; width: 32px; display: flex; align-items: center; justify-content: center; color: #3b82f6; font-size: 18px; line-height: 1; padding-top: 8px; user-select: none; background: #f8faff; align-self: stretch; border-right: 1px solid #f0f0f0; }
-.rsu-bullet-row__input { flex: 1; border: none !important; background: #fff; font-size: 13px; line-height: 1.65; font-family: inherit; color: #374151; padding: 8px 10px; resize: none; overflow: hidden; min-height: 36px; box-sizing: border-box; box-shadow: none !important; outline: none !important; }
+.rsu-bullet-row__input { flex: 1; border: none !important; background: #fff; font-size: 13px; line-height: 1.65; font-family: inherit; color: #374151; padding: 8px 10px; resize: none; overflow: visible; overflow-wrap: break-word; word-break: break-word; min-height: 36px; box-sizing: border-box; box-shadow: none !important; outline: none !important; }
 .rsu-bullet-row__input:focus { background: #fafbff; }
 .rsu-bullet-row__input::placeholder { color: #c3c4c7; }
 .rsu-bullet-row__remove { flex-shrink: 0; background: none; border: none; border-left: 1px solid #f0f0f0; font-size: 15px; line-height: 1; color: #d1d5db; cursor: pointer; padding: 0 8px; align-self: stretch; display: flex; align-items: center; visibility: hidden; }
@@ -308,7 +308,9 @@ var RSUSectionBuilder = (function () {
 		syncJSON(builder);
 
 		// Auto-resize all textareas after rendering.
+		// Run twice: once soon for fast layout, once later to catch late reflows.
 		setTimeout(autoResize, 10);
+		setTimeout(autoResize, 150);
 	}
 
 	// ── Build section element ──
@@ -399,6 +401,10 @@ var RSUSectionBuilder = (function () {
 			readFromDOM(getBuilder(this));
 		});
 
+		textarea.addEventListener('focus', function () {
+			autoResizeTextarea(this);
+		});
+
 		return el;
 	}
 
@@ -418,6 +424,11 @@ var RSUSectionBuilder = (function () {
 		input.addEventListener('input', function () {
 			autoResizeTextarea(this);
 			readFromDOM(getBuilder(this));
+		});
+
+		// Resize on focus in case initial auto-resize missed wrapped text.
+		input.addEventListener('focus', function () {
+			autoResizeTextarea(this);
 		});
 
 		return row;

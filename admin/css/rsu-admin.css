@@ -407,7 +407,9 @@
 	color: #374151;
 	padding: 8px 10px;
 	resize: none;
-	overflow: hidden;
+	overflow: visible;
+	overflow-wrap: break-word;
+	word-break: break-word;
 	min-height: 36px;
 	box-sizing: border-box;
 	transition: background 0.15s;
