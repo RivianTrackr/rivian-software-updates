@@ -46,12 +46,7 @@ class RSU_Platforms {
 	 * @return string
 	 */
 	public static function get_default() {
-		foreach ( self::get_all() as $slug => $platform ) {
-			if ( ! empty( $platform['default'] ) ) {
-				return $slug;
-			}
-		}
-		return 'gen2';
+		return RSU_Settings::get( 'default_tab', 'gen2' );
 	}
 
 	/**

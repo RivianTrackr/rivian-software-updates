@@ -2,6 +2,32 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.2.1] - 2026-04-05
+
+### Fixed
+- Section builder fully compatible with the Block Editor (Gutenberg) by delegating all event handlers from `document` instead of a wrapper element that may not exist during async meta box rendering.
+- Initialization retries up to 10 times for delayed meta box rendering in the Block Editor.
+- Button clicks use `stopPropagation()` to prevent Block Editor event interference.
+
+## [1.2.0] - 2026-04-05
+
+### Added
+- Settings page under Settings > RSU Settings with the following options:
+  - **Default Platforms**: Pre-selected platforms when creating new update posts.
+  - **Default Frontend Tab**: Which platform tab is shown first to visitors.
+  - **Section Heading Level**: Choose H2, H3, or H4 for rendered section headings.
+  - **Note Block Label**: Customize the label on note/blockquote blocks (e.g. "NOTE", "TIP").
+  - **Accent Color**: Color picker for the frontend accent color (tabs, links, bullet markers).
+  - **Schema Markup**: Toggle JSON-LD structured data output on/off.
+  - **Organization Name**: Configurable author/publisher name in schema markup.
+  - **Updates Archive Slug**: Configurable breadcrumb URL for the archive page.
+
+### Changed
+- Schema markup now reads organization name and archive slug from settings.
+- Default platform tab on frontend now reads from settings instead of hardcoded value.
+- Section HTML renderer uses configurable heading level and note label.
+- Frontend accent color can be overridden via settings (injected as CSS custom property).
+
 ## [1.1.1] - 2026-04-05
 
 ### Fixed
