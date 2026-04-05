@@ -2,6 +2,22 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.4.0] - 2026-04-05
+
+### Changed
+- Redesigned section builder UI with modern card-based layout, rounded corners, and subtle shadows.
+- Tab bar uses clean underline indicator instead of faux-tab borders.
+- Color-coded block types: blue left border for Bullet List, amber for Note.
+- Improved focus states with soft blue glow on inputs and tinted textarea backgrounds.
+- Enhanced empty state with icon and two-line helper text.
+- Refined add-block buttons with lighter default style and blue hover highlights.
+- Better spacing and typography throughout the editor.
+
+### Fixed
+- Rewrote section builder as inline vanilla JS to fix buttons not working in the Block Editor.
+- Removed dependency on external JS file, jQuery, and jQuery UI Sortable.
+- All button actions use direct `onclick` handlers via `RSUSectionBuilder` global API.
+
 ## [1.3.1] - 2026-04-05
 
 ### Fixed
