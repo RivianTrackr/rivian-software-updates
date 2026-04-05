@@ -2,6 +2,14 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [1.3.1] - 2026-04-05
+
+### Fixed
+- Rewrote section builder as inline vanilla JS to fix buttons not working in the Block Editor.
+- Removed dependency on external JS file, jQuery, and jQuery UI Sortable.
+- All button actions use direct `onclick` handlers via `RSUSectionBuilder` global API.
+- Script executes immediately when the meta box renders, with retry fallback for delayed rendering.
+
 ## [1.3.0] - 2026-04-05
 
 ### Added
