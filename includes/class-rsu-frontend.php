@@ -192,6 +192,7 @@ class RSU_Frontend {
 
 		// Widen theme content containers that hold release notes.
 		wp_add_inline_style( 'rsu-frontend',
+			// Generic theme wrappers.
 			'.entry-content:has(.rsu-update), ' .
 			'.post-content:has(.rsu-update), ' .
 			'.article-content:has(.rsu-update), ' .
@@ -199,11 +200,25 @@ class RSU_Frontend {
 			'.content-area:has(.rsu-update), ' .
 			'.site-content:has(.rsu-update) > *, ' .
 			'.wp-block-post-content:has(.rsu-update), ' .
-			// Blocksy theme containers.
+			// Blocksy theme — class-based containers.
 			'.ct-container:has(.rsu-update), ' .
 			'.ct-container-narrow:has(.rsu-update), ' .
-			'.ct-content-container:has(.rsu-update) { ' .
+			'.ct-content-container:has(.rsu-update), ' .
+			// Blocksy theme — data-attribute layout selectors.
+			'[data-content="narrow"]:has(.rsu-update), ' .
+			'[data-content="normal"]:has(.rsu-update), ' .
+			'.site-main:has(.rsu-update) > article > .entry-content { ' .
 				'max-width: none !important; width: 100% !important; ' .
+			'}'
+		);
+
+		// Blocksy uses a CSS custom property for content width — override it
+		// on any ancestor that contains release notes.
+		wp_add_inline_style( 'rsu-frontend',
+			'body:has(.rsu-update) .ct-container { ' .
+				'--theme-normal-content-max-width: 100% !important; ' .
+				'--theme-narrow-content-max-width: 100% !important; ' .
+				'--theme-wide-content-max-width: 100% !important; ' .
 			'}'
 		);
 
