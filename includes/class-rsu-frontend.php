@@ -198,7 +198,11 @@ class RSU_Frontend {
 			'.single-content:has(.rsu-update), ' .
 			'.content-area:has(.rsu-update), ' .
 			'.site-content:has(.rsu-update) > *, ' .
-			'.wp-block-post-content:has(.rsu-update) { ' .
+			'.wp-block-post-content:has(.rsu-update), ' .
+			// Blocksy theme containers.
+			'.ct-container:has(.rsu-update), ' .
+			'.ct-container-narrow:has(.rsu-update), ' .
+			'.ct-content-container:has(.rsu-update) { ' .
 				'max-width: none !important; width: 100% !important; ' .
 			'}'
 		);
