@@ -190,13 +190,6 @@ class RSU_Frontend {
 			RSU_VERSION
 		);
 
-		// WordPress block layout (.is-layout-constrained) applies max-width
-		// to children via :where(). Use .alignfull so the update component
-		// is excluded from that constraint naturally, then ensure full width.
-		wp_add_inline_style( 'rsu-frontend',
-			'.rsu-update { max-width: none !important; }'
-		);
-
 		// Override accent color from settings.
 		$accent = RSU_Settings::get( 'accent_color', '#fba919' );
 		if ( '#fba919' !== $accent ) {
