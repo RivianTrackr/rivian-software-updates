@@ -23,11 +23,7 @@
 	color: var(--rsu-text);
 	box-sizing: border-box;
 
-	/* Fill parent and try to break out of narrow theme containers */
 	width: 100%;
-	max-width: none !important;
-	margin-left: 0;
-	margin-right: 0;
 }
 
 .rsu-update *,

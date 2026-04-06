@@ -101,7 +101,7 @@ class RSU_Frontend {
 
 		ob_start();
 		?>
-		<div class="rsu-update" data-rsu-version="<?php echo esc_attr( $version ); ?>" data-rsu-default="<?php echo esc_attr( $default ); ?>">
+		<div class="rsu-update alignfull" data-rsu-version="<?php echo esc_attr( $version ); ?>" data-rsu-default="<?php echo esc_attr( $default ); ?>">
 
 			<?php if ( $date_noticed || $date_released ) : ?>
 				<div class="rsu-dates">
@@ -190,49 +190,11 @@ class RSU_Frontend {
 			RSU_VERSION
 		);
 
-		// Widen theme content containers that hold release notes.
+		// WordPress block layout (.is-layout-constrained) applies max-width
+		// to children via :where(). Use .alignfull so the update component
+		// is excluded from that constraint naturally, then ensure full width.
 		wp_add_inline_style( 'rsu-frontend',
-			// Generic theme wrappers.
-			'.entry-content:has(.rsu-update), ' .
-			'.post-content:has(.rsu-update), ' .
-			'.article-content:has(.rsu-update), ' .
-			'.single-content:has(.rsu-update), ' .
-			'.content-area:has(.rsu-update), ' .
-			'.site-content:has(.rsu-update) > *, ' .
-			'.wp-block-post-content:has(.rsu-update), ' .
-			// Blocksy theme — class-based containers.
-			'.ct-container:has(.rsu-update), ' .
-			'.ct-container-narrow:has(.rsu-update), ' .
-			'.ct-content-container:has(.rsu-update), ' .
-			// Blocksy theme — data-attribute layout selectors.
-			'[data-content="narrow"]:has(.rsu-update), ' .
-			'[data-content="normal"]:has(.rsu-update), ' .
-			'.site-main:has(.rsu-update) > article > .entry-content { ' .
-				'max-width: none !important; width: 100% !important; ' .
-			'}'
-		);
-
-		// Blocksy uses a CSS custom property for content width — override it
-		// on any ancestor that contains release notes.
-		wp_add_inline_style( 'rsu-frontend',
-			'body:has(.rsu-update) .ct-container { ' .
-				'--theme-normal-content-max-width: 100% !important; ' .
-				'--theme-narrow-content-max-width: 100% !important; ' .
-				'--theme-wide-content-max-width: 100% !important; ' .
-			'}'
-		);
-
-		// Blocksy applies max-width: 800px (or similar) to .entry-content > *
-		// which overrides .rsu-update's own max-width: none. Use high-specificity
-		// selectors to ensure the plugin wins.
-		wp_add_inline_style( 'rsu-frontend',
-			'.entry-content .rsu-update, ' .
-			'.entry-content > .rsu-update, ' .
-			'.ct-container .entry-content .rsu-update, ' .
-			'article .entry-content > .rsu-update, ' .
-			'div.rsu-update { ' .
-				'max-width: none !important; width: 100% !important; ' .
-			'}'
+			'.rsu-update { max-width: none !important; }'
 		);
 
 		// Override accent color from settings.
