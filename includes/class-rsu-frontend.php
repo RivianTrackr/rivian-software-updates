@@ -222,6 +222,19 @@ class RSU_Frontend {
 			'}'
 		);
 
+		// Blocksy applies max-width: 800px (or similar) to .entry-content > *
+		// which overrides .rsu-update's own max-width: none. Use high-specificity
+		// selectors to ensure the plugin wins.
+		wp_add_inline_style( 'rsu-frontend',
+			'.entry-content .rsu-update, ' .
+			'.entry-content > .rsu-update, ' .
+			'.ct-container .entry-content .rsu-update, ' .
+			'article .entry-content > .rsu-update, ' .
+			'div.rsu-update { ' .
+				'max-width: none !important; width: 100% !important; ' .
+			'}'
+		);
+
 		// Override accent color from settings.
 		$accent = RSU_Settings::get( 'accent_color', '#fba919' );
 		if ( '#fba919' !== $accent ) {
