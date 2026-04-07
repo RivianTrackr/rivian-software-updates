@@ -539,6 +539,57 @@
 }
 
 /* ═══════════════════════════════════════
+   Generation Selectors
+   ═══════════════════════════════════════ */
+
+.rsu-gen-select {
+	font-size: 10px;
+	padding: 1px 4px;
+	border: 1px solid #e5e7eb;
+	border-radius: 4px;
+	background: #fff;
+	color: #9ca3af;
+	cursor: pointer;
+	transition: all 0.15s;
+	line-height: 1.4;
+	flex-shrink: 0;
+}
+
+.rsu-gen-select:hover {
+	border-color: #93c5fd;
+	color: #374151;
+}
+
+.rsu-gen-select:focus {
+	outline: none;
+	border-color: #2271b1;
+	box-shadow: 0 0 0 1px rgba(34, 113, 177, 0.15);
+	color: #374151;
+}
+
+/* When a generation is selected, highlight the select */
+.rsu-gen-select--active {
+	background: #eff6ff;
+	border-color: #93c5fd;
+	color: #2563eb;
+	font-weight: 600;
+}
+
+/* Bullet row generation select */
+.rsu-bullet-row__gen {
+	flex-shrink: 0;
+	border-left: 1px solid #f0f0f0;
+	display: flex;
+	align-items: center;
+	padding: 0 6px;
+}
+
+.rsu-bullet-row__gen .rsu-gen-select {
+	font-size: 10px;
+	padding: 1px 3px;
+}
+
+/* ═══════════════════════════════════════
    Responsive
    ═══════════════════════════════════════ */
 
@@ -570,5 +621,9 @@
 	.rsu-section__heading {
 		font-size: 13px;
 		padding: 6px 10px;
+	}
+
+	.rsu-gen-select {
+		font-size: 9px;
 	}
 }

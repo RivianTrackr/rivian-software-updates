@@ -17,8 +17,8 @@ class RSU_Settings {
 	 * @var array
 	 */
 	private static $defaults = array(
-		'default_platforms'  => array( 'gen1', 'gen2' ),
-		'default_tab'        => 'gen2',
+		'default_vehicles'   => array( 'r1', 'r2' ),
+		'default_tab'        => 'r1',
 		'heading_level'      => 'h3',
 		'note_label'         => 'NOTE',
 		'schema_enabled'     => true,
@@ -50,12 +50,20 @@ class RSU_Settings {
 		" );
 
 		wp_add_inline_style( 'wp-color-picker', '
-			.rsu-platforms-table { max-width: 800px; }
-			.rsu-platforms-table th { font-size: 13px; font-weight: 600; }
-			.rsu-platforms-table td { vertical-align: middle; }
-			.rsu-platforms-table input[type="text"],
-			.rsu-platforms-table input[type="number"] { font-size: 13px; padding: 4px 8px; }
-			.rsu-remove-platform .dashicons { font-size: 18px; width: 18px; height: 18px; }
+			.rsu-vehicles-table { max-width: 900px; border-collapse: collapse; }
+			.rsu-vehicles-table th { font-size: 13px; font-weight: 600; }
+			.rsu-vehicles-table td { vertical-align: top; }
+			.rsu-vehicles-table input[type="text"],
+			.rsu-vehicles-table input[type="number"] { font-size: 13px; padding: 4px 8px; }
+			.rsu-vehicle-row { background: #fff; }
+			.rsu-vehicle-row td { border-top: 2px solid #c3c4c7; padding-top: 12px; }
+			.rsu-generations-table { margin-top: 8px; width: 100%; border-collapse: collapse; }
+			.rsu-generations-table th { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; text-align: left; padding: 4px 6px; }
+			.rsu-generations-table td { padding: 4px 6px; }
+			.rsu-generations-table input[type="text"],
+			.rsu-generations-table input[type="number"] { font-size: 12px; padding: 3px 6px; }
+			.rsu-add-generation { font-size: 11px !important; margin-top: 4px !important; }
+			.rsu-remove-btn .dashicons { font-size: 18px; width: 18px; height: 18px; }
 		' );
 	}
 
@@ -69,6 +77,11 @@ class RSU_Settings {
 	public static function get( $key, $default = null ) {
 		$options = get_option( self::OPTION_KEY, array() );
 		$options = wp_parse_args( $options, self::$defaults );
+
+		// Backward compat: map old key to new.
+		if ( 'default_platforms' === $key ) {
+			$key = 'default_vehicles';
+		}
 
 		if ( null !== $default ) {
 			return isset( $options[ $key ] ) ? $options[ $key ] : $default;
@@ -121,23 +134,23 @@ class RSU_Settings {
 			'sanitize_callback' => array( $this, 'sanitize_platforms' ),
 		) );
 
-		// ── Platforms section ──
+		// -- Vehicles section --
 		add_settings_section(
 			'rsu_platforms',
-			'Platforms',
+			'Vehicles',
 			array( $this, 'render_section_platforms' ),
 			'rsu-settings'
 		);
 
 		add_settings_field(
 			'platforms_manager',
-			'Vehicle Platforms',
+			'Vehicle Models',
 			array( $this, 'render_field_platforms_manager' ),
 			'rsu-settings',
 			'rsu_platforms'
 		);
 
-		// ── General section ──
+		// -- General section --
 		add_settings_section(
 			'rsu_general',
 			'General',
@@ -146,9 +159,9 @@ class RSU_Settings {
 		);
 
 		add_settings_field(
-			'default_platforms',
-			'Default Platforms',
-			array( $this, 'render_field_default_platforms' ),
+			'default_vehicles',
+			'Default Vehicles',
+			array( $this, 'render_field_default_vehicles' ),
 			'rsu-settings',
 			'rsu_general'
 		);
@@ -177,7 +190,7 @@ class RSU_Settings {
 			'rsu_general'
 		);
 
-		// ── Appearance section ──
+		// -- Appearance section --
 		add_settings_section(
 			'rsu_appearance',
 			'Appearance',
@@ -193,7 +206,7 @@ class RSU_Settings {
 			'rsu_appearance'
 		);
 
-		// ── SEO / Schema section ──
+		// -- SEO / Schema section --
 		add_settings_section(
 			'rsu_schema',
 			'SEO & Schema',
@@ -226,10 +239,10 @@ class RSU_Settings {
 		);
 	}
 
-	// ── Section descriptions ──
+	// -- Section descriptions --
 
 	public function render_section_platforms() {
-		echo '<p>Manage vehicle platforms. Each platform gets its own editor tab and frontend tab. The slug is used internally and cannot be changed after creation.</p>';
+		echo '<p>Manage vehicle models and their generations. Each vehicle gets its own tab on the frontend. Generations are used as pill badges to mark generation-specific features within release notes.</p>';
 	}
 
 	public function render_section_general() {
@@ -244,63 +257,81 @@ class RSU_Settings {
 		echo '<p>Configure SEO structured data output for software update posts.</p>';
 	}
 
-	// ── Field renderers ──
+	// -- Field renderers --
 
 	public function render_field_platforms_manager() {
-		$platforms = RSU_Platforms::get_all();
+		$vehicles = RSU_Platforms::get_all();
 		?>
-		<table class="widefat rsu-platforms-table" id="rsu-platforms-table">
-			<thead>
-				<tr>
-					<th style="width: 30px;"></th>
-					<th style="width: 120px;">Slug</th>
-					<th>Label</th>
-					<th>Description</th>
-					<th style="width: 70px;">Order</th>
-					<th style="width: 50px;"></th>
-				</tr>
-			</thead>
-			<tbody id="rsu-platforms-body">
-				<?php
-				$index = 0;
-				foreach ( $platforms as $slug => $platform ) :
-					$this->render_platform_row( $index, $slug, $platform );
-					$index++;
-				endforeach;
-				?>
-			</tbody>
-		</table>
+		<div id="rsu-vehicles-manager">
+			<?php
+			$vi = 0;
+			foreach ( $vehicles as $slug => $vehicle ) :
+				$this->render_vehicle_block( $vi, $slug, $vehicle );
+				$vi++;
+			endforeach;
+			?>
+		</div>
 		<p>
-			<button type="button" class="button" id="rsu-add-platform">+ Add Platform</button>
+			<button type="button" class="button" id="rsu-add-vehicle">+ Add Vehicle</button>
 		</p>
-		<template id="rsu-platform-row-template">
-			<?php $this->render_platform_row( '__INDEX__', '', array( 'label' => '', 'description' => '', 'sort' => '' ) ); ?>
+		<template id="rsu-vehicle-template">
+			<?php $this->render_vehicle_block( '__VI__', '', array(
+				'label'       => '',
+				'description' => '',
+				'sort'        => '',
+				'generations' => array(),
+			) ); ?>
+		</template>
+		<template id="rsu-generation-template">
+			<?php $this->render_generation_row( '__VI__', '__GI__', '', array(
+				'label'       => '',
+				'description' => '',
+				'sort'        => '',
+			) ); ?>
 		</template>
 		<script>
 		(function() {
-			var body = document.getElementById('rsu-platforms-body');
-			var template = document.getElementById('rsu-platform-row-template');
-			var addBtn = document.getElementById('rsu-add-platform');
+			var manager = document.getElementById('rsu-vehicles-manager');
+			var vTemplate = document.getElementById('rsu-vehicle-template');
+			var gTemplate = document.getElementById('rsu-generation-template');
 
-			addBtn.addEventListener('click', function() {
-				var index = body.querySelectorAll('tr').length;
-				var html = template.innerHTML.replace(/__INDEX__/g, index);
-				var temp = document.createElement('tbody');
+			document.getElementById('rsu-add-vehicle').addEventListener('click', function() {
+				var vi = manager.querySelectorAll('.rsu-vehicle-block').length;
+				var html = vTemplate.innerHTML.replace(/__VI__/g, vi);
+				var temp = document.createElement('div');
 				temp.innerHTML = html;
-				var row = temp.querySelector('tr');
-				body.appendChild(row);
-				row.querySelector('.rsu-platform-slug').focus();
+				var block = temp.firstElementChild;
+				manager.appendChild(block);
+				block.querySelector('.rsu-vehicle-slug').focus();
 			});
 
 			document.addEventListener('click', function(e) {
-				if (e.target.closest('.rsu-remove-platform')) {
-					var row = e.target.closest('tr');
-					if (body.querySelectorAll('tr').length <= 1) {
-						alert('You must have at least one platform.');
+				if (e.target.closest('.rsu-add-generation')) {
+					var block = e.target.closest('.rsu-vehicle-block');
+					var tbody = block.querySelector('.rsu-gen-tbody');
+					var vi = block.getAttribute('data-index');
+					var gi = tbody.querySelectorAll('tr').length;
+					var html = gTemplate.innerHTML.replace(/__VI__/g, vi).replace(/__GI__/g, gi);
+					var temp = document.createElement('tbody');
+					temp.innerHTML = html;
+					var row = temp.querySelector('tr');
+					tbody.appendChild(row);
+					row.querySelector('.rsu-gen-slug').focus();
+				}
+
+				if (e.target.closest('.rsu-remove-vehicle')) {
+					if (manager.querySelectorAll('.rsu-vehicle-block').length <= 1) {
+						alert('You must have at least one vehicle.');
 						return;
 					}
-					if (confirm('Remove this platform? Existing post data for this platform will not be deleted.')) {
-						row.remove();
+					if (confirm('Remove this vehicle? Existing post data will not be deleted.')) {
+						e.target.closest('.rsu-vehicle-block').remove();
+					}
+				}
+
+				if (e.target.closest('.rsu-remove-generation')) {
+					if (confirm('Remove this generation?')) {
+						e.target.closest('tr').remove();
 					}
 				}
 			});
@@ -310,42 +341,116 @@ class RSU_Settings {
 	}
 
 	/**
-	 * Render a single platform row in the manager table.
+	 * Render a single vehicle block in the settings manager.
 	 */
-	private function render_platform_row( $index, $slug, $platform ) {
-		$name_prefix = RSU_Platforms::OPTION_KEY . '[' . $index . ']';
+	private function render_vehicle_block( $vi, $slug, $vehicle ) {
+		$prefix = RSU_Platforms::OPTION_KEY . '[' . $vi . ']';
+		$is_existing = ! empty( $slug );
+		$generations = isset( $vehicle['generations'] ) ? $vehicle['generations'] : array();
+		?>
+		<div class="rsu-vehicle-block" data-index="<?php echo esc_attr( $vi ); ?>" style="border: 1px solid #c3c4c7; border-radius: 6px; padding: 16px; margin-bottom: 16px; background: #fff; max-width: 800px;">
+			<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+				<div style="flex: 0 0 120px;">
+					<label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6b7280;">Slug</label><br>
+					<?php if ( $is_existing ) : ?>
+						<code><?php echo esc_html( $slug ); ?></code>
+						<input type="hidden" name="<?php echo esc_attr( $prefix ); ?>[slug]" value="<?php echo esc_attr( $slug ); ?>" />
+					<?php else : ?>
+						<input type="text" name="<?php echo esc_attr( $prefix ); ?>[slug]"
+							class="rsu-vehicle-slug" style="width: 100%;"
+							placeholder="e.g. r3" pattern="[a-z0-9_]+" title="Lowercase letters, numbers, underscores only"
+							value="" />
+					<?php endif; ?>
+				</div>
+				<div style="flex: 1;">
+					<label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6b7280;">Label</label><br>
+					<input type="text" name="<?php echo esc_attr( $prefix ); ?>[label]"
+						value="<?php echo esc_attr( $vehicle['label'] ); ?>"
+						style="width: 100%;" placeholder="e.g. R3" />
+				</div>
+				<div style="flex: 1;">
+					<label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6b7280;">Description</label><br>
+					<input type="text" name="<?php echo esc_attr( $prefix ); ?>[description]"
+						value="<?php echo esc_attr( $vehicle['description'] ); ?>"
+						style="width: 100%;" placeholder="e.g. R3 SUV" />
+				</div>
+				<div style="flex: 0 0 70px;">
+					<label style="font-size: 11px; font-weight: 600; text-transform: uppercase; color: #6b7280;">Order</label><br>
+					<input type="number" name="<?php echo esc_attr( $prefix ); ?>[sort]"
+						value="<?php echo esc_attr( isset( $vehicle['sort'] ) ? $vehicle['sort'] : '' ); ?>"
+						style="width: 100%;" min="0" step="10" />
+				</div>
+				<div style="flex: 0 0 40px; padding-top: 16px;">
+					<button type="button" class="button-link rsu-remove-vehicle rsu-remove-btn" title="Remove" style="color: #b32d2e;">
+						<span class="dashicons dashicons-trash"></span>
+					</button>
+				</div>
+			</div>
+
+			<div style="margin-left: 12px; padding: 10px 14px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px;">
+				<strong style="font-size: 12px; color: #374151;">Generations</strong>
+				<table class="rsu-generations-table">
+					<thead>
+						<tr>
+							<th style="width: 100px;">Slug</th>
+							<th>Label</th>
+							<th>Description</th>
+							<th style="width: 60px;">Order</th>
+							<th style="width: 30px;"></th>
+						</tr>
+					</thead>
+					<tbody class="rsu-gen-tbody">
+						<?php
+						$gi = 0;
+						foreach ( $generations as $gen_slug => $gen ) :
+							$this->render_generation_row( $vi, $gi, $gen_slug, $gen );
+							$gi++;
+						endforeach;
+						?>
+					</tbody>
+				</table>
+				<button type="button" class="button button-small rsu-add-generation">+ Add Generation</button>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render a single generation row within a vehicle block.
+	 */
+	private function render_generation_row( $vi, $gi, $slug, $gen ) {
+		$prefix = RSU_Platforms::OPTION_KEY . '[' . $vi . '][generations][' . $gi . ']';
 		$is_existing = ! empty( $slug );
 		?>
 		<tr>
-			<td><span class="dashicons dashicons-menu" style="color: #c3c4c7; cursor: grab;"></span></td>
 			<td>
 				<?php if ( $is_existing ) : ?>
-					<code><?php echo esc_html( $slug ); ?></code>
-					<input type="hidden" name="<?php echo esc_attr( $name_prefix ); ?>[slug]" value="<?php echo esc_attr( $slug ); ?>" />
+					<code style="font-size: 11px;"><?php echo esc_html( $slug ); ?></code>
+					<input type="hidden" name="<?php echo esc_attr( $prefix ); ?>[slug]" value="<?php echo esc_attr( $slug ); ?>" />
 				<?php else : ?>
-					<input type="text" name="<?php echo esc_attr( $name_prefix ); ?>[slug]"
-						class="rsu-platform-slug" style="width: 100%;"
-						placeholder="e.g. r3" pattern="[a-z0-9_]+" title="Lowercase letters, numbers, underscores only"
+					<input type="text" name="<?php echo esc_attr( $prefix ); ?>[slug]"
+						class="rsu-gen-slug" style="width: 100%;"
+						placeholder="e.g. gen3" pattern="[a-z0-9_]+" title="Lowercase letters, numbers, underscores only"
 						value="" />
 				<?php endif; ?>
 			</td>
 			<td>
-				<input type="text" name="<?php echo esc_attr( $name_prefix ); ?>[label]"
-					value="<?php echo esc_attr( $platform['label'] ); ?>"
-					style="width: 100%;" placeholder="e.g. R3" />
+				<input type="text" name="<?php echo esc_attr( $prefix ); ?>[label]"
+					value="<?php echo esc_attr( $gen['label'] ); ?>"
+					style="width: 100%;" placeholder="e.g. Gen 3" />
 			</td>
 			<td>
-				<input type="text" name="<?php echo esc_attr( $name_prefix ); ?>[description]"
-					value="<?php echo esc_attr( $platform['description'] ); ?>"
-					style="width: 100%;" placeholder="e.g. R3 (2027+)" />
+				<input type="text" name="<?php echo esc_attr( $prefix ); ?>[description]"
+					value="<?php echo esc_attr( $gen['description'] ); ?>"
+					style="width: 100%;" placeholder="e.g. 2028+" />
 			</td>
 			<td>
-				<input type="number" name="<?php echo esc_attr( $name_prefix ); ?>[sort]"
-					value="<?php echo esc_attr( isset( $platform['sort'] ) ? $platform['sort'] : '' ); ?>"
+				<input type="number" name="<?php echo esc_attr( $prefix ); ?>[sort]"
+					value="<?php echo esc_attr( isset( $gen['sort'] ) ? $gen['sort'] : '' ); ?>"
 					style="width: 100%;" min="0" step="10" />
 			</td>
 			<td>
-				<button type="button" class="button-link rsu-remove-platform" title="Remove" style="color: #b32d2e;">
+				<button type="button" class="button-link rsu-remove-generation rsu-remove-btn" title="Remove" style="color: #b32d2e;">
 					<span class="dashicons dashicons-trash"></span>
 				</button>
 			</td>
@@ -353,39 +458,44 @@ class RSU_Settings {
 		<?php
 	}
 
-	public function render_field_default_platforms() {
-		$settings  = self::get_all();
-		$platforms = RSU_Platforms::get_all();
-		$selected  = (array) $settings['default_platforms'];
+	public function render_field_default_vehicles() {
+		$settings = self::get_all();
+		$vehicles = RSU_Platforms::get_all();
+		$selected = isset( $settings['default_vehicles'] ) ? (array) $settings['default_vehicles'] : array();
 
-		foreach ( $platforms as $slug => $platform ) {
+		// Backward compat.
+		if ( empty( $selected ) && isset( $settings['default_platforms'] ) ) {
+			$selected = (array) $settings['default_platforms'];
+		}
+
+		foreach ( $vehicles as $slug => $vehicle ) {
 			printf(
-				'<label style="margin-right: 16px;"><input type="checkbox" name="%s[default_platforms][]" value="%s" %s /> %s <span class="description">(%s)</span></label>',
+				'<label style="margin-right: 16px;"><input type="checkbox" name="%s[default_vehicles][]" value="%s" %s /> %s <span class="description">(%s)</span></label>',
 				esc_attr( self::OPTION_KEY ),
 				esc_attr( $slug ),
 				checked( in_array( $slug, $selected, true ), true, false ),
-				esc_html( $platform['label'] ),
-				esc_html( $platform['description'] )
+				esc_html( $vehicle['label'] ),
+				esc_html( $vehicle['description'] )
 			);
 		}
-		echo '<p class="description">Platforms pre-selected when creating a new software update post.</p>';
+		echo '<p class="description">Vehicles pre-selected when creating a new software update post.</p>';
 	}
 
 	public function render_field_default_tab() {
-		$settings  = self::get_all();
-		$platforms = RSU_Platforms::get_all();
+		$settings = self::get_all();
+		$vehicles = RSU_Platforms::get_all();
 
 		echo '<select name="' . esc_attr( self::OPTION_KEY ) . '[default_tab]">';
-		foreach ( $platforms as $slug => $platform ) {
+		foreach ( $vehicles as $slug => $vehicle ) {
 			printf(
 				'<option value="%s" %s>%s</option>',
 				esc_attr( $slug ),
 				selected( $settings['default_tab'], $slug, false ),
-				esc_html( $platform['label'] )
+				esc_html( $vehicle['label'] )
 			);
 		}
 		echo '</select>';
-		echo '<p class="description">The platform tab shown by default on the frontend for first-time visitors. Returning visitors who have previously selected a tab will see their last choice instead.</p>';
+		echo '<p class="description">The vehicle tab shown by default on the frontend for first-time visitors.</p>';
 	}
 
 	public function render_field_heading_level() {
@@ -456,10 +566,10 @@ class RSU_Settings {
 	}
 
 	/**
-	 * Sanitize platforms on save.
+	 * Sanitize platforms (vehicles + generations) on save.
 	 *
 	 * @param array $input Raw platforms array from form.
-	 * @return array Sanitized platforms keyed by slug.
+	 * @return array Sanitized vehicles keyed by slug.
 	 */
 	public function sanitize_platforms( $input ) {
 		if ( ! is_array( $input ) || empty( $input ) ) {
@@ -479,21 +589,44 @@ class RSU_Settings {
 				continue;
 			}
 
-			// Prevent duplicate slugs.
 			if ( isset( $clean[ $slug ] ) ) {
 				continue;
 			}
 
-			$clean[ $slug ] = array(
+			$vehicle = array(
 				'label'       => isset( $row['label'] ) ? sanitize_text_field( $row['label'] ) : $slug,
 				'description' => isset( $row['description'] ) ? sanitize_text_field( $row['description'] ) : '',
 				'sort'        => isset( $row['sort'] ) && is_numeric( $row['sort'] ) ? intval( $row['sort'] ) : $sort_counter,
+				'generations' => array(),
 			);
 
+			// Parse generations.
+			if ( ! empty( $row['generations'] ) && is_array( $row['generations'] ) ) {
+				$gen_sort = 10;
+				foreach ( $row['generations'] as $gen_row ) {
+					if ( ! is_array( $gen_row ) ) {
+						continue;
+					}
+
+					$gen_slug = isset( $gen_row['slug'] ) ? sanitize_key( $gen_row['slug'] ) : '';
+					if ( empty( $gen_slug ) || isset( $vehicle['generations'][ $gen_slug ] ) ) {
+						continue;
+					}
+
+					$vehicle['generations'][ $gen_slug ] = array(
+						'label'       => isset( $gen_row['label'] ) ? sanitize_text_field( $gen_row['label'] ) : $gen_slug,
+						'description' => isset( $gen_row['description'] ) ? sanitize_text_field( $gen_row['description'] ) : '',
+						'sort'        => isset( $gen_row['sort'] ) && is_numeric( $gen_row['sort'] ) ? intval( $gen_row['sort'] ) : $gen_sort,
+					);
+
+					$gen_sort += 10;
+				}
+			}
+
+			$clean[ $slug ] = $vehicle;
 			$sort_counter += 10;
 		}
 
-		// Must have at least one platform.
 		if ( empty( $clean ) ) {
 			return RSU_Platforms::get_defaults();
 		}
@@ -510,11 +643,9 @@ class RSU_Settings {
 	public function sanitize_settings( $input ) {
 		$clean = array();
 
-		// Default platforms — validate against current platform slugs.
-		// Use the platforms being saved in the same request if available.
-		$valid_slugs = array_keys( RSU_Platforms::get_all() );
-		$clean['default_platforms'] = isset( $input['default_platforms'] ) && is_array( $input['default_platforms'] )
-			? array_values( array_map( 'sanitize_text_field', $input['default_platforms'] ) )
+		// Default vehicles.
+		$clean['default_vehicles'] = isset( $input['default_vehicles'] ) && is_array( $input['default_vehicles'] )
+			? array_values( array_map( 'sanitize_text_field', $input['default_vehicles'] ) )
 			: array();
 
 		// Default tab.

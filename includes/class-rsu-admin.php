@@ -83,20 +83,20 @@ class RSU_Admin {
 			delete_post_meta( $post_id, '_rsu_is_update' );
 		}
 
-		// Platforms.
+		// Vehicles (replaces old platforms).
 		$valid_slugs = array_keys( RSU_Platforms::get_all() );
-		if ( isset( $_POST['rsu_platforms'] ) && is_array( $_POST['rsu_platforms'] ) ) {
-			$platforms = array_intersect(
-				array_map( 'sanitize_text_field', wp_unslash( $_POST['rsu_platforms'] ) ),
+		if ( isset( $_POST['rsu_vehicles'] ) && is_array( $_POST['rsu_vehicles'] ) ) {
+			$vehicles = array_intersect(
+				array_map( 'sanitize_text_field', wp_unslash( $_POST['rsu_vehicles'] ) ),
 				$valid_slugs
 			);
-			update_post_meta( $post_id, '_rsu_platforms', $platforms );
+			update_post_meta( $post_id, '_rsu_vehicles', $vehicles );
 		} else {
-			delete_post_meta( $post_id, '_rsu_platforms' );
+			delete_post_meta( $post_id, '_rsu_vehicles' );
 		}
 
-		// Platform content via section builder.
-		foreach ( RSU_Platforms::get_all() as $slug => $platform ) {
+		// Vehicle content via section builder.
+		foreach ( RSU_Platforms::get_all() as $slug => $vehicle ) {
 			$json_field = 'rsu_sections_' . $slug;
 			if ( isset( $_POST[ $json_field ] ) ) {
 				$raw_json = wp_unslash( $_POST[ $json_field ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.
@@ -110,15 +110,15 @@ class RSU_Admin {
 					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
 
 					// Render to HTML for frontend display.
-					$html = self::render_sections_to_html( $sections );
+					$html = self::render_sections_to_html( $sections, $slug );
 					if ( $html ) {
-						update_post_meta( $post_id, $platform['meta_key'], wp_kses_post( $html ) );
+						update_post_meta( $post_id, $vehicle['meta_key'], wp_kses_post( $html ) );
 					} else {
-						delete_post_meta( $post_id, $platform['meta_key'] );
+						delete_post_meta( $post_id, $vehicle['meta_key'] );
 					}
 				} else {
 					delete_post_meta( $post_id, '_rsu_sections_' . $slug );
-					delete_post_meta( $post_id, $platform['meta_key'] );
+					delete_post_meta( $post_id, $vehicle['meta_key'] );
 				}
 			}
 		}
@@ -144,11 +144,14 @@ class RSU_Admin {
 	/**
 	 * Sanitize sections data from user input.
 	 *
+	 * Supports generation tags on blocks and list items.
+	 *
 	 * @param array $sections Raw sections array.
 	 * @return array Sanitized sections.
 	 */
 	private static function sanitize_sections( $sections ) {
 		$clean = array();
+		$valid_generations = RSU_Platforms::get_all_generation_slugs();
 
 		foreach ( $sections as $section ) {
 			if ( ! is_array( $section ) ) {
@@ -167,20 +170,57 @@ class RSU_Admin {
 					}
 
 					$type = isset( $block['type'] ) ? sanitize_text_field( $block['type'] ) : 'paragraph';
+					$generation = null;
+
+					// Block-level generation tag (for paragraph and note).
+					if ( ! empty( $block['generation'] ) ) {
+						$gen = sanitize_text_field( $block['generation'] );
+						if ( in_array( $gen, $valid_generations, true ) ) {
+							$generation = $gen;
+						}
+					}
 
 					if ( 'list' === $type ) {
-						$items = isset( $block['items'] ) && is_array( $block['items'] )
-							? array_map( 'sanitize_text_field', $block['items'] )
-							: array();
-						$clean_section['blocks'][] = array(
+						$raw_items = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
+						$items = array();
+						foreach ( $raw_items as $item ) {
+							if ( is_array( $item ) ) {
+								// New format: { text: "...", generation: "gen1" }
+								$clean_item = array(
+									'text' => isset( $item['text'] ) ? sanitize_text_field( $item['text'] ) : '',
+								);
+								if ( ! empty( $item['generation'] ) ) {
+									$item_gen = sanitize_text_field( $item['generation'] );
+									if ( in_array( $item_gen, $valid_generations, true ) ) {
+										$clean_item['generation'] = $item_gen;
+									}
+								}
+								$items[] = $clean_item;
+							} else {
+								// Backward compat: plain string items.
+								$items[] = array(
+									'text' => sanitize_text_field( $item ),
+								);
+							}
+						}
+
+						$clean_block = array(
 							'type'  => 'list',
 							'items' => $items,
 						);
+						if ( $generation ) {
+							$clean_block['generation'] = $generation;
+						}
+						$clean_section['blocks'][] = $clean_block;
 					} else {
-						$clean_section['blocks'][] = array(
+						$clean_block = array(
 							'type'    => $type,
 							'content' => isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '',
 						);
+						if ( $generation ) {
+							$clean_block['generation'] = $generation;
+						}
+						$clean_section['blocks'][] = $clean_block;
 					}
 				}
 			}
@@ -194,10 +234,13 @@ class RSU_Admin {
 	/**
 	 * Render structured sections array to HTML for frontend display.
 	 *
-	 * @param array $sections Sections array.
+	 * Includes generation pill badges for generation-specific content.
+	 *
+	 * @param array  $sections      Sections array.
+	 * @param string $vehicle_slug  Vehicle slug for generation lookup.
 	 * @return string HTML content.
 	 */
-	public static function render_sections_to_html( $sections ) {
+	public static function render_sections_to_html( $sections, $vehicle_slug = '' ) {
 		if ( ! is_array( $sections ) ) {
 			return '';
 		}
@@ -205,6 +248,17 @@ class RSU_Admin {
 		$heading_tag = RSU_Settings::get( 'heading_level', 'h3' );
 		$note_label  = RSU_Settings::get( 'note_label', 'NOTE' );
 		$html        = '';
+
+		// Get generation labels for pill rendering.
+		$gen_labels = array();
+		if ( $vehicle_slug ) {
+			$all_vehicles = RSU_Platforms::get_all();
+			if ( isset( $all_vehicles[ $vehicle_slug ]['generations'] ) ) {
+				foreach ( $all_vehicles[ $vehicle_slug ]['generations'] as $gen_slug => $gen ) {
+					$gen_labels[ $gen_slug ] = $gen['label'];
+				}
+			}
+		}
 
 		foreach ( $sections as $section ) {
 			$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
@@ -217,24 +271,40 @@ class RSU_Admin {
 			}
 
 			foreach ( $section['blocks'] as $block ) {
-				$type = isset( $block['type'] ) ? $block['type'] : 'paragraph';
+				$type       = isset( $block['type'] ) ? $block['type'] : 'paragraph';
+				$block_gen  = isset( $block['generation'] ) ? $block['generation'] : '';
+				$block_pill = self::render_generation_pill( $block_gen, $gen_labels );
 
 				switch ( $type ) {
 					case 'paragraph':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p>' . "\n";
+							$html .= '<p>' . $block_pill . nl2br( esc_html( $content ) ) . '</p>' . "\n";
 						}
 						break;
 
 					case 'list':
 						$items = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
 						if ( ! empty( $items ) ) {
+							// Block-level pill goes before the list.
+							if ( $block_pill ) {
+								$html .= '<p>' . $block_pill . '</p>' . "\n";
+							}
 							$html .= "<ul>\n";
 							foreach ( $items as $item ) {
-								$item = trim( $item );
-								if ( '' !== $item ) {
-									$html .= '<li>' . esc_html( $item ) . '</li>' . "\n";
+								$item_text = '';
+								$item_gen  = '';
+
+								if ( is_array( $item ) ) {
+									$item_text = isset( $item['text'] ) ? trim( $item['text'] ) : '';
+									$item_gen  = isset( $item['generation'] ) ? $item['generation'] : '';
+								} else {
+									$item_text = trim( $item );
+								}
+
+								if ( '' !== $item_text ) {
+									$item_pill = self::render_generation_pill( $item_gen, $gen_labels );
+									$html .= '<li>' . esc_html( $item_text ) . $item_pill . '</li>' . "\n";
 								}
 							}
 							$html .= "</ul>\n";
@@ -244,7 +314,7 @@ class RSU_Admin {
 					case 'note':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							$html .= '<blockquote><p><strong>' . esc_html( $note_label ) . '</strong></p>' . "\n";
+							$html .= '<blockquote>' . $block_pill . '<p><strong>' . esc_html( $note_label ) . '</strong></p>' . "\n";
 							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p></blockquote>' . "\n";
 						}
 						break;
@@ -256,10 +326,35 @@ class RSU_Admin {
 	}
 
 	/**
+	 * Render a generation pill badge HTML.
+	 *
+	 * @param string $generation Generation slug (empty = all generations).
+	 * @param array  $gen_labels Map of generation slug => label.
+	 * @return string HTML for pill badge, or empty string.
+	 */
+	private static function render_generation_pill( $generation, $gen_labels ) {
+		if ( empty( $generation ) || empty( $gen_labels ) ) {
+			return '';
+		}
+
+		// Only show pill if the vehicle has multiple generations.
+		if ( count( $gen_labels ) < 2 ) {
+			return '';
+		}
+
+		$label = isset( $gen_labels[ $generation ] ) ? $gen_labels[ $generation ] : $generation;
+
+		return '<span class="rsu-gen-pill" data-generation="' . esc_attr( $generation ) . '">'
+			. esc_html( $label ) . ' Only'
+			. '</span>';
+	}
+
+	/**
 	 * Parse existing HTML content into structured sections array.
 	 *
 	 * Converts HTML with h3/h4 headings, p, ul/li, and blockquote elements
 	 * into the sections JSON format used by the section builder.
+	 * Also parses generation pill spans back into generation tags.
 	 *
 	 * @param string $html HTML content to parse.
 	 * @return array Sections array.
@@ -289,9 +384,7 @@ class RSU_Admin {
 
 		foreach ( $body->childNodes as $node ) {
 			if ( XML_ELEMENT_NODE !== $node->nodeType ) {
-				// Skip whitespace text nodes.
 				if ( XML_TEXT_NODE === $node->nodeType && '' !== trim( $node->textContent ) ) {
-					// Stray text — treat as paragraph.
 					self::ensure_section( $sections, $current );
 					$current['blocks'][] = array(
 						'type'    => 'paragraph',
@@ -303,9 +396,7 @@ class RSU_Admin {
 
 			$tag = strtolower( $node->nodeName );
 
-			// Heading starts a new section.
 			if ( in_array( $tag, array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ), true ) ) {
-				// Save previous section if it exists.
 				if ( null !== $current ) {
 					$sections[] = $current;
 				}
@@ -316,15 +407,32 @@ class RSU_Admin {
 				continue;
 			}
 
-			// Everything else goes into the current section.
 			self::ensure_section( $sections, $current );
 
 			if ( 'ul' === $tag || 'ol' === $tag ) {
 				$items = array();
 				foreach ( $node->getElementsByTagName( 'li' ) as $li ) {
+					$item = array( 'text' => '' );
+					// Check for generation pill.
+					$pill = $li->getElementsByTagName( 'span' );
+					$gen  = '';
+					if ( $pill->length > 0 ) {
+						$span = $pill->item( 0 );
+						if ( $span->hasAttribute( 'data-generation' ) ) {
+							$gen = $span->getAttribute( 'data-generation' );
+						}
+					}
+					// Get text without pill.
 					$text = trim( $li->textContent );
-					if ( '' !== $text ) {
-						$items[] = $text;
+					if ( $gen ) {
+						// Remove the pill text from item text.
+						$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
+						$text = trim( $text );
+						$item['generation'] = $gen;
+					}
+					$item['text'] = $text;
+					if ( '' !== $item['text'] ) {
+						$items[] = $item;
 					}
 				}
 				if ( ! empty( $items ) ) {
@@ -334,33 +442,43 @@ class RSU_Admin {
 					);
 				}
 			} elseif ( 'blockquote' === $tag ) {
-				// Extract text, stripping "NOTE" prefix if present.
+				$block = array( 'type' => 'note' );
+				$gen = self::extract_generation_from_node( $node );
+				if ( $gen ) {
+					$block['generation'] = $gen;
+				}
 				$text = trim( $node->textContent );
 				$text = preg_replace( '/^\s*NOTE\s*/i', '', $text );
-				if ( '' !== $text ) {
-					$current['blocks'][] = array(
-						'type'    => 'note',
-						'content' => $text,
-					);
+				// Remove pill text.
+				if ( $gen ) {
+					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
+				}
+				$block['content'] = trim( $text );
+				if ( '' !== $block['content'] ) {
+					$current['blocks'][] = $block;
 				}
 			} elseif ( 'p' === $tag ) {
+				$block = array( 'type' => 'paragraph' );
+				$gen = self::extract_generation_from_node( $node );
+				if ( $gen ) {
+					$block['generation'] = $gen;
+				}
 				$text = trim( $node->textContent );
-				if ( '' !== $text ) {
-					$current['blocks'][] = array(
-						'type'    => 'paragraph',
-						'content' => $text,
-					);
+				// Remove pill text.
+				if ( $gen ) {
+					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
+				}
+				$block['content'] = trim( $text );
+				if ( '' !== $block['content'] ) {
+					$current['blocks'][] = $block;
 				}
 			} elseif ( 'div' === $tag ) {
-				// Divs may wrap inner content (e.g. from Essential Blocks).
-				// Recursively parse inner HTML.
 				$inner_html = '';
 				foreach ( $node->childNodes as $child ) {
 					$inner_html .= $doc->saveHTML( $child );
 				}
 				$inner_sections = self::parse_html_to_sections( $inner_html );
 				if ( ! empty( $inner_sections ) ) {
-					// Merge: if current section has no heading and inner starts with one, just append.
 					if ( null !== $current && ! empty( $current['blocks'] ) ) {
 						$sections[] = $current;
 						$current = null;
@@ -371,7 +489,6 @@ class RSU_Admin {
 					$current = null;
 				}
 			} else {
-				// Unknown element — treat text content as paragraph.
 				$text = trim( $node->textContent );
 				if ( '' !== $text ) {
 					$current['blocks'][] = array(
@@ -382,7 +499,6 @@ class RSU_Admin {
 			}
 		}
 
-		// Don't forget the last section.
 		if ( null !== $current ) {
 			$sections[] = $current;
 		}
@@ -391,7 +507,25 @@ class RSU_Admin {
 	}
 
 	/**
-	 * Ensure a current section exists. Creates one with empty heading if needed.
+	 * Extract generation slug from a node's child rsu-gen-pill span.
+	 *
+	 * @param DOMNode $node DOM node to check.
+	 * @return string Generation slug or empty string.
+	 */
+	private static function extract_generation_from_node( $node ) {
+		$spans = $node->getElementsByTagName( 'span' );
+		if ( $spans->length > 0 ) {
+			foreach ( $spans as $span ) {
+				if ( $span->hasAttribute( 'data-generation' ) ) {
+					return $span->getAttribute( 'data-generation' );
+				}
+			}
+		}
+		return '';
+	}
+
+	/**
+	 * Ensure a current section exists.
 	 *
 	 * @param array      $sections Sections array (passed by reference).
 	 * @param array|null $current  Current section (passed by reference).
@@ -431,7 +565,5 @@ class RSU_Admin {
 			array(),
 			RSU_VERSION
 		);
-
-		// Section builder JS is inline in meta-box-content.php (no external JS needed).
 	}
 }
