@@ -141,18 +141,38 @@
 }
 
 .rsu-copy-from {
-	font-size: 12px;
+	font-size: 13px;
+	font-weight: 500;
 	color: var(--rsu-text-muted);
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
+	gap: 8px;
 }
 
 .rsu-copy-from-select {
-	font-size: 12px;
-	padding: 3px 8px;
-	border-radius: var(--rsu-radius-pill);
+	font-size: 13px;
+	padding: 6px 28px 6px 10px;
+	border-radius: var(--rsu-radius-input);
 	border: 1px solid var(--rsu-border);
+	background: var(--rsu-white);
+	color: var(--rsu-text);
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 10px center;
+	cursor: pointer;
+	transition: border-color var(--rsu-transition), box-shadow var(--rsu-transition);
+}
+
+.rsu-copy-from-select:focus {
+	border-color: var(--rsu-action);
+	box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+	outline: none;
+}
+
+.rsu-copy-from-select:hover {
+	border-color: var(--rsu-action);
 }
 
 /* ═══════════════════════════════════════
@@ -557,16 +577,47 @@
 }
 
 /* ═══════════════════════════════════════
-   Details Meta Box
+   Details Meta Box (sidebar dates)
    ═══════════════════════════════════════ */
 
-.rsu-details-wrap label {
+.rsu-details-wrap {
+	padding: 4px 0;
+}
+
+.rsu-details-wrap .rsu-field {
+	margin-bottom: 16px;
+}
+
+.rsu-details-wrap .rsu-field:last-child {
+	margin-bottom: 4px;
+}
+
+.rsu-details-wrap .rsu-field label {
+	display: block;
 	font-size: 13px;
+	font-weight: 600;
+	color: var(--rsu-text);
+	margin-bottom: 6px;
 }
 
 .rsu-details-wrap input[type="date"],
 .rsu-details-wrap input[type="text"] {
 	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid var(--rsu-border);
+	border-radius: var(--rsu-radius-input);
+	font-size: 14px;
+	color: var(--rsu-text);
+	background: var(--rsu-white);
+	transition: border-color var(--rsu-transition), box-shadow var(--rsu-transition);
+	box-sizing: border-box;
+}
+
+.rsu-details-wrap input[type="date"]:focus,
+.rsu-details-wrap input[type="text"]:focus {
+	border-color: var(--rsu-action);
+	box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+	outline: none;
 }
 
 /* ═══════════════════════════════════════

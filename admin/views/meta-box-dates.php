@@ -1,6 +1,6 @@
 <?php
 /**
- * Meta box: Update Details (version + dates).
+ * Meta box: Update Details (dates).
  *
  * @package Rivian_Software_Updates
  * @var WP_Post $post
@@ -13,17 +13,15 @@ $date_released = get_post_meta( $post->ID, '_rsu_date_released', true );
 ?>
 
 <div class="rsu-details-wrap">
-	<p>
-		<label for="rsu-date-noticed"><strong>First Noticed</strong></label><br />
+	<div class="rsu-field">
+		<label for="rsu-date-noticed">First Noticed</label>
 		<input type="date" id="rsu-date-noticed" name="rsu_date_noticed"
-			value="<?php echo esc_attr( $date_noticed ); ?>"
-			class="widefat" />
-	</p>
+			value="<?php echo esc_attr( $date_noticed ); ?>" />
+	</div>
 
-	<p>
-		<label for="rsu-date-released"><strong>Public Release</strong></label><br />
+	<div class="rsu-field">
+		<label for="rsu-date-released">Public Release</label>
 		<input type="date" id="rsu-date-released" name="rsu_date_released"
-			value="<?php echo esc_attr( $date_released ); ?>"
-			class="widefat" />
-	</p>
+			value="<?php echo esc_attr( $date_released ); ?>" />
+	</div>
 </div>
