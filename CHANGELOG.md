@@ -2,6 +2,31 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.0.1] - 2026-04-07
+
+### Fixed
+- Generation pills now consistently appear after content (right-aligned) across all element types — headings, paragraphs, list items, and notes.
+- Generation selector dropdowns in the admin editor restyled to match the plugin's design language — consistent font size, background, border radius, and custom chevron arrow.
+
+## [2.0.0] - 2026-04-07
+
+### Added
+- **Vehicle + Generation model**: Top-level tabs are now vehicle models (R1, R2) instead of flat platforms (Gen 1 R1, Gen 2 R1, R2).
+- **Generation pills**: Individual blocks, list items, and section headings can be tagged with a generation (e.g. "Gen 1 Only", "Gen 2 Only") shown as inline pill badges.
+- Generation selector dropdowns in the section builder for blocks, bullet items, and section headings.
+- Vehicles have nested generations in the settings manager — each vehicle can have multiple generations configured independently.
+- `RSU_Platforms::get_generations()` and `get_all_generation_slugs()` helper methods.
+- Backward compatibility: reads old `_rsu_platforms` meta key when `_rsu_vehicles` is not set.
+
+### Changed
+- Platform registry restructured from flat list to vehicle → generation hierarchy.
+- Settings page "Platforms" section renamed to "Vehicles" with nested generation management UI.
+- `default_platforms` setting renamed to `default_vehicles`; `default_tab` now defaults to `r1`.
+- Section JSON format updated: blocks and list items support optional `generation` field; list items changed from plain strings to `{text, generation}` objects.
+- Schema description now includes generation info (e.g. "R1 (Gen 1, Gen 2) and R2 (Gen 1)").
+- Frontend `aria-label` changed from "Vehicle platform" to "Vehicle model".
+- Plugin version bumped to 2.0.0.
+
 ## [1.6.0] - 2026-04-05
 
 ### Added
