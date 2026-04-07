@@ -289,17 +289,13 @@ class RSU_Admin {
 					case 'paragraph':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							$html .= '<p>' . $block_pill . nl2br( esc_html( $content ) ) . '</p>' . "\n";
+							$html .= '<p>' . nl2br( esc_html( $content ) ) . $block_pill . '</p>' . "\n";
 						}
 						break;
 
 					case 'list':
 						$items = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
 						if ( ! empty( $items ) ) {
-							// Block-level pill goes before the list.
-							if ( $block_pill ) {
-								$html .= '<p>' . $block_pill . '</p>' . "\n";
-							}
 							$html .= "<ul>\n";
 							foreach ( $items as $item ) {
 								$item_text = '';
@@ -318,14 +314,18 @@ class RSU_Admin {
 								}
 							}
 							$html .= "</ul>\n";
+							// Block-level pill goes after the list.
+							if ( $block_pill ) {
+								$html .= '<p class="rsu-list-pill">' . $block_pill . '</p>' . "\n";
+							}
 						}
 						break;
 
 					case 'note':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							$html .= '<blockquote>' . $block_pill . '<p><strong>' . esc_html( $note_label ) . '</strong></p>' . "\n";
-							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p></blockquote>' . "\n";
+							$html .= '<blockquote><p><strong>' . esc_html( $note_label ) . '</strong></p>' . "\n";
+							$html .= '<p>' . nl2br( esc_html( $content ) ) . $block_pill . '</p></blockquote>' . "\n";
 						}
 						break;
 				}
