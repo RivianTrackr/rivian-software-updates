@@ -276,8 +276,10 @@
 
 @media (max-width: 768px) {
 	.rsu-update {
-		margin-left: 0;
-		margin-right: 0;
+		width: 100vw;
+		max-width: 100vw;
+		margin-left: calc(50% - 50vw);
+		margin-right: calc(50% - 50vw);
 	}
 
 	.rsu-panel__content {
@@ -314,8 +316,6 @@
 @media (max-width: 480px) {
 	.rsu-update {
 		--rsu-radius: 0;
-		margin-left: 0;
-		margin-right: 0;
 	}
 
 	.rsu-dates {
