@@ -408,10 +408,30 @@ class RSU_Migrate {
 			if ( empty( $items1 ) && empty( $items2 ) ) {
 				return 100;
 			}
-			$text1 = implode( ' ', array_map( array( __CLASS__, 'item_text' ), $items1 ) );
-			$text2 = implode( ' ', array_map( array( __CLASS__, 'item_text' ), $items2 ) );
-			similar_text( self::normalize_text( $text1 ), self::normalize_text( $text2 ), $percent );
-			return $percent;
+			// Use item-level overlap: if any items match (exact or >80% fuzzy),
+			// return a high score so the lists get merged with per-item tagging.
+			$overlap = 0;
+			foreach ( $items1 as $item1 ) {
+				$norm1 = self::normalize_text( self::item_text( $item1 ) );
+				foreach ( $items2 as $item2 ) {
+					$norm2 = self::normalize_text( self::item_text( $item2 ) );
+					if ( $norm1 === $norm2 ) {
+						$overlap++;
+						break;
+					}
+					similar_text( $norm1, $norm2, $pct );
+					if ( $pct > 80 ) {
+						$overlap++;
+						break;
+					}
+				}
+			}
+			if ( $overlap > 0 ) {
+				// Any shared items means these lists should be merged.
+				$total = max( count( $items1 ), count( $items2 ) );
+				return 60 + ( 40 * $overlap / $total );
+			}
+			return 0;
 		}
 
 		$c1 = isset( $b1['content'] ) ? $b1['content'] : '';
