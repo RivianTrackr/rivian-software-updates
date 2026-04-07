@@ -101,7 +101,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-gen-select:focus { outline: none; border-color: var(--rsu-action); box-shadow: 0 0 0 2px rgba(0,113,227,0.15); color: var(--rsu-text); }
 .rsu-gen-select--active { background: var(--rsu-bg-info); border-color: var(--rsu-action); color: var(--rsu-action); font-weight: 600; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%230071e3' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 .rsu-bullet-row__gen { flex-shrink: 0; border-left: 1px solid var(--rsu-border-light); display: flex; align-items: center; padding: 0 8px; background: var(--rsu-bg-light); }
-.rsu-bullet-row__gen .rsu-gen-select { font-size: 10px; padding: 2px 18px 2px 6px; background-position: right 4px center; }
+.rsu-bullet-row__gen .rsu-gen-select { font-size: 11px; padding: 3px 20px 3px 8px; background-position: right 6px center; }
 
 .rsu-section__footer { padding: 8px 14px 12px; border-top: 1px solid var(--rsu-border-light); }
 .rsu-add-block-group { display: flex; gap: 8px; }

@@ -2,6 +2,25 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.2.0] - 2026-04-07
+
+### Added
+- New card-based settings page matching the RivianTrackr admin design system (Apple/iOS-inspired).
+- iOS-style toggle switch for Schema Markup setting.
+- Dedicated `rsu-settings.css` stylesheet with full RTG design tokens.
+- Sticky save bar at the bottom of the settings page.
+- Custom-styled inputs, selects, buttons (primary/secondary/danger), and checkbox groups.
+- Settings CSS added to esbuild pipeline for minification.
+
+### Changed
+- Settings page now renders custom HTML instead of default WordPress Settings API tables.
+- Settings page is full-width instead of capped at 900px.
+- RSU_Settings class slimmed down — removed all field/section renderer methods; view handles rendering directly.
+- Bullet row generation selectors resized to match block-level selectors (11px font, consistent padding).
+
+### Removed
+- WordPress Settings API `add_settings_section` and `add_settings_field` calls (form still uses `register_setting` for sanitization).
+
 ## [2.1.0] - 2026-04-07
 
 ### Changed
