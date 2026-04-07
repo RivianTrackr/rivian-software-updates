@@ -315,7 +315,63 @@ class RSU_Migrate {
 			}
 		}
 
+		// Post-process: merge adjacent gen-tagged list blocks into one list
+		// with per-item generation tags for a cleaner presentation.
+		$merged['blocks'] = self::consolidate_list_blocks( $merged['blocks'] );
+
 		return $merged;
+	}
+
+	/**
+	 * Merge adjacent gen-tagged list blocks into a single list with per-item tags.
+	 *
+	 * When two or more consecutive list blocks each have a block-level generation
+	 * tag, combine them into one list where each item inherits its block's tag.
+	 *
+	 * @param array $blocks Array of block arrays.
+	 * @return array Consolidated blocks.
+	 */
+	private static function consolidate_list_blocks( $blocks ) {
+		$result  = array();
+		$i       = 0;
+		$count   = count( $blocks );
+
+		while ( $i < $count ) {
+			$block = $blocks[ $i ];
+
+			// Check if this is a gen-tagged list block.
+			if ( 'list' === $block['type'] && ! empty( $block['generation'] ) ) {
+				// Collect consecutive gen-tagged list blocks.
+				$combined_items = array();
+				while ( $i < $count && 'list' === $blocks[ $i ]['type'] && ! empty( $blocks[ $i ]['generation'] ) ) {
+					$gen   = $blocks[ $i ]['generation'];
+					$items = isset( $blocks[ $i ]['items'] ) ? $blocks[ $i ]['items'] : array();
+					foreach ( $items as $item ) {
+						$entry = array( 'text' => self::item_text( $item ) );
+						// Preserve existing item-level gen tag, or inherit from block.
+						if ( ! empty( $item['generation'] ) ) {
+							$entry['generation'] = $item['generation'];
+						} else {
+							$entry['generation'] = $gen;
+						}
+						$combined_items[] = $entry;
+					}
+					$i++;
+				}
+
+				if ( ! empty( $combined_items ) ) {
+					$result[] = array(
+						'type'  => 'list',
+						'items' => $combined_items,
+					);
+				}
+			} else {
+				$result[] = $block;
+				$i++;
+			}
+		}
+
+		return $result;
 	}
 
 	/**
