@@ -669,7 +669,7 @@ var RSUSectionBuilder = (function () {
 		readFromDOM(builder);
 		builder._sections.push({
 			heading: '',
-			blocks: [{ type: 'paragraph', content: '' }]
+			blocks: []
 		});
 
 		renderSections(builder);
