@@ -2,6 +2,11 @@
 /**
  * Migration tool for converting existing posts to use RSU meta fields.
  *
+ * Handles:
+ * - Fresh migration from Essential Blocks toggle content or plain HTML
+ * - Converting legacy platform data (gen1/gen2/r2) to new vehicle model (r1/r2)
+ * - Backfilling sections JSON from stored HTML
+ *
  * @package Rivian_Software_Updates
  */
 
@@ -9,11 +14,44 @@ defined( 'ABSPATH' ) || exit;
 
 class RSU_Migration {
 
+	/**
+	 * Map old platform slugs to vehicle slugs.
+	 */
+	const LEGACY_MAP = array(
+		'gen1' => 'r1',
+		'gen2' => 'r1',
+		'r2'   => 'r2',
+	);
+
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_ajax_rsu_migrate_post', array( $this, 'ajax_migrate_post' ) );
 		add_action( 'wp_ajax_rsu_scan_posts', array( $this, 'ajax_scan_posts' ) );
 		add_action( 'wp_ajax_rsu_backfill_sections', array( $this, 'ajax_backfill_sections' ) );
+		add_action( 'wp_ajax_rsu_convert_legacy', array( $this, 'ajax_convert_legacy' ) );
+	}
+
+	/**
+	 * Enqueue settings CSS on migration page.
+	 */
+	public function enqueue_assets( $hook ) {
+		if ( 'tools_page_rsu-migration' !== $hook ) {
+			return;
+		}
+
+		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+		$css_file = RSU_PLUGIN_DIR . 'admin/css/rsu-settings' . $suffix . '.css';
+		if ( ! file_exists( $css_file ) ) {
+			$suffix = '';
+		}
+
+		wp_enqueue_style(
+			'rsu-settings',
+			RSU_PLUGIN_URL . 'admin/css/rsu-settings' . $suffix . '.css',
+			array(),
+			RSU_VERSION
+		);
 	}
 
 	/**
@@ -57,18 +95,21 @@ class RSU_Migration {
 
 		$results = array();
 		foreach ( $posts as $post_id ) {
-			$post    = get_post( $post_id );
-			$is_update = get_post_meta( $post_id, '_rsu_is_update', true );
-			$has_toggle = $this->detect_toggle_block( $post->post_content );
+			$post        = get_post( $post_id );
+			$is_update   = get_post_meta( $post_id, '_rsu_is_update', true );
+			$has_toggle  = $this->detect_toggle_block( $post->post_content );
+			$has_legacy  = $this->has_legacy_data( $post_id );
+			$has_vehicles = ! empty( get_post_meta( $post_id, '_rsu_vehicles', true ) );
 
 			$results[] = array(
-				'id'          => $post_id,
-				'title'       => get_the_title( $post_id ),
-				'date'        => get_the_date( 'Y-m-d', $post_id ),
-				'url'         => get_permalink( $post_id ),
-				'migrated'    => ! empty( $is_update ),
-				'has_toggle'  => $has_toggle,
-				'version'     => get_post_meta( $post_id, '_rsu_version', true ),
+				'id'           => $post_id,
+				'title'        => get_the_title( $post_id ),
+				'date'         => get_the_date( 'Y-m-d', $post_id ),
+				'url'          => get_permalink( $post_id ),
+				'migrated'     => ! empty( $is_update ),
+				'has_toggle'   => $has_toggle,
+				'has_legacy'   => $has_legacy,
+				'has_vehicles' => $has_vehicles,
 			);
 		}
 
@@ -76,7 +117,7 @@ class RSU_Migration {
 	}
 
 	/**
-	 * AJAX: Migrate a single post.
+	 * AJAX: Migrate a single post (fresh migration from post content).
 	 */
 	public function ajax_migrate_post() {
 		check_ajax_referer( 'rsu_migration', 'nonce' );
@@ -90,13 +131,9 @@ class RSU_Migration {
 			wp_send_json_error( 'Invalid post ID.' );
 		}
 
-		$platforms = isset( $_POST['platforms'] ) && is_array( $_POST['platforms'] )
-			? array_map( 'sanitize_text_field', wp_unslash( $_POST['platforms'] ) )
-			: array( 'gen1', 'gen2' );
-
-		$version = isset( $_POST['version'] )
-			? sanitize_text_field( wp_unslash( $_POST['version'] ) )
-			: '';
+		$vehicles = isset( $_POST['vehicles'] ) && is_array( $_POST['vehicles'] )
+			? array_map( 'sanitize_text_field', wp_unslash( $_POST['vehicles'] ) )
+			: array( 'r1' );
 
 		$date_noticed = isset( $_POST['date_noticed'] )
 			? sanitize_text_field( wp_unslash( $_POST['date_noticed'] ) )
@@ -106,56 +143,48 @@ class RSU_Migration {
 			? sanitize_text_field( wp_unslash( $_POST['date_released'] ) )
 			: '';
 
-		$post = get_post( $post_id );
+		$post    = get_post( $post_id );
 		$content = $post->post_content;
+
+		$all_vehicles = RSU_Platforms::get_all();
 
 		// Try to parse Essential Blocks Toggle Content.
 		$parsed = $this->parse_toggle_block( $content );
 
-		$all_platforms = RSU_Platforms::get_all();
-
 		if ( $parsed ) {
-			// Parsed Gen 1 and Gen 2 content from toggle blocks.
-			if ( ! empty( $parsed['gen1'] ) && in_array( 'gen1', $platforms, true ) ) {
-				$gen1_html = wp_kses_post( $parsed['gen1'] );
-				update_post_meta( $post_id, $all_platforms['gen1']['meta_key'], $gen1_html );
-				$gen1_sections = RSU_Admin::parse_html_to_sections( $gen1_html );
-				if ( ! empty( $gen1_sections ) ) {
-					update_post_meta( $post_id, '_rsu_sections_gen1', wp_json_encode( $gen1_sections ) );
-				}
-			}
-			if ( ! empty( $parsed['gen2'] ) && in_array( 'gen2', $platforms, true ) ) {
-				$gen2_html = wp_kses_post( $parsed['gen2'] );
-				update_post_meta( $post_id, $all_platforms['gen2']['meta_key'], $gen2_html );
-				$gen2_sections = RSU_Admin::parse_html_to_sections( $gen2_html );
-				if ( ! empty( $gen2_sections ) ) {
-					update_post_meta( $post_id, '_rsu_sections_gen2', wp_json_encode( $gen2_sections ) );
+			// Toggle blocks found — merge gen1/gen2 content into R1 vehicle.
+			if ( in_array( 'r1', $vehicles, true ) && isset( $all_vehicles['r1'] ) ) {
+				// Use gen2 content as base (newer), fall back to gen1.
+				$r1_html = ! empty( $parsed['gen2'] ) ? $parsed['gen2'] : ( ! empty( $parsed['gen1'] ) ? $parsed['gen1'] : '' );
+				if ( $r1_html ) {
+					$r1_html = wp_kses_post( $r1_html );
+					update_post_meta( $post_id, '_rsu_content_r1', $r1_html );
+					$sections = RSU_Admin::parse_html_to_sections( $r1_html );
+					if ( ! empty( $sections ) ) {
+						update_post_meta( $post_id, '_rsu_sections_r1', wp_json_encode( $sections ) );
+					}
 				}
 			}
 		} else {
-			// No toggle block found: copy full content to all selected platforms.
-			foreach ( $platforms as $slug ) {
-				if ( isset( $all_platforms[ $slug ] ) ) {
-					$platform_html = wp_kses_post( $content );
-					update_post_meta( $post_id, $all_platforms[ $slug ]['meta_key'], $platform_html );
-					$platform_sections = RSU_Admin::parse_html_to_sections( $platform_html );
-					if ( ! empty( $platform_sections ) ) {
-						update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $platform_sections ) );
+			// No toggle block: copy full content to all selected vehicles.
+			foreach ( $vehicles as $slug ) {
+				if ( isset( $all_vehicles[ $slug ] ) ) {
+					$vehicle_html = wp_kses_post( $content );
+					update_post_meta( $post_id, $all_vehicles[ $slug ]['meta_key'], $vehicle_html );
+					$sections = RSU_Admin::parse_html_to_sections( $vehicle_html );
+					if ( ! empty( $sections ) ) {
+						update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
 					}
 				}
 			}
 		}
 
 		// Set meta fields.
-		$valid_slugs = array_keys( $all_platforms );
-		$platforms = array_intersect( $platforms, $valid_slugs );
+		$valid_slugs = array_keys( $all_vehicles );
+		$vehicles    = array_intersect( $vehicles, $valid_slugs );
 
 		update_post_meta( $post_id, '_rsu_is_update', '1' );
-		update_post_meta( $post_id, '_rsu_platforms', $platforms );
-
-		if ( $version ) {
-			update_post_meta( $post_id, '_rsu_version', $version );
-		}
+		update_post_meta( $post_id, '_rsu_vehicles', $vehicles );
 
 		if ( preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date_noticed ) ) {
 			update_post_meta( $post_id, '_rsu_date_noticed', $date_noticed );
@@ -172,10 +201,136 @@ class RSU_Migration {
 	}
 
 	/**
-	 * AJAX: Backfill sections JSON for already-migrated posts.
+	 * AJAX: Convert legacy platform data to vehicle model.
 	 *
-	 * Finds posts that have _rsu_is_update but no _rsu_sections_* meta,
-	 * parses their HTML content into structured sections.
+	 * Finds posts with _rsu_platforms (old key) and converts:
+	 * - gen1/gen2 content → r1 (uses gen2 as base)
+	 * - r2 content → r2
+	 * - _rsu_platforms → _rsu_vehicles
+	 */
+	public function ajax_convert_legacy() {
+		check_ajax_referer( 'rsu_migration', 'nonce' );
+
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_send_json_error( 'Insufficient permissions.' );
+		}
+
+		$post_ids = get_posts( array(
+			'post_type'      => 'post',
+			'post_status'    => 'any',
+			'posts_per_page' => -1,
+			'fields'         => 'ids',
+			'meta_query'     => array(
+				array(
+					'key'     => '_rsu_platforms',
+					'compare' => 'EXISTS',
+				),
+			),
+		) );
+
+		$converted = 0;
+		$skipped   = 0;
+
+		foreach ( $post_ids as $post_id ) {
+			// Skip if already has _rsu_vehicles.
+			$existing_vehicles = get_post_meta( $post_id, '_rsu_vehicles', true );
+			if ( ! empty( $existing_vehicles ) && is_array( $existing_vehicles ) ) {
+				$skipped++;
+				continue;
+			}
+
+			$old_platforms = get_post_meta( $post_id, '_rsu_platforms', true );
+			if ( ! is_array( $old_platforms ) || empty( $old_platforms ) ) {
+				$skipped++;
+				continue;
+			}
+
+			// Determine which vehicles this post should have.
+			$new_vehicles = array();
+			foreach ( $old_platforms as $old_slug ) {
+				if ( isset( self::LEGACY_MAP[ $old_slug ] ) ) {
+					$vehicle = self::LEGACY_MAP[ $old_slug ];
+					if ( ! in_array( $vehicle, $new_vehicles, true ) ) {
+						$new_vehicles[] = $vehicle;
+					}
+				}
+			}
+
+			if ( empty( $new_vehicles ) ) {
+				$skipped++;
+				continue;
+			}
+
+			// Migrate R1 content: prefer gen2 sections, fall back to gen1.
+			if ( in_array( 'r1', $new_vehicles, true ) ) {
+				$r1_sections = null;
+				$r1_html     = '';
+
+				// Try gen2 first (newer/default).
+				$gen2_sections = get_post_meta( $post_id, '_rsu_sections_gen2', true );
+				$gen2_html     = get_post_meta( $post_id, '_rsu_content_gen2', true );
+
+				if ( ! empty( $gen2_sections ) ) {
+					$r1_sections = $gen2_sections;
+					$r1_html     = $gen2_html;
+				} else {
+					// Fall back to gen1.
+					$gen1_sections = get_post_meta( $post_id, '_rsu_sections_gen1', true );
+					$gen1_html     = get_post_meta( $post_id, '_rsu_content_gen1', true );
+
+					if ( ! empty( $gen1_sections ) ) {
+						$r1_sections = $gen1_sections;
+						$r1_html     = $gen1_html;
+					} elseif ( ! empty( $gen1_html ) ) {
+						$r1_html = $gen1_html;
+					}
+				}
+
+				if ( $r1_sections ) {
+					update_post_meta( $post_id, '_rsu_sections_r1', $r1_sections );
+				}
+				if ( $r1_html ) {
+					update_post_meta( $post_id, '_rsu_content_r1', $r1_html );
+				}
+
+				// If we only had HTML but no sections, parse them.
+				if ( ! $r1_sections && $r1_html ) {
+					$parsed = RSU_Admin::parse_html_to_sections( $r1_html );
+					if ( ! empty( $parsed ) ) {
+						update_post_meta( $post_id, '_rsu_sections_r1', wp_json_encode( $parsed ) );
+					}
+				}
+			}
+
+			// Migrate R2 content (direct copy if it existed).
+			if ( in_array( 'r2', $new_vehicles, true ) ) {
+				$r2_sections = get_post_meta( $post_id, '_rsu_sections_r2', true );
+				$r2_html     = get_post_meta( $post_id, '_rsu_content_r2', true );
+
+				// R2 key is the same in old and new model, so just ensure sections exist.
+				if ( ! $r2_sections && $r2_html ) {
+					$parsed = RSU_Admin::parse_html_to_sections( $r2_html );
+					if ( ! empty( $parsed ) ) {
+						update_post_meta( $post_id, '_rsu_sections_r2', wp_json_encode( $parsed ) );
+					}
+				}
+			}
+
+			// Save new vehicle list.
+			update_post_meta( $post_id, '_rsu_vehicles', $new_vehicles );
+
+			$converted++;
+		}
+
+		wp_send_json_success( array(
+			'converted' => $converted,
+			'skipped'   => $skipped,
+			'total'     => count( $post_ids ),
+		) );
+	}
+
+	/**
+	 * AJAX: Backfill sections JSON for already-migrated posts.
 	 */
 	public function ajax_backfill_sections() {
 		check_ajax_referer( 'rsu_migration', 'nonce' );
@@ -184,9 +339,8 @@ class RSU_Migration {
 			wp_send_json_error( 'Insufficient permissions.' );
 		}
 
-		$all_platforms = RSU_Platforms::get_all();
+		$all_vehicles = RSU_Platforms::get_all();
 
-		// Find all posts flagged as software updates.
 		$post_ids = get_posts( array(
 			'post_type'      => 'post',
 			'post_status'    => 'any',
@@ -204,16 +358,15 @@ class RSU_Migration {
 		$skipped = 0;
 
 		foreach ( $post_ids as $post_id ) {
-			foreach ( $all_platforms as $slug => $platform ) {
+			foreach ( $all_vehicles as $slug => $vehicle ) {
 				$existing_sections = get_post_meta( $post_id, '_rsu_sections_' . $slug, true );
 
-				// Skip if sections JSON already exists.
 				if ( ! empty( $existing_sections ) ) {
 					$skipped++;
 					continue;
 				}
 
-				$html = get_post_meta( $post_id, $platform['meta_key'], true );
+				$html = get_post_meta( $post_id, $vehicle['meta_key'], true );
 				if ( empty( $html ) ) {
 					continue;
 				}
@@ -234,6 +387,19 @@ class RSU_Migration {
 	}
 
 	/**
+	 * Check if a post has legacy platform data (old _rsu_platforms key).
+	 */
+	private function has_legacy_data( $post_id ) {
+		$platforms = get_post_meta( $post_id, '_rsu_platforms', true );
+		if ( ! is_array( $platforms ) || empty( $platforms ) ) {
+			return false;
+		}
+		// It's legacy if any of the old platform slugs are present.
+		$old_slugs = array_keys( self::LEGACY_MAP );
+		return ! empty( array_intersect( $platforms, $old_slugs ) );
+	}
+
+	/**
 	 * Detect if post content contains an Essential Blocks toggle block.
 	 */
 	private function detect_toggle_block( $content ) {
@@ -245,8 +411,6 @@ class RSU_Migration {
 
 	/**
 	 * Parse Essential Blocks Toggle Content block to extract Gen 1 and Gen 2 content.
-	 *
-	 * Attempts to split toggle sections by looking for common patterns.
 	 */
 	private function parse_toggle_block( $content ) {
 		if ( ! $this->detect_toggle_block( $content ) ) {
@@ -258,7 +422,6 @@ class RSU_Migration {
 			'gen2' => '',
 		);
 
-		// Parse WordPress blocks.
 		$blocks = parse_blocks( $content );
 
 		foreach ( $blocks as $block ) {
@@ -266,10 +429,9 @@ class RSU_Migration {
 				continue;
 			}
 
-			$inner_html = $block['innerHTML'] ?? '';
+			$inner_html    = $block['innerHTML'] ?? '';
 			$inner_content = '';
 
-			// Collect inner blocks' rendered content.
 			if ( ! empty( $block['innerBlocks'] ) ) {
 				foreach ( $block['innerBlocks'] as $inner_block ) {
 					$inner_content .= render_block( $inner_block );
@@ -280,7 +442,6 @@ class RSU_Migration {
 				$inner_content = $inner_html;
 			}
 
-			// Determine which generation this toggle belongs to.
 			$full_text = strtolower( $inner_html . ( $block['attrs']['title'] ?? '' ) );
 
 			if ( false !== strpos( $full_text, 'gen 1' ) || false !== strpos( $full_text, 'gen1' ) ||
@@ -292,7 +453,6 @@ class RSU_Migration {
 			}
 		}
 
-		// If we couldn't identify either, return false.
 		if ( ! $parsed['gen1'] && ! $parsed['gen2'] ) {
 			return false;
 		}
