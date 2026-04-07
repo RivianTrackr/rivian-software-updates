@@ -275,11 +275,6 @@
 /* === Responsive — Tablet === */
 
 @media (max-width: 768px) {
-	.rsu-update {
-		margin-left: 0;
-		margin-right: 0;
-	}
-
 	.rsu-panel__content {
 		padding: 22px 24px 24px;
 	}
@@ -312,11 +307,6 @@
 /* === Responsive — Mobile === */
 
 @media (max-width: 480px) {
-	.rsu-update {
-		--rsu-radius: 0;
-		margin-left: 0;
-		margin-right: 0;
-	}
 
 	.rsu-dates {
 		flex-direction: column;
