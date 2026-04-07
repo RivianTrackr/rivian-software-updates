@@ -96,12 +96,12 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-bullet-add:hover { background: #eff6ff; color: #2271b1; }
 
 /* Generation selector */
-.rsu-gen-select { font-size: 10px; padding: 1px 4px; border: 1px solid #e5e7eb; border-radius: 4px; background: #fff; color: #9ca3af; cursor: pointer; transition: all 0.15s; line-height: 1.4; flex-shrink: 0; }
-.rsu-gen-select:hover { border-color: #93c5fd; color: #374151; }
-.rsu-gen-select:focus { outline: none; border-color: #2271b1; color: #374151; }
-.rsu-gen-select--active { background: #eff6ff; border-color: #93c5fd; color: #2563eb; font-weight: 600; }
-.rsu-bullet-row__gen { flex-shrink: 0; border-left: 1px solid #f0f0f0; display: flex; align-items: center; padding: 0 6px; }
-.rsu-bullet-row__gen .rsu-gen-select { font-size: 10px; padding: 1px 3px; }
+.rsu-gen-select { font-size: 11px; font-weight: 500; padding: 3px 8px; border: 1px solid #e5e7eb; border-radius: 6px; background: #f9fafb; color: #9ca3af; cursor: pointer; transition: all 0.15s; line-height: 1.5; flex-shrink: 0; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%239ca3af' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 6px center; padding-right: 20px; }
+.rsu-gen-select:hover { border-color: #bfdbfe; background: #eff6ff; color: #374151; }
+.rsu-gen-select:focus { outline: none; border-color: #2271b1; box-shadow: 0 0 0 2px rgba(34,113,177,0.15); color: #374151; }
+.rsu-gen-select--active { background: #eff6ff; border-color: #93c5fd; color: #2563eb; font-weight: 600; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%232563eb' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+.rsu-bullet-row__gen { flex-shrink: 0; border-left: 1px solid #f0f0f0; display: flex; align-items: center; padding: 0 8px; background: #f9fafb; }
+.rsu-bullet-row__gen .rsu-gen-select { font-size: 10px; padding: 2px 18px 2px 6px; background-position: right 4px center; }
 
 .rsu-section__footer { padding: 8px 14px 12px; border-top: 1px solid #f3f4f6; }
 .rsu-add-block-group { display: flex; gap: 8px; }
