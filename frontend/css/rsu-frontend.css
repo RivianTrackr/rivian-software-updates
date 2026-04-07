@@ -264,24 +264,19 @@
 }
 
 
-/* === Single Platform (no tabs) === */
-
-.rsu-update:not(:has(.rsu-tabs)) .rsu-panel {
-	border-radius: var(--rsu-radius);
-	border-top: 1px solid var(--rsu-border);
-}
-
-
 /* === Responsive — Tablet === */
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
 	.rsu-update {
 		padding-left: 16px;
 		padding-right: 16px;
 	}
+}
+
+@media (max-width: 768px) {
 
 	.rsu-panel__content {
-		padding: 22px 24px 24px;
+		padding: 26px 28px 28px;
 	}
 
 	.rsu-panel__content h2 {
@@ -340,7 +335,7 @@
 	}
 
 	.rsu-panel__content {
-		padding: 18px 16px 20px;
+		padding: 24px 24px 26px;
 	}
 
 	.rsu-panel__content h2 {
