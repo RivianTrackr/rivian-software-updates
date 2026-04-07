@@ -197,6 +197,19 @@ class RSU_Migrate {
 			}
 		}
 
+		// Ensure "Additional Improvements" is always last.
+		usort( $merged, function ( $a, $b ) {
+			$a_is_additional = ( self::normalize_heading( $a['heading'] ) === 'additional improvements' );
+			$b_is_additional = ( self::normalize_heading( $b['heading'] ) === 'additional improvements' );
+			if ( $a_is_additional && ! $b_is_additional ) {
+				return 1;
+			}
+			if ( $b_is_additional && ! $a_is_additional ) {
+				return -1;
+			}
+			return 0;
+		} );
+
 		return $merged;
 	}
 
