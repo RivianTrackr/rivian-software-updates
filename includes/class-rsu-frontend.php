@@ -9,33 +9,16 @@ defined( 'ABSPATH' ) || exit;
 
 class RSU_Frontend {
 
-	/**
-	 * Whether to enqueue frontend assets.
-	 *
-	 * @var bool
-	 */
 	private $should_enqueue = false;
 
 	public function __construct() {
 		add_filter( 'the_content', array( $this, 'render_update_content' ), 20 );
 		add_action( 'wp_footer', array( $this, 'maybe_enqueue_assets' ) );
-
-		// Give AIOSEO clean content from the default platform for SEO analysis.
 		add_filter( 'aioseo_description_context', array( $this, 'aioseo_clean_content' ) );
 		add_filter( 'aioseo_og_description_context', array( $this, 'aioseo_clean_content' ) );
 		add_filter( 'aioseo_twitter_description_context', array( $this, 'aioseo_clean_content' ) );
 	}
 
-	/**
-	 * Provide AIOSEO with clean content from the default platform.
-	 *
-	 * When AIOSEO auto-generates descriptions, it pulls from the_content
-	 * which has tabbed HTML with hidden panels. This gives it the plain
-	 * release notes text instead.
-	 *
-	 * @param string $content Current content for description generation.
-	 * @return string Clean platform content.
-	 */
 	public function aioseo_clean_content( $content ) {
 		if ( ! is_singular( 'post' ) ) {
 			return $content;
@@ -46,31 +29,28 @@ class RSU_Frontend {
 			return $content;
 		}
 
-		$active_platforms = RSU_Platforms::get_active( $post_id );
-		if ( empty( $active_platforms ) ) {
+		$active_vehicles = RSU_Platforms::get_active( $post_id );
+		if ( empty( $active_vehicles ) ) {
 			return $content;
 		}
 
-		$all_platforms = RSU_Platforms::get_all();
-		$default       = RSU_Platforms::get_default();
+		$all_vehicles = RSU_Platforms::get_all();
+		$default      = RSU_Platforms::get_default();
 
-		if ( ! in_array( $default, $active_platforms, true ) ) {
-			$default = $active_platforms[0];
+		if ( ! in_array( $default, $active_vehicles, true ) ) {
+			$default = $active_vehicles[0];
 		}
 
-		if ( isset( $all_platforms[ $default ] ) ) {
-			$platform_content = get_post_meta( $post_id, $all_platforms[ $default ]['meta_key'], true );
-			if ( $platform_content ) {
-				return wp_strip_all_tags( $platform_content );
+		if ( isset( $all_vehicles[ $default ] ) ) {
+			$vehicle_content = get_post_meta( $post_id, $all_vehicles[ $default ]['meta_key'], true );
+			if ( $vehicle_content ) {
+				return wp_strip_all_tags( $vehicle_content );
 			}
 		}
 
 		return $content;
 	}
 
-	/**
-	 * Inject tabbed release notes content into the post.
-	 */
 	public function render_update_content( $content ) {
 		if ( ! is_singular( 'post' ) || ! is_main_query() ) {
 			return $content;
@@ -81,20 +61,19 @@ class RSU_Frontend {
 			return $content;
 		}
 
-		$active_platforms = RSU_Platforms::get_active( $post_id );
-		if ( empty( $active_platforms ) ) {
+		$active_vehicles = RSU_Platforms::get_active( $post_id );
+		if ( empty( $active_vehicles ) ) {
 			return $content;
 		}
 
-		$all_platforms  = RSU_Platforms::get_all();
+		$all_vehicles   = RSU_Platforms::get_all();
 		$default        = RSU_Platforms::get_default();
 		$version        = get_the_title( $post_id );
 		$date_noticed   = get_post_meta( $post_id, '_rsu_date_noticed', true );
 		$date_released  = get_post_meta( $post_id, '_rsu_date_released', true );
 
-		// If the default platform isn't active for this post, use the first active one.
-		if ( ! in_array( $default, $active_platforms, true ) ) {
-			$default = $active_platforms[0];
+		if ( ! in_array( $default, $active_vehicles, true ) ) {
+			$default = $active_vehicles[0];
 		}
 
 		$this->should_enqueue = true;
@@ -125,10 +104,10 @@ class RSU_Frontend {
 				</div>
 			<?php endif; ?>
 
-			<?php if ( count( $active_platforms ) > 1 ) : ?>
-				<div class="rsu-tabs" role="tablist" aria-label="Vehicle platform">
-					<?php foreach ( $active_platforms as $slug ) :
-						$platform  = $all_platforms[ $slug ];
+			<?php if ( count( $active_vehicles ) > 1 ) : ?>
+				<div class="rsu-tabs" role="tablist" aria-label="Vehicle model">
+					<?php foreach ( $active_vehicles as $slug ) :
+						$vehicle    = $all_vehicles[ $slug ];
 						$is_default = ( $slug === $default );
 						?>
 						<button class="rsu-tab <?php echo $is_default ? 'rsu-tab--active' : ''; ?>"
@@ -138,16 +117,16 @@ class RSU_Frontend {
 							aria-controls="rsu-panel-<?php echo esc_attr( $slug ); ?>"
 							id="rsu-tab-<?php echo esc_attr( $slug ); ?>"
 							data-platform="<?php echo esc_attr( $slug ); ?>">
-							<?php echo esc_html( $platform['label'] ); ?>
+							<?php echo esc_html( $vehicle['label'] ); ?>
 						</button>
 					<?php endforeach; ?>
 				</div>
 			<?php endif; ?>
 
-			<?php foreach ( $active_platforms as $slug ) :
-				$platform   = $all_platforms[ $slug ];
+			<?php foreach ( $active_vehicles as $slug ) :
+				$vehicle    = $all_vehicles[ $slug ];
 				$is_default = ( $slug === $default );
-				$platform_content = get_post_meta( $post_id, $platform['meta_key'], true );
+				$vehicle_content = get_post_meta( $post_id, $vehicle['meta_key'], true );
 				?>
 				<div class="rsu-panel <?php echo $is_default ? 'rsu-panel--active' : ''; ?>"
 					role="tabpanel"
@@ -155,22 +134,16 @@ class RSU_Frontend {
 					aria-labelledby="rsu-tab-<?php echo esc_attr( $slug ); ?>"
 					<?php echo $is_default ? '' : 'hidden'; ?>>
 					<div class="rsu-panel__content">
-						<?php echo wp_kses_post( $platform_content ); ?>
+						<?php echo wp_kses_post( $vehicle_content ); ?>
 					</div>
 				</div>
 			<?php endforeach; ?>
 		</div>
 		<?php
 		$html = ob_get_clean();
-
-		// Replace the original post content (which has the old Essential Blocks toggle)
-		// with just the new RSU rendering.
 		return $html;
 	}
 
-	/**
-	 * Conditionally enqueue frontend assets.
-	 */
 	public function maybe_enqueue_assets() {
 		if ( ! $this->should_enqueue ) {
 			return;
@@ -190,7 +163,6 @@ class RSU_Frontend {
 			RSU_VERSION
 		);
 
-		// Override accent color from settings.
 		$accent = RSU_Settings::get( 'accent_color', '#fba919' );
 		if ( '#fba919' !== $accent ) {
 			wp_add_inline_style( 'rsu-frontend', sprintf(

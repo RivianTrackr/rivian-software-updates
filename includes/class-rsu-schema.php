@@ -14,15 +14,6 @@ class RSU_Schema {
 		add_filter( 'aioseo_schema_output', array( $this, 'enrich_aioseo_schema' ), 10, 1 );
 	}
 
-	/**
-	 * Enrich AIOSEO schema with software update details.
-	 *
-	 * Instead of outputting duplicate schema, we hook into AIOSEO's
-	 * schema output and enhance it with software-specific data.
-	 *
-	 * @param array $schema AIOSEO's schema graph.
-	 * @return array Modified schema.
-	 */
 	public function enrich_aioseo_schema( $schema ) {
 		if ( ! is_singular( 'post' ) ) {
 			return $schema;
@@ -33,26 +24,12 @@ class RSU_Schema {
 			return $schema;
 		}
 
-		$version           = get_the_title( $post_id );
-		$active_platforms  = RSU_Platforms::get_active( $post_id );
-		$all_platforms     = RSU_Platforms::get_all();
-		$sections          = $this->extract_sections( $post_id, $active_platforms, $all_platforms );
+		$version          = get_the_title( $post_id );
+		$active_vehicles  = RSU_Platforms::get_active( $post_id );
+		$all_vehicles     = RSU_Platforms::get_all();
+		$sections         = $this->extract_sections( $post_id, $active_vehicles, $all_vehicles );
+		$description      = $this->build_description( $version, $active_vehicles, $all_vehicles );
 
-		// Build platform description.
-		$platform_labels = array();
-		foreach ( $active_platforms as $slug ) {
-			if ( isset( $all_platforms[ $slug ] ) ) {
-				$platform_labels[] = $all_platforms[ $slug ]['label'];
-			}
-		}
-
-		$description = sprintf(
-			'Release notes for Rivian software update %s covering %s vehicles.',
-			$version ? $version : get_the_title( $post_id ),
-			implode( ' and ', $platform_labels )
-		);
-
-		// Walk the @graph and enhance any Article-type node.
 		if ( isset( $schema['@graph'] ) && is_array( $schema['@graph'] ) ) {
 			foreach ( $schema['@graph'] as &$node ) {
 				if ( ! isset( $node['@type'] ) ) {
@@ -61,7 +38,6 @@ class RSU_Schema {
 
 				$type = is_array( $node['@type'] ) ? $node['@type'] : array( $node['@type'] );
 
-				// Upgrade Article to TechArticle and add software details.
 				if ( array_intersect( $type, array( 'Article', 'BlogPosting', 'WebPage' ) ) ) {
 					$node['@type']       = 'TechArticle';
 					$node['description'] = $description;
@@ -87,17 +63,11 @@ class RSU_Schema {
 		return $schema;
 	}
 
-	/**
-	 * Output JSON-LD for software update posts.
-	 *
-	 * Only outputs when AIOSEO is not active, to avoid duplicate schema.
-	 */
 	public function output_structured_data() {
 		if ( ! RSU_Settings::get( 'schema_enabled', true ) ) {
 			return;
 		}
 
-		// Skip if AIOSEO is handling schema — we enhance it via the filter instead.
 		if ( function_exists( 'aioseo' ) ) {
 			return;
 		}
@@ -111,34 +81,16 @@ class RSU_Schema {
 			return;
 		}
 
-		$post    = get_post( $post_id );
-		$version = get_the_title( $post_id );
-		$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
-		$active_platforms = RSU_Platforms::get_active( $post_id );
-		$all_platforms    = RSU_Platforms::get_all();
-
-		// Build article sections from h3 headings in the content.
-		$sections = $this->extract_sections( $post_id, $active_platforms, $all_platforms );
-
-		// Build platform description.
-		$platform_labels = array();
-		foreach ( $active_platforms as $slug ) {
-			if ( isset( $all_platforms[ $slug ] ) ) {
-				$platform_labels[] = $all_platforms[ $slug ]['label'];
-			}
-		}
-
-		$org_name = RSU_Settings::get( 'organization_name', 'RivianTrackr' );
-
-		$description = sprintf(
-			'Release notes for Rivian software update %s covering %s vehicles.',
-			$version ? $version : get_the_title( $post_id ),
-			implode( ' and ', $platform_labels )
-		);
+		$version          = get_the_title( $post_id );
+		$date_released    = get_post_meta( $post_id, '_rsu_date_released', true );
+		$active_vehicles  = RSU_Platforms::get_active( $post_id );
+		$all_vehicles     = RSU_Platforms::get_all();
+		$sections         = $this->extract_sections( $post_id, $active_vehicles, $all_vehicles );
+		$description      = $this->build_description( $version, $active_vehicles, $all_vehicles );
+		$org_name         = RSU_Settings::get( 'organization_name', 'RivianTrackr' );
 
 		$graph = array();
 
-		// TechArticle.
 		$article = array(
 			'@type'         => 'TechArticle',
 			'headline'      => get_the_title( $post_id ),
@@ -177,7 +129,6 @@ class RSU_Schema {
 
 		$archive_slug = RSU_Settings::get( 'archive_slug', '/software-updates/' );
 
-		// BreadcrumbList.
 		$graph[] = array(
 			'@type'           => 'BreadcrumbList',
 			'itemListElement' => array(
@@ -212,17 +163,42 @@ class RSU_Schema {
 	}
 
 	/**
-	 * Extract h3 heading text from platform content for articleSection.
+	 * Build a description string including vehicle and generation info.
 	 */
-	private function extract_sections( $post_id, $active_platforms, $all_platforms ) {
+	private function build_description( $version, $active_vehicles, $all_vehicles ) {
+		$vehicle_parts = array();
+		foreach ( $active_vehicles as $slug ) {
+			if ( ! isset( $all_vehicles[ $slug ] ) ) {
+				continue;
+			}
+			$v = $all_vehicles[ $slug ];
+			$label = $v['label'];
+			if ( ! empty( $v['generations'] ) && count( $v['generations'] ) > 1 ) {
+				$gen_labels = array();
+				foreach ( $v['generations'] as $gen ) {
+					$gen_labels[] = $gen['label'];
+				}
+				$label .= ' (' . implode( ', ', $gen_labels ) . ')';
+			}
+			$vehicle_parts[] = $label;
+		}
+
+		return sprintf(
+			'Release notes for Rivian software update %s covering %s vehicles.',
+			$version ? $version : 'unknown',
+			implode( ' and ', $vehicle_parts )
+		);
+	}
+
+	private function extract_sections( $post_id, $active_vehicles, $all_vehicles ) {
 		$sections = array();
 
-		foreach ( $active_platforms as $slug ) {
-			if ( ! isset( $all_platforms[ $slug ] ) ) {
+		foreach ( $active_vehicles as $slug ) {
+			if ( ! isset( $all_vehicles[ $slug ] ) ) {
 				continue;
 			}
 
-			$content = get_post_meta( $post_id, $all_platforms[ $slug ]['meta_key'], true );
+			$content = get_post_meta( $post_id, $all_vehicles[ $slug ]['meta_key'], true );
 			if ( ! $content ) {
 				continue;
 			}
