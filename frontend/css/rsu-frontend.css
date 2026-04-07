@@ -275,6 +275,11 @@
 /* === Responsive — Tablet === */
 
 @media (max-width: 768px) {
+	.rsu-update {
+		padding-left: 16px;
+		padding-right: 16px;
+	}
+
 	.rsu-panel__content {
 		padding: 22px 24px 24px;
 	}
@@ -307,6 +312,10 @@
 /* === Responsive — Mobile === */
 
 @media (max-width: 480px) {
+	.rsu-update {
+		padding-left: 12px;
+		padding-right: 12px;
+	}
 
 	.rsu-dates {
 		flex-direction: column;
