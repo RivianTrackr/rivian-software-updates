@@ -358,9 +358,124 @@ var RSUSectionBuilder = (function () {
 
 		syncJSON(builder);
 
+		// Enable drag-and-drop for sections.
+		enableDragAndDrop(list, '.rsu-section', '.rsu-section__drag', function () {
+			readFromDOM(builder);
+		});
+
+		// Enable drag-and-drop for blocks within each section.
+		qsa('.rsu-blocks-list', builder).forEach(function (blocksList) {
+			enableDragAndDrop(blocksList, '.rsu-block', '.rsu-block__drag', function () {
+				readFromDOM(builder);
+			});
+		});
+
 		setTimeout(autoResize, 0);
 		setTimeout(autoResize, 100);
 		setTimeout(autoResize, 500);
+	}
+
+	// ── Drag and drop ──
+	var dragState = { el: null, placeholder: null };
+
+	function enableDragAndDrop(container, itemSel, handleSel, onDrop) {
+		qsa(itemSel, container).forEach(function (item) {
+			var handle = qs(handleSel, item);
+			if (!handle) return;
+
+			handle.addEventListener('mousedown', function (e) {
+				e.preventDefault();
+				startDrag(container, item, itemSel, e.clientY, onDrop);
+			});
+
+			handle.addEventListener('touchstart', function (e) {
+				var touch = e.touches[0];
+				startDrag(container, item, itemSel, touch.clientY, onDrop);
+			}, { passive: true });
+		});
+	}
+
+	function startDrag(container, item, itemSel, startY, onDrop) {
+		var items = qsa(itemSel, container);
+		var index = items.indexOf(item);
+		if (index === -1) return;
+
+		// Create placeholder.
+		var placeholder = document.createElement('div');
+		placeholder.style.cssText = 'height:' + item.offsetHeight + 'px;border:2px dashed #d2d2d7;border-radius:12px;margin-bottom:16px;background:#f5f5f7;';
+		placeholder.className = 'rsu-drag-placeholder';
+
+		// Style the dragged item.
+		var rect = item.getBoundingClientRect();
+		item.style.position = 'fixed';
+		item.style.top = rect.top + 'px';
+		item.style.left = rect.left + 'px';
+		item.style.width = rect.width + 'px';
+		item.style.zIndex = '10000';
+		item.style.opacity = '0.9';
+		item.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+		item.style.pointerEvents = 'none';
+		item.style.transition = 'none';
+
+		// Insert placeholder.
+		item.parentNode.insertBefore(placeholder, item);
+
+		dragState.el = item;
+		dragState.placeholder = placeholder;
+
+		var offsetY = startY - rect.top;
+
+		function onMove(clientY) {
+			item.style.top = (clientY - offsetY) + 'px';
+
+			// Find which item we're hovering over.
+			var siblings = qsa(itemSel + ':not([style*="position: fixed"])', container);
+			for (var i = 0; i < siblings.length; i++) {
+				var sRect = siblings[i].getBoundingClientRect();
+				var midY = sRect.top + sRect.height / 2;
+				if (clientY < midY) {
+					container.insertBefore(placeholder, siblings[i]);
+					return;
+				}
+			}
+			// Past all items — append.
+			container.appendChild(placeholder);
+		}
+
+		function onMouseMove(e) { onMove(e.clientY); }
+		function onTouchMove(e) { onMove(e.touches[0].clientY); }
+
+		function finish() {
+			document.removeEventListener('mousemove', onMouseMove);
+			document.removeEventListener('mouseup', finish);
+			document.removeEventListener('touchmove', onTouchMove);
+			document.removeEventListener('touchend', finish);
+
+			// Reset styles.
+			item.style.position = '';
+			item.style.top = '';
+			item.style.left = '';
+			item.style.width = '';
+			item.style.zIndex = '';
+			item.style.opacity = '';
+			item.style.boxShadow = '';
+			item.style.pointerEvents = '';
+			item.style.transition = '';
+
+			// Insert item where placeholder is.
+			container.insertBefore(item, placeholder);
+			placeholder.remove();
+
+			dragState.el = null;
+			dragState.placeholder = null;
+
+			if (onDrop) onDrop();
+		}
+
+		document.addEventListener('mousemove', onMouseMove);
+		document.addEventListener('mouseup', finish);
+		document.addEventListener('touchmove', onTouchMove, { passive: true });
+		document.addEventListener('touchend', finish);
 	}
 
 	// ── Build section element ──
