@@ -15,6 +15,15 @@
     if (!tablist) return;
 
     var tabs = tablist.querySelectorAll('.rsu-tab');
+    if (tabs.length === 0) return;
+
+    // Set proper ARIA tabindex on all tabs.
+    tabs.forEach(function (tab) {
+      if (!tab.classList.contains('rsu-tab--active')) {
+        tab.setAttribute('tabindex', '-1');
+      }
+    });
+
     if (tabs.length < 2) return;
 
     // URL hash overrides the server-rendered default tab.
@@ -106,14 +115,6 @@
           targetPanel.removeEventListener('animationend', handler);
         });
       }
-    }
-  }
-
-  function getPreferred() {
-    try {
-      return localStorage.getItem(STORAGE_KEY);
-    } catch (e) {
-      return null;
     }
   }
 

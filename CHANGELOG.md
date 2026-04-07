@@ -2,14 +2,17 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
-## [2.3.2] - 2026-04-07
-
-### Fixed
-- Removed horizontal margins on tablet and mobile so the update card stretches full-width (edge-to-edge).
-- Set border-radius to 0 on small screens for a flush appearance against screen edges.
+## [2.3.9] - 2026-04-07
 
 ### Changed
 - Vehicle toggle tab bar now displays even when only one vehicle is active, so users always see which model they are viewing.
+- Removed all responsive media query overrides (padding, margins, font sizes, widths) from plugin CSS — layout responsiveness is now fully inherited from the WordPress theme (Blocksy).
+- Removed `width: 100%` from `.rsu-update` wrapper to let the theme control container sizing.
+- Set proper ARIA `tabindex` attributes on single-vehicle tab for accessibility.
+
+### Removed
+- Dead "single platform (no tabs)" CSS rule (`.rsu-update:not(:has(.rsu-tabs))`).
+- Unused `getPreferred()` function from frontend JS (localStorage read was no longer called).
 
 ## [2.2.0] - 2026-04-07
 
