@@ -108,7 +108,7 @@ class RSU_Migrate {
 		$doc = new DOMDocument();
 		libxml_use_internal_errors( true );
 		$doc->loadHTML(
-			'<html><body>' . mb_convert_encoding( $html, 'HTML-ENTITIES', 'UTF-8' ) . '</body></html>',
+			'<html><head><meta charset="UTF-8"></head><body>' . $html . '</body></html>',
 			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
 		);
 		libxml_clear_errors();
@@ -118,7 +118,8 @@ class RSU_Migrate {
 		$wrappers = $xpath->query( "//div[contains(@class, 'eb-wrapper-inner-blocks')]" );
 
 		if ( ! $wrappers || $wrappers->length === 0 ) {
-			return '';
+			// Fallback: try regex extraction.
+			return self::extract_toggle_content_regex( $html, $side );
 		}
 
 		$index = ( 'secondary' === $side ) ? 1 : 0;
@@ -133,6 +134,28 @@ class RSU_Migrate {
 		}
 
 		return $inner_html;
+	}
+
+	/**
+	 * Regex fallback for extracting toggle content when DOMDocument fails.
+	 */
+	private static function extract_toggle_content_regex( $html, $side ) {
+		// Find content between eb-wrapper-inner-blocks divs.
+		// Match the opening tag and capture everything until the matching closing divs.
+		if ( ! preg_match_all(
+			'/<div[^>]*class="[^"]*eb-wrapper-inner-blocks[^"]*"[^>]*>(.*?)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/s',
+			$html,
+			$matches
+		) ) {
+			return '';
+		}
+
+		$index = ( 'secondary' === $side ) ? 1 : 0;
+		if ( ! isset( $matches[1][ $index ] ) ) {
+			return '';
+		}
+
+		return $matches[1][ $index ];
 	}
 
 	/**
