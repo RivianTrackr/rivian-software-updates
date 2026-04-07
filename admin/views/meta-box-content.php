@@ -39,8 +39,10 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-editor-panel--hidden { position: absolute; left: -9999px; visibility: hidden; }
 
 .rsu-editor-toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
-.rsu-copy-from { font-size: 12px; color: var(--rsu-text-muted); display: inline-flex; align-items: center; gap: 6px; }
-.rsu-copy-from-select { font-size: 12px; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--rsu-border); }
+.rsu-copy-from { font-size: 13px; font-weight: 500; color: var(--rsu-text-muted); display: inline-flex; align-items: center; gap: 8px; }
+.rsu-copy-from-select { font-size: 13px; padding: 6px 28px 6px 10px; border-radius: 8px; border: 1px solid var(--rsu-border); background: var(--rsu-white); color: var(--rsu-text); appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; }
+.rsu-copy-from-select:focus { border-color: var(--rsu-action); box-shadow: 0 0 0 3px rgba(0,113,227,0.1); outline: none; }
+.rsu-copy-from-select:hover { border-color: var(--rsu-action); }
 
 .rsu-sections-empty { padding: 40px 24px; text-align: center; color: var(--rsu-text-muted); font-size: 14px; background: var(--rsu-bg-light); border: 2px dashed var(--rsu-border); border-radius: 12px; margin-bottom: 16px; }
 
