@@ -90,7 +90,7 @@ class RSU_Frontend {
 
 		ob_start();
 		?>
-		<div class="rsu-update" data-rsu-version="<?php echo esc_attr( $version ); ?>" data-rsu-default="<?php echo esc_attr( $default ); ?>">
+		<div class="rsu-update alignfull" data-rsu-version="<?php echo esc_attr( $version ); ?>" data-rsu-default="<?php echo esc_attr( $default ); ?>">
 
 			<?php if ( $date_noticed || $date_released ) : ?>
 				<div class="rsu-dates">
