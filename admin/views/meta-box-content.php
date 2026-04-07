@@ -292,10 +292,14 @@ var RSUSectionBuilder = (function () {
 		var sections = [];
 		qsa('.rsu-sections-list .rsu-section', builder).forEach(function (sEl) {
 			var headingInput = qs('.rsu-section__heading', sEl);
+			var sectionGenSelect = qs('.rsu-section__header > .rsu-gen-select', sEl);
 			var section = {
 				heading: headingInput ? headingInput.value.trim() : '',
 				blocks: []
 			};
+			if (sectionGenSelect && sectionGenSelect.value) {
+				section.generation = sectionGenSelect.value;
+			}
 
 			qsa('.rsu-blocks-list .rsu-block', sEl).forEach(function (bEl) {
 				var type = bEl.getAttribute('data-type');
@@ -360,11 +364,13 @@ var RSUSectionBuilder = (function () {
 
 	// ── Build section element ──
 	function buildSectionEl(builder, section, si) {
+		var sectionGen = section.generation || '';
 		var el = createElement(
 			'<div class="rsu-section" data-index="' + si + '">' +
 				'<div class="rsu-section__header">' +
 					'<span class="rsu-section__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
 					'<input type="text" class="rsu-section__heading" placeholder="Section heading (e.g. Cold Weather Improvements)" />' +
+					genOptionsHTML(builder, sectionGen) +
 					'<button type="button" class="rsu-section__remove" title="Remove section" onclick="RSUSectionBuilder.removeSection(this)">&times;</button>' +
 				'</div>' +
 				'<div class="rsu-blocks-list"></div>' +
@@ -383,6 +389,15 @@ var RSUSectionBuilder = (function () {
 		qs('.rsu-section__heading', el).addEventListener('input', function () {
 			readFromDOM(getBuilder(this));
 		});
+
+		// Section-level gen select change handler.
+		var sectionGenSel = qs('.rsu-section__header > .rsu-gen-select', el);
+		if (sectionGenSel) {
+			sectionGenSel.addEventListener('change', function() {
+				this.classList.toggle('rsu-gen-select--active', !!this.value);
+				readFromDOM(getBuilder(this));
+			});
+		}
 
 		var blocksList = qs('.rsu-blocks-list', el);
 		if (section.blocks && section.blocks.length) {

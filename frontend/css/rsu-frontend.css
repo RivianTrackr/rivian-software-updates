@@ -414,6 +414,17 @@
 	margin-left: 8px;
 }
 
+.rsu-panel__content h2 > .rsu-gen-pill,
+.rsu-panel__content h3 > .rsu-gen-pill,
+.rsu-panel__content h4 > .rsu-gen-pill {
+	font-size: 10px;
+	padding: 2px 9px;
+	margin-left: 10px;
+	vertical-align: middle;
+	position: relative;
+	top: -1px;
+}
+
 
 /* === Reduced Motion === */
 

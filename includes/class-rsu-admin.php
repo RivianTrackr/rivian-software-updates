@@ -163,6 +163,14 @@ class RSU_Admin {
 				'blocks'  => array(),
 			);
 
+			// Section-level generation tag (for headings).
+			if ( ! empty( $section['generation'] ) ) {
+				$section_gen = sanitize_text_field( $section['generation'] );
+				if ( in_array( $section_gen, $valid_generations, true ) ) {
+					$clean_section['generation'] = $section_gen;
+				}
+			}
+
 			if ( ! empty( $section['blocks'] ) && is_array( $section['blocks'] ) ) {
 				foreach ( $section['blocks'] as $block ) {
 					if ( ! is_array( $block ) ) {
@@ -261,9 +269,11 @@ class RSU_Admin {
 		}
 
 		foreach ( $sections as $section ) {
-			$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
+			$heading     = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
+			$section_gen = isset( $section['generation'] ) ? $section['generation'] : '';
 			if ( $heading ) {
-				$html .= '<' . $heading_tag . '>' . esc_html( $heading ) . '</' . $heading_tag . '>' . "\n";
+				$heading_pill = self::render_generation_pill( $section_gen, $gen_labels );
+				$html .= '<' . $heading_tag . '>' . esc_html( $heading ) . $heading_pill . '</' . $heading_tag . '>' . "\n";
 			}
 
 			if ( empty( $section['blocks'] ) || ! is_array( $section['blocks'] ) ) {
@@ -400,10 +410,19 @@ class RSU_Admin {
 				if ( null !== $current ) {
 					$sections[] = $current;
 				}
+				$gen = self::extract_generation_from_node( $node );
+				$text = trim( $node->textContent );
+				if ( $gen ) {
+					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
+					$text = trim( $text );
+				}
 				$current = array(
-					'heading' => trim( $node->textContent ),
+					'heading' => $text,
 					'blocks'  => array(),
 				);
+				if ( $gen ) {
+					$current['generation'] = $gen;
+				}
 				continue;
 			}
 
