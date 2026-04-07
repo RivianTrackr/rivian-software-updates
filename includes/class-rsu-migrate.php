@@ -108,7 +108,7 @@ class RSU_Migrate {
 		$doc = new DOMDocument();
 		libxml_use_internal_errors( true );
 		$doc->loadHTML(
-			'<html><body>' . mb_convert_encoding( $html, 'HTML-ENTITIES', 'UTF-8' ) . '</body></html>',
+			'<html><head><meta charset="UTF-8"></head><body>' . $html . '</body></html>',
 			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
 		);
 		libxml_clear_errors();
@@ -118,7 +118,8 @@ class RSU_Migrate {
 		$wrappers = $xpath->query( "//div[contains(@class, 'eb-wrapper-inner-blocks')]" );
 
 		if ( ! $wrappers || $wrappers->length === 0 ) {
-			return '';
+			// Fallback: try regex extraction.
+			return self::extract_toggle_content_regex( $html, $side );
 		}
 
 		$index = ( 'secondary' === $side ) ? 1 : 0;
@@ -133,6 +134,28 @@ class RSU_Migrate {
 		}
 
 		return $inner_html;
+	}
+
+	/**
+	 * Regex fallback for extracting toggle content when DOMDocument fails.
+	 */
+	private static function extract_toggle_content_regex( $html, $side ) {
+		// Find content between eb-wrapper-inner-blocks divs.
+		// Match the opening tag and capture everything until the matching closing divs.
+		if ( ! preg_match_all(
+			'/<div[^>]*class="[^"]*eb-wrapper-inner-blocks[^"]*"[^>]*>(.*?)<\/div>\s*<\/div>\s*<\/div>\s*<\/div>\s*<\/div>/s',
+			$html,
+			$matches
+		) ) {
+			return '';
+		}
+
+		$index = ( 'secondary' === $side ) ? 1 : 0;
+		if ( ! isset( $matches[1][ $index ] ) ) {
+			return '';
+		}
+
+		return $matches[1][ $index ];
 	}
 
 	/**
@@ -323,10 +346,10 @@ class RSU_Migrate {
 	}
 
 	/**
-	 * Merge adjacent gen-tagged list blocks into a single list with per-item tags.
+	 * Merge adjacent list blocks into a single list, preserving per-item tags.
 	 *
-	 * When two or more consecutive list blocks each have a block-level generation
-	 * tag, combine them into one list where each item inherits its block's tag.
+	 * Consecutive list blocks are combined into one. Items inherit their block's
+	 * generation tag if they don't already have one. Non-tagged items stay untagged.
 	 *
 	 * @param array $blocks Array of block arrays.
 	 * @return array Consolidated blocks.
@@ -339,20 +362,19 @@ class RSU_Migrate {
 		while ( $i < $count ) {
 			$block = $blocks[ $i ];
 
-			// Check if this is a gen-tagged list block.
-			if ( 'list' === $block['type'] && ! empty( $block['generation'] ) ) {
-				// Collect consecutive gen-tagged list blocks.
+			if ( 'list' === $block['type'] ) {
+				// Collect all consecutive list blocks.
 				$combined_items = array();
-				while ( $i < $count && 'list' === $blocks[ $i ]['type'] && ! empty( $blocks[ $i ]['generation'] ) ) {
-					$gen   = $blocks[ $i ]['generation'];
-					$items = isset( $blocks[ $i ]['items'] ) ? $blocks[ $i ]['items'] : array();
+				while ( $i < $count && 'list' === $blocks[ $i ]['type'] ) {
+					$block_gen = isset( $blocks[ $i ]['generation'] ) ? $blocks[ $i ]['generation'] : '';
+					$items     = isset( $blocks[ $i ]['items'] ) ? $blocks[ $i ]['items'] : array();
 					foreach ( $items as $item ) {
 						$entry = array( 'text' => self::item_text( $item ) );
 						// Preserve existing item-level gen tag, or inherit from block.
 						if ( ! empty( $item['generation'] ) ) {
 							$entry['generation'] = $item['generation'];
-						} else {
-							$entry['generation'] = $gen;
+						} elseif ( $block_gen ) {
+							$entry['generation'] = $block_gen;
 						}
 						$combined_items[] = $entry;
 					}

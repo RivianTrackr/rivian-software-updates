@@ -379,7 +379,7 @@ class RSU_Admin {
 		$doc = new DOMDocument();
 		libxml_use_internal_errors( true );
 		$doc->loadHTML(
-			'<html><body>' . mb_convert_encoding( $html, 'HTML-ENTITIES', 'UTF-8' ) . '</body></html>',
+			'<html><head><meta charset="UTF-8"></head><body>' . $html . '</body></html>',
 			LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD
 		);
 		libxml_clear_errors();
