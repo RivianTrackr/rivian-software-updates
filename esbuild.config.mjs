@@ -42,6 +42,13 @@ const builds = [
     bundle: false,
     minify: true,
   },
+  // Settings CSS
+  {
+    entryPoints: ['admin/css/rsu-settings.css'],
+    outfile: 'admin/css/rsu-settings.min.css',
+    bundle: false,
+    minify: true,
+  },
 ];
 
 async function run() {
