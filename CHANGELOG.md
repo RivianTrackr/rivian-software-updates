@@ -2,6 +2,15 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.3.2] - 2026-04-07
+
+### Fixed
+- Removed horizontal margins on tablet and mobile so the update card stretches full-width (edge-to-edge).
+- Set border-radius to 0 on small screens for a flush appearance against screen edges.
+
+### Changed
+- Vehicle toggle tab bar now displays even when only one vehicle is active, so users always see which model they are viewing.
+
 ## [2.2.0] - 2026-04-07
 
 ### Added
