@@ -2,6 +2,22 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.1.0] - 2026-04-07
+
+### Changed
+- Admin panel restyled to match the RivianTrackr design system (shared with Tire Guide and AI Search Summary plugins).
+- Action blue updated from WordPress blue (`#2271b1`) to RTG action blue (`#0071e3`).
+- Borders, backgrounds, and text colors aligned to RTG light theme tokens (`#d2d2d7`, `#f5f5f7`, `#1d1d1f`, `#6e6e73`, `#86868b`).
+- Error/delete states use RTG error red (`#ff3b30` / `#ffe5e5`).
+- Note block accent updated to brand gold (`#fba919`).
+- Card border radius increased to 12px, input/block radius to 8px per RTG scale.
+- Shadows use RTG subtle/hover levels for more visible card depth.
+- All admin colors defined as CSS custom properties on `.rsu-admin-wrap` for easy theming.
+- Frontend now renders release notes from sections JSON at display time — settings like heading level and note label apply immediately to all posts without re-saving.
+
+### Fixed
+- Changing Section Heading Level or Note Block Label in settings now updates all existing software update posts immediately.
+
 ## [2.0.1] - 2026-04-07
 
 ### Fixed
