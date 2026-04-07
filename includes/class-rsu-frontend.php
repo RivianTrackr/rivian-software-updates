@@ -114,7 +114,7 @@ class RSU_Frontend {
 				</div>
 			<?php endif; ?>
 
-			<?php if ( count( $active_vehicles ) > 1 ) : ?>
+			<?php if ( count( $active_vehicles ) >= 1 ) : ?>
 				<div class="rsu-tabs" role="tablist" aria-label="Vehicle model">
 					<?php foreach ( $active_vehicles as $slug ) :
 						$vehicle    = $all_vehicles[ $slug ];
