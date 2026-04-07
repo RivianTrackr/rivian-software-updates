@@ -675,28 +675,29 @@
 }
 
 .rsu-bullet-row__gen .rsu-gen-select {
-	font-size: 10px;
-	font-weight: 500;
-	padding: 2px 14px 2px 6px;
-	border: 1px solid var(--rsu-border);
-	border-radius: var(--rsu-radius-pill);
-	background-color: transparent;
-	color: var(--rsu-text-muted);
+	font-size: 10px !important;
+	font-weight: 500 !important;
+	padding: 2px 16px 2px 6px !important;
+	border: 1px solid var(--rsu-border) !important;
+	border-radius: var(--rsu-radius-pill) !important;
+	background-color: transparent !important;
+	color: var(--rsu-text-muted) !important;
 	cursor: pointer;
-	appearance: none;
-	-webkit-appearance: none;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='4' viewBox='0 0 6 4'%3E%3Cpath d='M1 1l2 2 2-2' stroke='%2386868b' stroke-width='1' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	background-repeat: no-repeat;
-	background-position: right 4px center;
-	line-height: 1.5;
+	appearance: none !important;
+	-webkit-appearance: none !important;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='3' viewBox='0 0 5 3'%3E%3Cpath d='M.5.5l2 2 2-2' stroke='%2386868b' stroke-width='.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
+	background-repeat: no-repeat !important;
+	background-position: right 5px center !important;
+	line-height: 1.5 !important;
+	background-size: 5px 3px !important;
 }
 
 .rsu-bullet-row__gen .rsu-gen-select--active {
-	background-color: transparent;
-	border-color: var(--rsu-action);
-	color: var(--rsu-action);
-	font-weight: 600;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='4' viewBox='0 0 6 4'%3E%3Cpath d='M1 1l2 2 2-2' stroke='%230071e3' stroke-width='1' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-color: transparent !important;
+	border-color: var(--rsu-action) !important;
+	color: var(--rsu-action) !important;
+	font-weight: 600 !important;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='5' height='3' viewBox='0 0 5 3'%3E%3Cpath d='M.5.5l2 2 2-2' stroke='%230071e3' stroke-width='.8' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") !important;
 }
 
 /* ═══════════════════════════════════════
