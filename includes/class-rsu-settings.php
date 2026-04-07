@@ -108,6 +108,14 @@ class RSU_Settings {
 			'rsu-settings',
 			array( $this, 'render_page' )
 		);
+
+		add_management_page(
+			'RSU Migration',
+			'RSU Migration',
+			'manage_options',
+			'rsu-migrate',
+			array( $this, 'render_migrate_page' )
+		);
 	}
 
 	/**
@@ -115,6 +123,13 @@ class RSU_Settings {
 	 */
 	public function render_page() {
 		include RSU_PLUGIN_DIR . 'admin/views/settings-page.php';
+	}
+
+	/**
+	 * Render the migration tools page.
+	 */
+	public function render_migrate_page() {
+		include RSU_PLUGIN_DIR . 'admin/views/migrate-page.php';
 	}
 
 	/**
