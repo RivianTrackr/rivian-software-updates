@@ -163,6 +163,14 @@ class RSU_Admin {
 				'blocks'  => array(),
 			);
 
+			// Section-level generation tag (for headings).
+			if ( ! empty( $section['generation'] ) ) {
+				$section_gen = sanitize_text_field( $section['generation'] );
+				if ( in_array( $section_gen, $valid_generations, true ) ) {
+					$clean_section['generation'] = $section_gen;
+				}
+			}
+
 			if ( ! empty( $section['blocks'] ) && is_array( $section['blocks'] ) ) {
 				foreach ( $section['blocks'] as $block ) {
 					if ( ! is_array( $block ) ) {
@@ -261,9 +269,11 @@ class RSU_Admin {
 		}
 
 		foreach ( $sections as $section ) {
-			$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
+			$heading     = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
+			$section_gen = isset( $section['generation'] ) ? $section['generation'] : '';
 			if ( $heading ) {
-				$html .= '<' . $heading_tag . '>' . esc_html( $heading ) . '</' . $heading_tag . '>' . "\n";
+				$heading_pill = self::render_generation_pill( $section_gen, $gen_labels );
+				$html .= '<' . $heading_tag . '>' . esc_html( $heading ) . $heading_pill . '</' . $heading_tag . '>' . "\n";
 			}
 
 			if ( empty( $section['blocks'] ) || ! is_array( $section['blocks'] ) ) {
@@ -279,17 +289,13 @@ class RSU_Admin {
 					case 'paragraph':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							$html .= '<p>' . $block_pill . nl2br( esc_html( $content ) ) . '</p>' . "\n";
+							$html .= '<p>' . nl2br( esc_html( $content ) ) . $block_pill . '</p>' . "\n";
 						}
 						break;
 
 					case 'list':
 						$items = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
 						if ( ! empty( $items ) ) {
-							// Block-level pill goes before the list.
-							if ( $block_pill ) {
-								$html .= '<p>' . $block_pill . '</p>' . "\n";
-							}
 							$html .= "<ul>\n";
 							foreach ( $items as $item ) {
 								$item_text = '';
@@ -308,14 +314,18 @@ class RSU_Admin {
 								}
 							}
 							$html .= "</ul>\n";
+							// Block-level pill goes after the list.
+							if ( $block_pill ) {
+								$html .= '<p class="rsu-list-pill">' . $block_pill . '</p>' . "\n";
+							}
 						}
 						break;
 
 					case 'note':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							$html .= '<blockquote>' . $block_pill . '<p><strong>' . esc_html( $note_label ) . '</strong></p>' . "\n";
-							$html .= '<p>' . nl2br( esc_html( $content ) ) . '</p></blockquote>' . "\n";
+							$html .= '<blockquote><p><strong>' . esc_html( $note_label ) . '</strong></p>' . "\n";
+							$html .= '<p>' . nl2br( esc_html( $content ) ) . $block_pill . '</p></blockquote>' . "\n";
 						}
 						break;
 				}
@@ -400,10 +410,19 @@ class RSU_Admin {
 				if ( null !== $current ) {
 					$sections[] = $current;
 				}
+				$gen = self::extract_generation_from_node( $node );
+				$text = trim( $node->textContent );
+				if ( $gen ) {
+					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
+					$text = trim( $text );
+				}
 				$current = array(
-					'heading' => trim( $node->textContent ),
+					'heading' => $text,
 					'blocks'  => array(),
 				);
+				if ( $gen ) {
+					$current['generation'] = $gen;
+				}
 				continue;
 			}
 

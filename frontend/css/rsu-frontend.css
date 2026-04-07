@@ -399,19 +399,26 @@
 	vertical-align: middle;
 }
 
-.rsu-panel__content p > .rsu-gen-pill:first-child {
-	margin-left: 0;
-	margin-right: 8px;
-}
-
-.rsu-panel__content blockquote > .rsu-gen-pill:first-child {
-	margin-left: 0;
-	margin-bottom: 8px;
-	display: inline-flex;
-}
-
-.rsu-panel__content li > .rsu-gen-pill {
+.rsu-panel__content p > .rsu-gen-pill,
+.rsu-panel__content li > .rsu-gen-pill,
+.rsu-panel__content blockquote .rsu-gen-pill {
 	margin-left: 8px;
+}
+
+.rsu-list-pill {
+	margin-top: -12px;
+	text-align: right;
+}
+
+.rsu-panel__content h2 > .rsu-gen-pill,
+.rsu-panel__content h3 > .rsu-gen-pill,
+.rsu-panel__content h4 > .rsu-gen-pill {
+	font-size: 10px;
+	padding: 2px 9px;
+	margin-left: 10px;
+	vertical-align: middle;
+	position: relative;
+	top: -1px;
 }
 
 
