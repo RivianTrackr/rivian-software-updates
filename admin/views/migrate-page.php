@@ -3,6 +3,7 @@ defined( 'ABSPATH' ) || exit;
 
 $dry_run_results = null;
 $migrate_results = null;
+$is_force        = false;
 
 if ( isset( $_POST['rsu_migrate_preview'] ) && check_admin_referer( 'rsu_migrate' ) ) {
 	$dry_run_results = RSU_Migrate::migrate_all( true );
@@ -12,7 +13,19 @@ if ( isset( $_POST['rsu_migrate_run'] ) && check_admin_referer( 'rsu_migrate' ) 
 	$migrate_results = RSU_Migrate::migrate_all( false );
 }
 
-$migratable = RSU_Migrate::get_migratable_posts();
+if ( isset( $_POST['rsu_migrate_force_preview'] ) && check_admin_referer( 'rsu_migrate' ) ) {
+	$dry_run_results = RSU_Migrate::migrate_all( true, true );
+	$is_force = true;
+}
+
+if ( isset( $_POST['rsu_migrate_force_run'] ) && check_admin_referer( 'rsu_migrate' ) ) {
+	$migrate_results = RSU_Migrate::migrate_all( false, true );
+	$is_force = true;
+}
+
+$migratable   = RSU_Migrate::get_migratable_posts();
+$all_toggle   = RSU_Migrate::get_migratable_posts( true );
+$already_done = count( $all_toggle ) - count( $migratable );
 ?>
 <div class="wrap">
 	<h1>Migrate Essential Blocks Toggle Content</h1>
@@ -21,27 +34,20 @@ $migratable = RSU_Migrate::get_migratable_posts();
 
 	<hr>
 
-	<h2>Eligible Posts (<?php echo count( $migratable ); ?>)</h2>
+	<h2>Not Yet Migrated (<?php echo count( $migratable ); ?>)</h2>
 
 	<?php if ( empty( $migratable ) ) : ?>
-		<p>No posts found with Essential Blocks toggle content that haven't already been migrated.</p>
+		<p>All toggle posts have been migrated.</p>
 	<?php else : ?>
 		<table class="widefat striped">
 			<thead>
-				<tr>
-					<th>ID</th>
-					<th>Title</th>
-				</tr>
+				<tr><th>ID</th><th>Title</th></tr>
 			</thead>
 			<tbody>
 				<?php foreach ( $migratable as $post ) : ?>
 					<tr>
 						<td><?php echo esc_html( $post->ID ); ?></td>
-						<td>
-							<a href="<?php echo esc_url( get_edit_post_link( $post->ID ) ); ?>">
-								<?php echo esc_html( $post->post_title ); ?>
-							</a>
-						</td>
+						<td><a href="<?php echo esc_url( get_edit_post_link( $post->ID ) ); ?>"><?php echo esc_html( $post->post_title ); ?></a></td>
 					</tr>
 				<?php endforeach; ?>
 			</tbody>
@@ -50,8 +56,22 @@ $migratable = RSU_Migrate::get_migratable_posts();
 		<form method="post" style="margin-top: 20px;">
 			<?php wp_nonce_field( 'rsu_migrate' ); ?>
 			<p>
-				<button type="submit" name="rsu_migrate_preview" class="button button-secondary">Preview Migration (Dry Run)</button>
+				<button type="submit" name="rsu_migrate_preview" class="button button-secondary">Preview (Dry Run)</button>
 				<button type="submit" name="rsu_migrate_run" class="button button-primary" onclick="return confirm('This will write RSU section data to all eligible posts. Continue?');">Migrate All</button>
+			</p>
+		</form>
+	<?php endif; ?>
+
+	<?php if ( $already_done > 0 ) : ?>
+		<hr>
+		<h2>Re-migrate Already Migrated Posts (<?php echo $already_done; ?>)</h2>
+		<p>Use this to re-run migration on posts that were already converted. This <strong>overwrites</strong> existing RSU section data with a fresh parse from the Essential Blocks content.</p>
+
+		<form method="post" style="margin-top: 10px;">
+			<?php wp_nonce_field( 'rsu_migrate' ); ?>
+			<p>
+				<button type="submit" name="rsu_migrate_force_preview" class="button button-secondary">Preview Re-migration (Dry Run)</button>
+				<button type="submit" name="rsu_migrate_force_run" class="button button-primary" style="background: #d63638; border-color: #d63638;" onclick="return confirm('This will OVERWRITE existing RSU section data for all toggle posts. Continue?');">Re-migrate All (Force)</button>
 			</p>
 		</form>
 	<?php endif; ?>
@@ -61,7 +81,7 @@ $migratable = RSU_Migrate::get_migratable_posts();
 		$is_dry  = (bool) $dry_run_results;
 		?>
 		<hr>
-		<h2><?php echo $is_dry ? 'Preview Results' : 'Migration Results'; ?></h2>
+		<h2><?php echo $is_dry ? 'Preview Results' : 'Migration Results'; ?><?php echo $is_force ? ' (Force)' : ''; ?></h2>
 
 		<?php foreach ( $results as $result ) : ?>
 			<?php if ( is_wp_error( $result ) ) : ?>

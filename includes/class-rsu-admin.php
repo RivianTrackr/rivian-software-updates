@@ -429,31 +429,7 @@ class RSU_Admin {
 			self::ensure_section( $sections, $current );
 
 			if ( 'ul' === $tag || 'ol' === $tag ) {
-				$items = array();
-				foreach ( $node->getElementsByTagName( 'li' ) as $li ) {
-					$item = array( 'text' => '' );
-					// Check for generation pill.
-					$pill = $li->getElementsByTagName( 'span' );
-					$gen  = '';
-					if ( $pill->length > 0 ) {
-						$span = $pill->item( 0 );
-						if ( $span->hasAttribute( 'data-generation' ) ) {
-							$gen = $span->getAttribute( 'data-generation' );
-						}
-					}
-					// Get text without pill.
-					$text = trim( $li->textContent );
-					if ( $gen ) {
-						// Remove the pill text from item text.
-						$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
-						$text = trim( $text );
-						$item['generation'] = $gen;
-					}
-					$item['text'] = $text;
-					if ( '' !== $item['text'] ) {
-						$items[] = $item;
-					}
-				}
+				$items = self::parse_list_items( $node );
 				if ( ! empty( $items ) ) {
 					$current['blocks'][] = array(
 						'type'  => 'list',
@@ -523,6 +499,95 @@ class RSU_Admin {
 		}
 
 		return $sections;
+	}
+
+	/**
+	 * Parse list items from a UL/OL node, handling nested lists.
+	 *
+	 * Only processes direct <li> children. For each <li> that contains a nested
+	 * <ul>/<ol>, the parent's own text is added as one item followed by the
+	 * nested items as separate entries.
+	 *
+	 * @param DOMNode $list_node The UL or OL element.
+	 * @return array List item arrays with 'text' and optional 'generation'.
+	 */
+	private static function parse_list_items( $list_node ) {
+		$items = array();
+
+		foreach ( $list_node->childNodes as $child ) {
+			if ( XML_ELEMENT_NODE !== $child->nodeType || 'li' !== strtolower( $child->nodeName ) ) {
+				continue;
+			}
+
+			$li = $child;
+			$gen = self::extract_generation_from_node( $li );
+
+			// Check if this <li> has a nested <ul> or <ol>.
+			$nested_list = null;
+			foreach ( $li->childNodes as $li_child ) {
+				if ( XML_ELEMENT_NODE === $li_child->nodeType ) {
+					$child_tag = strtolower( $li_child->nodeName );
+					if ( 'ul' === $child_tag || 'ol' === $child_tag ) {
+						$nested_list = $li_child;
+						break;
+					}
+				}
+			}
+
+			if ( $nested_list ) {
+				// Get only the parent's own text (exclude nested list text).
+				$parent_text = '';
+				foreach ( $li->childNodes as $li_child ) {
+					if ( $li_child === $nested_list ) {
+						continue;
+					}
+					if ( XML_ELEMENT_NODE === $li_child->nodeType ) {
+						$child_tag = strtolower( $li_child->nodeName );
+						if ( 'ul' === $child_tag || 'ol' === $child_tag ) {
+							continue;
+						}
+					}
+					$parent_text .= $li_child->textContent;
+				}
+				$parent_text = trim( $parent_text );
+
+				if ( $gen ) {
+					$parent_text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $parent_text );
+					$parent_text = trim( $parent_text );
+				}
+
+				// Add parent text as an item.
+				if ( '' !== $parent_text ) {
+					$item = array( 'text' => $parent_text );
+					if ( $gen ) {
+						$item['generation'] = $gen;
+					}
+					$items[] = $item;
+				}
+
+				// Recursively parse nested list items.
+				$nested_items = self::parse_list_items( $nested_list );
+				foreach ( $nested_items as $nested_item ) {
+					$items[] = $nested_item;
+				}
+			} else {
+				// Simple <li> — no nesting.
+				$text = trim( $li->textContent );
+				if ( $gen ) {
+					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
+					$text = trim( $text );
+				}
+				if ( '' !== $text ) {
+					$item = array( 'text' => $text );
+					if ( $gen ) {
+						$item['generation'] = $gen;
+					}
+					$items[] = $item;
+				}
+			}
+		}
+
+		return $items;
 	}
 
 	/**

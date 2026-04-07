@@ -20,16 +20,26 @@ class RSU_Migrate {
 	 * @param bool $dry_run  If true, return result without saving.
 	 * @return array|WP_Error Migration result or error.
 	 */
-	public static function migrate_post( $post_id, $dry_run = false ) {
+	/**
+	 * Migrate a single post from Essential Blocks toggle format to RSU sections.
+	 *
+	 * @param int  $post_id  Post ID.
+	 * @param bool $dry_run  If true, return result without saving.
+	 * @param bool $force    If true, overwrite existing sections data.
+	 * @return array|WP_Error Migration result or error.
+	 */
+	public static function migrate_post( $post_id, $dry_run = false, $force = false ) {
 		$post = get_post( $post_id );
 		if ( ! $post ) {
 			return new WP_Error( 'not_found', 'Post not found.' );
 		}
 
-		// Check if already migrated.
-		$existing = get_post_meta( $post_id, '_rsu_sections_r1', true );
-		if ( $existing && ! empty( json_decode( $existing, true ) ) ) {
-			return new WP_Error( 'already_migrated', 'Post already has _rsu_sections_r1 data.' );
+		// Check if already migrated (skip unless forced).
+		if ( ! $force ) {
+			$existing = get_post_meta( $post_id, '_rsu_sections_r1', true );
+			if ( $existing && ! empty( json_decode( $existing, true ) ) ) {
+				return new WP_Error( 'already_migrated', 'Post already has _rsu_sections_r1 data. Use force to overwrite.' );
+			}
 		}
 
 		$content = $post->post_content;
@@ -390,7 +400,13 @@ class RSU_Migrate {
 	 *
 	 * @return array Array of post objects.
 	 */
-	public static function get_migratable_posts() {
+	/**
+	 * Get all posts that have Essential Blocks toggle content.
+	 *
+	 * @param bool $force If true, include already-migrated posts.
+	 * @return array Array of post objects.
+	 */
+	public static function get_migratable_posts( $force = false ) {
 		global $wpdb;
 
 		$posts = $wpdb->get_results(
@@ -401,6 +417,10 @@ class RSU_Migrate {
 			   AND p.post_content LIKE '%eb-toggle%'
 			 ORDER BY p.post_date DESC"
 		);
+
+		if ( $force ) {
+			return $posts;
+		}
 
 		$migratable = array();
 		foreach ( $posts as $post ) {
@@ -421,12 +441,19 @@ class RSU_Migrate {
 	 * @param bool $dry_run If true, don't save anything.
 	 * @return array Results for each post.
 	 */
-	public static function migrate_all( $dry_run = false ) {
-		$posts   = self::get_migratable_posts();
+	/**
+	 * Migrate all eligible posts.
+	 *
+	 * @param bool $dry_run If true, don't save anything.
+	 * @param bool $force   If true, re-migrate already-migrated posts.
+	 * @return array Results for each post.
+	 */
+	public static function migrate_all( $dry_run = false, $force = false ) {
+		$posts   = self::get_migratable_posts( $force );
 		$results = array();
 
 		foreach ( $posts as $post ) {
-			$results[] = self::migrate_post( $post->ID, $dry_run );
+			$results[] = self::migrate_post( $post->ID, $dry_run, $force );
 		}
 
 		return $results;
