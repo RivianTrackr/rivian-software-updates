@@ -621,14 +621,33 @@
 	border-left: 1px solid var(--rsu-border-light);
 	display: flex;
 	align-items: center;
-	padding: 0 8px;
+	padding: 4px 8px;
 	background: var(--rsu-bg-light);
 }
 
 .rsu-bullet-row__gen .rsu-gen-select {
 	font-size: 11px;
+	font-weight: 500;
 	padding: 3px 20px 3px 8px;
+	border: 1px solid var(--rsu-border);
+	border-radius: var(--rsu-radius-badge);
+	background-color: var(--rsu-bg-light);
+	color: var(--rsu-text-muted);
+	cursor: pointer;
+	appearance: none;
+	-webkit-appearance: none;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
 	background-position: right 6px center;
+	line-height: 1.5;
+}
+
+.rsu-bullet-row__gen .rsu-gen-select--active {
+	background-color: var(--rsu-bg-info);
+	border-color: var(--rsu-action);
+	color: var(--rsu-action);
+	font-weight: 600;
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%230071e3' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
 /* ═══════════════════════════════════════
