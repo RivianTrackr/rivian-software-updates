@@ -535,10 +535,14 @@ class RSU_Admin {
 			}
 
 			if ( $nested_list ) {
-				// Get only the parent's own text (exclude nested list text).
+				// Get only the parent's own text (exclude nested lists and HTML comments).
 				$parent_text = '';
 				foreach ( $li->childNodes as $li_child ) {
 					if ( $li_child === $nested_list ) {
+						continue;
+					}
+					// Skip comment nodes (WordPress block comments like <!-- wp:list -->).
+					if ( XML_COMMENT_NODE === $li_child->nodeType ) {
 						continue;
 					}
 					if ( XML_ELEMENT_NODE === $li_child->nodeType ) {
