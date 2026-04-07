@@ -197,6 +197,19 @@ class RSU_Migrate {
 			}
 		}
 
+		// Ensure "Additional Improvements" is always last.
+		usort( $merged, function ( $a, $b ) {
+			$a_is_additional = ( self::normalize_heading( $a['heading'] ) === 'additional improvements' );
+			$b_is_additional = ( self::normalize_heading( $b['heading'] ) === 'additional improvements' );
+			if ( $a_is_additional && ! $b_is_additional ) {
+				return 1;
+			}
+			if ( $b_is_additional && ! $a_is_additional ) {
+				return -1;
+			}
+			return 0;
+		} );
+
 		return $merged;
 	}
 
@@ -216,55 +229,89 @@ class RSU_Migrate {
 		$blocks1 = isset( $s1['blocks'] ) ? $s1['blocks'] : array();
 		$blocks2 = isset( $s2['blocks'] ) ? $s2['blocks'] : array();
 
-		// Try to match blocks by position and type.
-		$max = max( count( $blocks1 ), count( $blocks2 ) );
+		// Match Gen 1 blocks against Gen 2 blocks by content, not just position.
+		// For each Gen 1 block, find the best matching Gen 2 block (same type + similar content).
+		$used2    = array();
+		$matches  = array(); // $matches[i1] = i2 index or null.
 
-		$i1 = 0;
-		$i2 = 0;
+		foreach ( $blocks1 as $i1 => $b1 ) {
+			$best_match = null;
+			$best_score = 0;
 
-		while ( $i1 < count( $blocks1 ) || $i2 < count( $blocks2 ) ) {
-			$b1 = isset( $blocks1[ $i1 ] ) ? $blocks1[ $i1 ] : null;
-			$b2 = isset( $blocks2[ $i2 ] ) ? $blocks2[ $i2 ] : null;
+			foreach ( $blocks2 as $i2 => $b2 ) {
+				if ( isset( $used2[ $i2 ] ) ) {
+					continue;
+				}
+				if ( $b1['type'] !== $b2['type'] ) {
+					continue;
+				}
+				if ( self::blocks_equal( $b1, $b2 ) ) {
+					$best_match = $i2;
+					$best_score = 100;
+					break;
+				}
+				// Check content similarity for same-type blocks.
+				$score = self::block_similarity( $b1, $b2 );
+				if ( $score > 60 && $score > $best_score ) {
+					$best_match = $i2;
+					$best_score = $score;
+				}
+			}
 
-			// Both blocks exist at this position.
-			if ( $b1 && $b2 && $b1['type'] === $b2['type'] ) {
+			if ( null !== $best_match ) {
+				$used2[ $best_match ] = true;
+				$matches[ $i1 ] = $best_match;
+			} else {
+				$matches[ $i1 ] = null;
+			}
+		}
+
+		// Build output: walk Gen 1 blocks in order, interleave unmatched Gen 2 blocks.
+		$emitted2 = array();
+
+		foreach ( $blocks1 as $i1 => $b1 ) {
+			// Emit any unmatched Gen 2 blocks that come before the matched block.
+			if ( null !== $matches[ $i1 ] ) {
+				$matched_i2 = $matches[ $i1 ];
+				foreach ( $blocks2 as $i2 => $b2 ) {
+					if ( $i2 >= $matched_i2 ) {
+						break;
+					}
+					if ( ! isset( $emitted2[ $i2 ] ) && ! isset( $used2[ $i2 ] ) ) {
+						$b2['generation']   = 'gen2';
+						$merged['blocks'][] = $b2;
+						$emitted2[ $i2 ]    = true;
+					}
+				}
+			}
+
+			if ( null !== $matches[ $i1 ] ) {
+				$b2 = $blocks2[ $matches[ $i1 ] ];
+				$emitted2[ $matches[ $i1 ] ] = true;
+
 				if ( self::blocks_equal( $b1, $b2 ) ) {
 					// Identical — no generation tag.
 					$merged['blocks'][] = $b1;
 				} elseif ( 'list' === $b1['type'] ) {
-					// Merge list items with per-item generation tagging.
 					$merged['blocks'][] = self::merge_list_blocks( $b1, $b2 );
 				} else {
-					// Different paragraph or note — include both tagged.
 					$b1['generation'] = 'gen1';
 					$b2['generation'] = 'gen2';
 					$merged['blocks'][] = $b1;
 					$merged['blocks'][] = $b2;
 				}
-				$i1++;
-				$i2++;
-			} elseif ( $b1 && ! $b2 ) {
+			} else {
 				// Gen 1 only block.
 				$b1['generation'] = 'gen1';
 				$merged['blocks'][] = $b1;
-				$i1++;
-			} elseif ( $b2 && ! $b1 ) {
-				// Gen 2 only block.
-				$b2['generation'] = 'gen2';
+			}
+		}
+
+		// Emit remaining unmatched Gen 2 blocks.
+		foreach ( $blocks2 as $i2 => $b2 ) {
+			if ( ! isset( $emitted2[ $i2 ] ) ) {
+				$b2['generation']   = 'gen2';
 				$merged['blocks'][] = $b2;
-				$i2++;
-			} else {
-				// Type mismatch — include both tagged.
-				if ( $b1 ) {
-					$b1['generation'] = 'gen1';
-					$merged['blocks'][] = $b1;
-				}
-				if ( $b2 ) {
-					$b2['generation'] = 'gen2';
-					$merged['blocks'][] = $b2;
-				}
-				$i1++;
-				$i2++;
 			}
 		}
 
@@ -345,6 +392,32 @@ class RSU_Migrate {
 			'type'  => 'list',
 			'items' => $merged_items,
 		);
+	}
+
+	/**
+	 * Compute similarity percentage between two same-type blocks.
+	 */
+	private static function block_similarity( $b1, $b2 ) {
+		if ( $b1['type'] !== $b2['type'] ) {
+			return 0;
+		}
+
+		if ( 'list' === $b1['type'] ) {
+			$items1 = isset( $b1['items'] ) ? $b1['items'] : array();
+			$items2 = isset( $b2['items'] ) ? $b2['items'] : array();
+			if ( empty( $items1 ) && empty( $items2 ) ) {
+				return 100;
+			}
+			$text1 = implode( ' ', array_map( array( __CLASS__, 'item_text' ), $items1 ) );
+			$text2 = implode( ' ', array_map( array( __CLASS__, 'item_text' ), $items2 ) );
+			similar_text( self::normalize_text( $text1 ), self::normalize_text( $text2 ), $percent );
+			return $percent;
+		}
+
+		$c1 = isset( $b1['content'] ) ? $b1['content'] : '';
+		$c2 = isset( $b2['content'] ) ? $b2['content'] : '';
+		similar_text( self::normalize_text( $c1 ), self::normalize_text( $c2 ), $percent );
+		return $percent;
 	}
 
 	/**

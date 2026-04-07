@@ -440,7 +440,7 @@ class RSU_Admin {
 					$block['generation'] = $gen;
 				}
 				$text = trim( $node->textContent );
-				$text = preg_replace( '/^\s*NOTE\s*/i', '', $text );
+				$text = preg_replace( '/^\s*NOTE\s*:?\s*/i', '', $text );
 				// Remove pill text.
 				if ( $gen ) {
 					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
