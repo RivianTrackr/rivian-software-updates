@@ -42,7 +42,17 @@ class RSU_Frontend {
 		}
 
 		if ( isset( $all_vehicles[ $default ] ) ) {
-			$vehicle_content = get_post_meta( $post_id, $all_vehicles[ $default ]['meta_key'], true );
+			$vehicle_content = '';
+			$sections_json   = get_post_meta( $post_id, '_rsu_sections_' . $default, true );
+			if ( $sections_json ) {
+				$sections = json_decode( $sections_json, true );
+				if ( is_array( $sections ) && ! empty( $sections ) ) {
+					$vehicle_content = RSU_Admin::render_sections_to_html( $sections, $default );
+				}
+			}
+			if ( empty( $vehicle_content ) ) {
+				$vehicle_content = get_post_meta( $post_id, $all_vehicles[ $default ]['meta_key'], true );
+			}
 			if ( $vehicle_content ) {
 				return wp_strip_all_tags( $vehicle_content );
 			}
@@ -126,7 +136,20 @@ class RSU_Frontend {
 			<?php foreach ( $active_vehicles as $slug ) :
 				$vehicle    = $all_vehicles[ $slug ];
 				$is_default = ( $slug === $default );
-				$vehicle_content = get_post_meta( $post_id, $vehicle['meta_key'], true );
+
+				// Render from sections JSON so settings like heading level apply immediately.
+				$vehicle_content = '';
+				$sections_json   = get_post_meta( $post_id, '_rsu_sections_' . $slug, true );
+				if ( $sections_json ) {
+					$sections = json_decode( $sections_json, true );
+					if ( is_array( $sections ) && ! empty( $sections ) ) {
+						$vehicle_content = RSU_Admin::render_sections_to_html( $sections, $slug );
+					}
+				}
+				// Fallback to pre-rendered HTML for legacy posts without sections JSON.
+				if ( empty( $vehicle_content ) ) {
+					$vehicle_content = get_post_meta( $post_id, $vehicle['meta_key'], true );
+				}
 				?>
 				<div class="rsu-panel <?php echo $is_default ? 'rsu-panel--active' : ''; ?>"
 					role="tabpanel"
