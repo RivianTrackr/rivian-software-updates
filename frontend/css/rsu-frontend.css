@@ -22,8 +22,6 @@
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 	color: var(--rsu-text);
 	box-sizing: border-box;
-	padding-left: 16px;
-	padding-right: 16px;
 
 	width: 100%;
 }
@@ -302,11 +300,6 @@
 /* === Responsive — Mobile === */
 
 @media (max-width: 480px) {
-	.rsu-update {
-		padding-left: 12px;
-		padding-right: 12px;
-	}
-
 	.rsu-dates {
 		flex-direction: column;
 		gap: 8px;
