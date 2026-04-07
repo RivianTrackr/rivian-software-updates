@@ -429,12 +429,9 @@ class RSU_Admin {
 			self::ensure_section( $sections, $current );
 
 			if ( 'ul' === $tag || 'ol' === $tag ) {
-				$items = self::parse_list_items( $node );
-				if ( ! empty( $items ) ) {
-					$current['blocks'][] = array(
-						'type'  => 'list',
-						'items' => $items,
-					);
+				$blocks = self::parse_list_to_blocks( $node );
+				foreach ( $blocks as $block ) {
+					$current['blocks'][] = $block;
 				}
 			} elseif ( 'blockquote' === $tag ) {
 				$block = array( 'type' => 'note' );
@@ -502,24 +499,25 @@ class RSU_Admin {
 	}
 
 	/**
-	 * Parse list items from a UL/OL node, handling nested lists.
+	 * Parse a UL/OL node into an array of blocks.
 	 *
-	 * Only processes direct <li> children. For each <li> that contains a nested
-	 * <ul>/<ol>, the parent's own text is added as one item followed by the
-	 * nested items as separate entries.
+	 * Simple items are collected into list blocks. When a <li> contains a nested
+	 * <ul>/<ol>, the current list is flushed, the parent text becomes a paragraph
+	 * block (sub-heading), and the nested items become a separate list block.
 	 *
 	 * @param DOMNode $list_node The UL or OL element.
-	 * @return array List item arrays with 'text' and optional 'generation'.
+	 * @return array Array of block arrays (list and paragraph blocks).
 	 */
-	private static function parse_list_items( $list_node ) {
-		$items = array();
+	private static function parse_list_to_blocks( $list_node ) {
+		$blocks        = array();
+		$pending_items = array();
 
 		foreach ( $list_node->childNodes as $child ) {
 			if ( XML_ELEMENT_NODE !== $child->nodeType || 'li' !== strtolower( $child->nodeName ) ) {
 				continue;
 			}
 
-			$li = $child;
+			$li  = $child;
 			$gen = self::extract_generation_from_node( $li );
 
 			// Check if this <li> has a nested <ul> or <ol>.
@@ -535,13 +533,18 @@ class RSU_Admin {
 			}
 
 			if ( $nested_list ) {
-				// Get only the parent's own text (exclude nested lists and HTML comments).
+				// Flush pending simple items as a list block.
+				if ( ! empty( $pending_items ) ) {
+					$blocks[]      = array( 'type' => 'list', 'items' => $pending_items );
+					$pending_items = array();
+				}
+
+				// Get the parent's own text (exclude nested lists and comments).
 				$parent_text = '';
 				foreach ( $li->childNodes as $li_child ) {
 					if ( $li_child === $nested_list ) {
 						continue;
 					}
-					// Skip comment nodes (WordPress block comments like <!-- wp:list -->).
 					if ( XML_COMMENT_NODE === $li_child->nodeType ) {
 						continue;
 					}
@@ -560,23 +563,27 @@ class RSU_Admin {
 					$parent_text = trim( $parent_text );
 				}
 
-				// Add parent text as an item.
+				// Emit parent text as a paragraph block (acts as a sub-heading).
 				if ( '' !== $parent_text ) {
-					$item = array( 'text' => $parent_text );
+					$para = array( 'type' => 'paragraph', 'content' => $parent_text );
 					if ( $gen ) {
-						$item['generation'] = $gen;
+						$para['generation'] = $gen;
 					}
-					$items[] = $item;
+					$blocks[] = $para;
 				}
 
-				// Recursively parse nested list items.
-				$nested_items = self::parse_list_items( $nested_list );
-				foreach ( $nested_items as $nested_item ) {
-					$items[] = $nested_item;
+				// Recursively parse nested list into blocks.
+				$nested_blocks = self::parse_list_to_blocks( $nested_list );
+				foreach ( $nested_blocks as $nb ) {
+					$blocks[] = $nb;
 				}
 			} else {
-				// Simple <li> — no nesting.
+				// Simple <li> — collect into pending items.
 				$text = trim( $li->textContent );
+				// Skip comment text that might leak through.
+				if ( XML_COMMENT_NODE === $li->nodeType ) {
+					continue;
+				}
 				if ( $gen ) {
 					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
 					$text = trim( $text );
@@ -586,12 +593,17 @@ class RSU_Admin {
 					if ( $gen ) {
 						$item['generation'] = $gen;
 					}
-					$items[] = $item;
+					$pending_items[] = $item;
 				}
 			}
 		}
 
-		return $items;
+		// Flush remaining items.
+		if ( ! empty( $pending_items ) ) {
+			$blocks[] = array( 'type' => 'list', 'items' => $pending_items );
+		}
+
+		return $blocks;
 	}
 
 	/**
