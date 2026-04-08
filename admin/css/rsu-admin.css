@@ -22,13 +22,16 @@
 	--rsu-bg-info: #dbeafe;
 	--rsu-white: #ffffff;
 	--rsu-placeholder: #86868b;
+	--rsu-note-bg: #fef9ee;
+	--rsu-note-bg-focus: #fdf0d5;
+	--rsu-border-subtle: #f0f0f0;
 	--rsu-radius-card: 12px;
 	--rsu-radius-input: 8px;
 	--rsu-radius-badge: 6px;
 	--rsu-radius-pill: 4px;
 	--rsu-shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.08);
 	--rsu-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.12);
-	--rsu-transition: 0.15s ease;
+	--rsu-transition: 0.2s ease;
 }
 
 /* ═══════════════════════════════════════
@@ -536,11 +539,11 @@
 }
 
 .rsu-block[data-type="note"] .rsu-block__content {
-	background: #fef9ee;
+	background: var(--rsu-note-bg);
 }
 
 .rsu-block[data-type="note"] .rsu-block__content:focus {
-	background: #fdf0d5;
+	background: var(--rsu-note-bg-focus);
 }
 
 /* ═══════════════════════════════════════

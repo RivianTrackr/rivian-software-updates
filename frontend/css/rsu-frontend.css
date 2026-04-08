@@ -53,11 +53,23 @@
 .rsu-date--noticed {
 	background: var(--rsu-accent-tint-8);
 	border: 1px solid var(--rsu-accent-tint-15);
+	transition: background var(--rsu-transition), border-color var(--rsu-transition);
+}
+
+.rsu-date--noticed:hover {
+	background: var(--rsu-accent-tint-15);
+	border-color: color-mix(in srgb, var(--rsu-accent) 30%, var(--rsu-bg));
 }
 
 .rsu-date--released {
 	background: color-mix(in srgb, var(--rsu-success) 8%, var(--rsu-bg));
 	border: 1px solid color-mix(in srgb, var(--rsu-success) 15%, var(--rsu-bg));
+	transition: background var(--rsu-transition), border-color var(--rsu-transition);
+}
+
+.rsu-date--released:hover {
+	background: color-mix(in srgb, var(--rsu-success) 15%, var(--rsu-bg));
+	border-color: color-mix(in srgb, var(--rsu-success) 30%, var(--rsu-bg));
 }
 
 .rsu-date__label {
@@ -249,6 +261,17 @@
 }
 
 
+/* Last-child margin cleanup */
+.rsu-panel__content > *:last-child {
+	margin-bottom: 0;
+}
+
+.rsu-panel__content > ul:last-child li:last-child,
+.rsu-panel__content > ol:last-child li:last-child {
+	margin-bottom: 0;
+}
+
+
 /* === Tab Panel Animation === */
 
 .rsu-panel--enter {
@@ -295,6 +318,12 @@
 	border-radius: 9999px;
 	white-space: nowrap;
 	vertical-align: middle;
+	transition: background var(--rsu-transition), border-color var(--rsu-transition);
+}
+
+.rsu-gen-pill:hover {
+	background: var(--rsu-accent-tint-15);
+	border-color: var(--rsu-accent);
 }
 
 .rsu-panel__content p > .rsu-gen-pill,

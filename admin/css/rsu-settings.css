@@ -30,6 +30,7 @@
     --rsu-radius-badge: 6px;
     --rsu-shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.08);
     --rsu-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.12);
+    --rsu-border-subtle: #f0f0f0;
     --rsu-transition: 0.2s ease;
 }
 
@@ -100,7 +101,7 @@
 /* ── 4. Field Rows ─────────────────────────────────────────────── */
 .rsu-field-row {
     padding: 16px 20px;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--rsu-border-subtle);
     display: flex;
     gap: 16px;
 }
@@ -298,12 +299,12 @@
     letter-spacing: 0.05em;
     color: var(--rsu-text-secondary);
     padding: 8px 8px 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--rsu-border-subtle);
 }
 
 .rsu-vehicle-block__generations td {
     padding: 8px 8px 8px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid var(--rsu-border-subtle);
     font-size: 14px;
     vertical-align: middle;
 }
