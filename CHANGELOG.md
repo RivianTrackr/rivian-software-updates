@@ -2,6 +2,15 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.10.0] - 2026-04-08
+
+### Added
+- **`[rsu_history]` shortcode**: Displays a styled table of all software update posts with OTA Version (linked to post), First Noticed date, Public Release date, and Available For vehicle badges. Supports `limit` and `order` attributes.
+- New `RSU_Shortcode` class registered on `plugins_loaded`.
+- Dark-themed table styles matching the existing frontend design system, with hover rows, accent-colored version links, and pill-style vehicle badges.
+- Responsive card layout on small screens (< 480px): table collapses into stacked cards with hidden headers.
+- Print-ready light theme override for the history table.
+
 ## [2.9.0] - 2026-04-08
 
 ### Added
