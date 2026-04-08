@@ -398,7 +398,6 @@
 	letter-spacing: 0.06em;
 	color: var(--rsu-text-muted);
 	background: var(--rsu-bg);
-	border-bottom: 1px solid var(--rsu-border);
 	text-align: start;
 	white-space: nowrap;
 }
@@ -414,12 +413,7 @@
 .rsu-history__table tbody td {
 	padding: 14px 20px;
 	font-size: 14px;
-	border-bottom: 1px solid var(--rsu-divider);
 	vertical-align: middle;
-}
-
-.rsu-history__table tbody tr:last-child td {
-	border-bottom: none;
 }
 
 .rsu-history__version a {
