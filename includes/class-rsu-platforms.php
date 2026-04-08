@@ -16,6 +16,13 @@ class RSU_Platforms {
 	const OPTION_KEY = 'rsu_platforms';
 
 	/**
+	 * Static cache for get_all() to avoid repeated option lookups and sorting.
+	 *
+	 * @var array|null
+	 */
+	private static $cache = null;
+
+	/**
 	 * Built-in vehicles used as fallback when no custom config is saved.
 	 *
 	 * @return array
@@ -60,6 +67,10 @@ class RSU_Platforms {
 	 * @return array Keyed by vehicle slug, each with label, description, meta_key, sort, generations.
 	 */
 	public static function get_all() {
+		if ( null !== self::$cache ) {
+			return self::$cache;
+		}
+
 		$saved = get_option( self::OPTION_KEY, null );
 
 		if ( is_array( $saved ) && ! empty( $saved ) && self::is_vehicle_format( $saved ) ) {
@@ -94,7 +105,9 @@ class RSU_Platforms {
 		}
 		unset( $vehicle );
 
-		return apply_filters( 'rsu_platforms', $vehicles );
+		self::$cache = apply_filters( 'rsu_platforms', $vehicles );
+
+		return self::$cache;
 	}
 
 	/**

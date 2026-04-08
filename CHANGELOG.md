@@ -2,6 +2,26 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.6.0] - 2026-04-08
+
+### Fixed
+- **localStorage tab preference never read back**: Saved preferred tab was written to localStorage but never restored on page load — only the URL hash was checked. Now falls back to stored preference when no hash is present.
+- **Schema `extract_sections` ignored configurable heading level**: Heading extraction regex only matched `h2`/`h3`, missing `h4` when configured. Now reads structured sections JSON directly (with HTML regex fallback for legacy posts matching all heading levels).
+- **Frontend CSS loaded in footer causing FOUC**: Stylesheet was enqueued in `wp_footer`, causing a flash of unstyled content. CSS now loads in `<head>` via `wp_enqueue_scripts`; JS remains in footer.
+
+### Changed
+- **`RSU_Platforms::get_all()` now uses a static cache**: Eliminates 5+ redundant `get_option()` calls and sort operations per page load.
+- Vehicle tabs only render when 2+ vehicles are active. Single-vehicle posts display a full-radius panel without an unnecessary tab button.
+- Empty tab panels now show a "No release notes available" message instead of a blank panel.
+- `uninstall.php` uses a single batch `DELETE ... WHERE meta_key IN (...)` query instead of looping individual deletes.
+- `aioseo_clean_content` filter exits earlier when post ID is missing.
+- `package.json` version synced with plugin version (was 1.5.2, now 2.6.0).
+
+### Added
+- `Enter` and `Space` key support for tab activation (WAI-ARIA tab pattern compliance).
+- `getPreferred()` helper restored for reading stored tab preference from localStorage.
+- Sanitized URL hash values — only alphanumeric, hyphens, and underscores are accepted in the platform selector to prevent malformed selectors.
+
 ## [2.3.9] - 2026-04-07
 
 ### Changed

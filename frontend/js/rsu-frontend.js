@@ -10,6 +10,21 @@
     });
   }
 
+  function getPreferred() {
+    try {
+      return localStorage.getItem(STORAGE_KEY) || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  function hasPlatform(container, slug) {
+    if (!slug) return false;
+    // Sanitize: only allow alphanumeric, hyphens, underscores.
+    if (!/^[a-zA-Z0-9_-]+$/.test(slug)) return false;
+    return !!container.querySelector('[data-platform="' + slug + '"]');
+  }
+
   function setupTabs(container) {
     var tablist = container.querySelector('.rsu-tabs');
     if (!tablist) return;
@@ -26,13 +41,18 @@
 
     if (tabs.length < 2) return;
 
-    // URL hash overrides the server-rendered default tab.
+    // URL hash takes priority, then localStorage preference.
     // The PHP already renders the correct default from settings,
-    // so JS only intervenes if a hash is present.
+    // so JS only intervenes if a hash or stored preference is present.
     var hash = window.location.hash.replace('#', '');
+    var override = hash || getPreferred();
 
-    if (hash && container.querySelector('[data-platform="' + hash + '"]')) {
-      activateTab(container, hash, false);
+    if (hasPlatform(container, override)) {
+      activateTab(container, override, false);
+      // Sync hash to match the active tab.
+      if (override && override !== hash) {
+        history.replaceState(null, '', '#' + override);
+      }
     }
 
     // Click handler.
@@ -47,7 +67,7 @@
       });
     });
 
-    // Keyboard navigation (arrow keys).
+    // Keyboard navigation (arrow keys, Enter, Space).
     tablist.addEventListener('keydown', function (e) {
       var tabArray = Array.from(tabs);
       var currentIndex = tabArray.indexOf(document.activeElement);
@@ -67,6 +87,13 @@
       } else if (e.key === 'End') {
         e.preventDefault();
         newIndex = tabArray.length - 1;
+      } else if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        var platform = tabArray[currentIndex].dataset.platform;
+        activateTab(container, platform, true);
+        setPreferred(platform);
+        history.replaceState(null, '', '#' + platform);
+        return;
       }
 
       if (newIndex >= 0) {

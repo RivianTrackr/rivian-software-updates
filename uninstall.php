@@ -12,7 +12,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 global $wpdb;
 
 // Remove all RSU post meta.
-$meta_keys = array(
+$static_keys = array(
 	'_rsu_is_update',
 	'_rsu_vehicles',
 	'_rsu_date_noticed',
@@ -28,10 +28,15 @@ $dynamic = $wpdb->get_col(
 	 WHERE meta_key LIKE '_rsu_content_%' OR meta_key LIKE '_rsu_sections_%'"
 );
 
-$meta_keys = array_merge( $meta_keys, $dynamic );
+$meta_keys = array_merge( $static_keys, $dynamic );
 
-foreach ( $meta_keys as $key ) {
-	$wpdb->delete( $wpdb->postmeta, array( 'meta_key' => $key ) );
+if ( ! empty( $meta_keys ) ) {
+	$placeholders = implode( ', ', array_fill( 0, count( $meta_keys ), '%s' ) );
+	// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- placeholders are generated above.
+	$wpdb->query( $wpdb->prepare(
+		"DELETE FROM {$wpdb->postmeta} WHERE meta_key IN ($placeholders)",
+		$meta_keys
+	) );
 }
 
 // Remove plugin options.
