@@ -425,6 +425,24 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 	var vTemplate = document.getElementById('rsu-vehicle-template');
 	var gTemplate = document.getElementById('rsu-generation-template');
 
+	function rsuConfirm(message) {
+		return new Promise(function (resolve) {
+			var dialog = document.createElement('dialog');
+			dialog.className = 'rsu-confirm-dialog';
+			dialog.innerHTML =
+				'<div class="rsu-confirm-dialog__body"><p class="rsu-confirm-dialog__message">' + message + '</p></div>' +
+				'<div class="rsu-confirm-dialog__actions">' +
+					'<button type="button" class="rsu-confirm-dialog__cancel">Cancel</button>' +
+					'<button type="button" class="rsu-confirm-dialog__ok">Confirm</button>' +
+				'</div>';
+			document.body.appendChild(dialog);
+			dialog.showModal();
+			dialog.querySelector('.rsu-confirm-dialog__cancel').addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(false); });
+			dialog.querySelector('.rsu-confirm-dialog__ok').addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(true); });
+			dialog.addEventListener('cancel', function () { dialog.remove(); resolve(false); });
+		});
+	}
+
 	document.getElementById('rsu-add-vehicle').addEventListener('click', function() {
 		var vi = manager.querySelectorAll('.rsu-vehicle-block').length;
 		var html = vTemplate.innerHTML.replace(/__VI__/g, vi);
@@ -454,15 +472,17 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 				alert('You must have at least one vehicle.');
 				return;
 			}
-			if (confirm('Remove this vehicle? Existing post data will not be deleted.')) {
-				e.target.closest('.rsu-vehicle-block').remove();
-			}
+			var vehicleBlock = e.target.closest('.rsu-vehicle-block');
+			rsuConfirm('Remove this vehicle? Existing post data will not be deleted.').then(function (ok) {
+				if (ok) vehicleBlock.remove();
+			});
 		}
 
 		if (e.target.closest('.rsu-remove-generation')) {
-			if (confirm('Remove this generation?')) {
-				e.target.closest('tr').remove();
-			}
+			var row = e.target.closest('tr');
+			rsuConfirm('Remove this generation?').then(function (ok) {
+				if (ok) row.remove();
+			});
 		}
 	});
 })();

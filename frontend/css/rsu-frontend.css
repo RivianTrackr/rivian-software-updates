@@ -212,7 +212,7 @@
 .rsu-panel__content ul,
 .rsu-panel__content ol {
 	margin: 0 0 20px;
-	padding-left: 24px;
+	padding-inline-start: 24px;
 }
 
 .rsu-panel__content li {
@@ -247,7 +247,7 @@
 	margin: 20px 0;
 	padding: 16px 20px;
 	background: var(--rsu-accent-tint-8);
-	border-left: 3px solid var(--rsu-accent);
+	border-inline-start: 3px solid var(--rsu-accent);
 	border-radius: 0 8px 8px 0;
 }
 
@@ -307,7 +307,7 @@
 	align-items: center;
 	gap: 4px;
 	padding: 2px 10px;
-	margin-left: 8px;
+	margin-inline-start: 8px;
 	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.03em;
@@ -329,12 +329,12 @@
 .rsu-panel__content p > .rsu-gen-pill,
 .rsu-panel__content li > .rsu-gen-pill,
 .rsu-panel__content blockquote .rsu-gen-pill {
-	margin-left: 8px;
+	margin-inline-start: 8px;
 }
 
 .rsu-list-pill {
 	margin-top: -12px;
-	text-align: right;
+	text-align: end;
 }
 
 .rsu-panel__content h2 > .rsu-gen-pill,
@@ -342,7 +342,7 @@
 .rsu-panel__content h4 > .rsu-gen-pill {
 	font-size: 10px;
 	padding: 2px 9px;
-	margin-left: 10px;
+	margin-inline-start: 10px;
 	vertical-align: middle;
 	position: relative;
 	top: -1px;

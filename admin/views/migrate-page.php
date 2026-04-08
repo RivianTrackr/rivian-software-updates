@@ -53,11 +53,11 @@ $already_done = count( $all_toggle ) - count( $migratable );
 			</tbody>
 		</table>
 
-		<form method="post" style="margin-top: 20px;">
+		<form method="post" style="margin-top: 20px;" class="rsu-migrate-form">
 			<?php wp_nonce_field( 'rsu_migrate' ); ?>
 			<p>
 				<button type="submit" name="rsu_migrate_preview" class="button button-secondary">Preview (Dry Run)</button>
-				<button type="submit" name="rsu_migrate_run" class="button button-primary" onclick="return confirm('This will write RSU section data to all eligible posts. Continue?');">Migrate All</button>
+				<button type="submit" name="rsu_migrate_run" class="button button-primary" data-rsu-confirm="This will write RSU section data to all eligible posts. Continue?">Migrate All</button>
 			</p>
 		</form>
 	<?php endif; ?>
@@ -67,11 +67,11 @@ $already_done = count( $all_toggle ) - count( $migratable );
 		<h2>Re-migrate Already Migrated Posts (<?php echo $already_done; ?>)</h2>
 		<p>Use this to re-run migration on posts that were already converted. This <strong>overwrites</strong> existing RSU section data with a fresh parse from the Essential Blocks content.</p>
 
-		<form method="post" style="margin-top: 10px;">
+		<form method="post" style="margin-top: 10px;" class="rsu-migrate-form">
 			<?php wp_nonce_field( 'rsu_migrate' ); ?>
 			<p>
 				<button type="submit" name="rsu_migrate_force_preview" class="button button-secondary">Preview Re-migration (Dry Run)</button>
-				<button type="submit" name="rsu_migrate_force_run" class="button button-primary" style="background: #d63638; border-color: #d63638;" onclick="return confirm('This will OVERWRITE existing RSU section data for all toggle posts. Continue?');">Re-migrate All (Force)</button>
+				<button type="submit" name="rsu_migrate_force_run" class="button button-primary" style="background: #d63638; border-color: #d63638;" data-rsu-confirm="This will OVERWRITE existing RSU section data for all toggle posts. Continue?">Re-migrate All (Force)</button>
 			</p>
 		</form>
 	<?php endif; ?>
@@ -122,6 +122,64 @@ $already_done = count( $all_toggle ) - count( $migratable );
 		<?php wp_nonce_field( 'rsu_migrate' ); ?>
 		<button type="submit" name="rsu_migrate_diagnose" class="button button-secondary">Check Database Directly</button>
 	</form>
+
+	<script>
+	(function() {
+		function rsuConfirm(message) {
+			return new Promise(function (resolve) {
+				var dialog = document.createElement('dialog');
+				dialog.className = 'rsu-confirm-dialog';
+				dialog.setAttribute('style', 'border:none;border-radius:12px;padding:0;box-shadow:0 8px 32px rgba(0,0,0,0.2);max-width:400px;width:calc(100% - 32px);');
+				dialog.innerHTML =
+					'<div style="padding:24px 24px 0;"><p style="font-size:14px;line-height:1.6;margin:0;">' + message + '</p></div>' +
+					'<div style="display:flex;justify-content:flex-end;gap:8px;padding:16px 24px 20px;">' +
+						'<button type="button" class="button button-secondary rsu-dlg-cancel">Cancel</button>' +
+						'<button type="button" class="button button-primary" style="background:#d63638;border-color:#d63638;">Confirm</button>' +
+					'</div>';
+				document.body.appendChild(dialog);
+				dialog.showModal();
+				dialog.querySelector('.rsu-dlg-cancel').addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(false); });
+				dialog.querySelector('.button-primary').addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(true); });
+				dialog.addEventListener('cancel', function () { dialog.remove(); resolve(false); });
+			});
+		}
+
+		// Intercept confirm buttons and add loading state.
+		document.querySelectorAll('.rsu-migrate-form').forEach(function (form) {
+			form.addEventListener('click', function (e) {
+				var btn = e.target.closest('[data-rsu-confirm]');
+				if (!btn) return;
+
+				e.preventDefault();
+				var msg = btn.getAttribute('data-rsu-confirm');
+				rsuConfirm(msg).then(function (ok) {
+					if (!ok) return;
+					// Add loading state to all buttons in form.
+					form.querySelectorAll('button[type="submit"]').forEach(function (b) {
+						b.disabled = true;
+						b.style.opacity = '0.6';
+					});
+					btn.textContent = btn.textContent.trim() + '...';
+					// Create a hidden input to carry the button name since disabled buttons don't submit.
+					var hidden = document.createElement('input');
+					hidden.type = 'hidden';
+					hidden.name = btn.name;
+					hidden.value = '1';
+					form.appendChild(hidden);
+					form.submit();
+				});
+			});
+
+			// Also add loading state for non-confirm buttons (Preview/Dry Run).
+			form.addEventListener('submit', function () {
+				form.querySelectorAll('button[type="submit"]').forEach(function (b) {
+					b.disabled = true;
+					b.style.opacity = '0.6';
+				});
+			});
+		});
+	})();
+	</script>
 
 	<?php if ( $dry_run_results || $migrate_results ) :
 		$results = $dry_run_results ? $dry_run_results : $migrate_results;

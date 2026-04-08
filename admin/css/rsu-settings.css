@@ -199,7 +199,7 @@
     background: var(--rsu-white);
     border-radius: 50%;
     top: 4px;
-    left: 4px;
+    inset-inline-start: 4px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease;
 }
@@ -423,7 +423,73 @@
     color: var(--rsu-info-text);
 }
 
-/* ── 13. Responsive ────────────────────────────────────────────── */
+/* ── 13. Confirm Dialog ───────────────────────────────────────── */
+.rsu-confirm-dialog {
+    border: none;
+    border-radius: var(--rsu-radius-card);
+    padding: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    max-width: 400px;
+    width: calc(100% - 32px);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+        Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.rsu-confirm-dialog::backdrop {
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.rsu-confirm-dialog__body {
+    padding: 24px 24px 0;
+}
+
+.rsu-confirm-dialog__message {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--rsu-text);
+    margin: 0;
+}
+
+.rsu-confirm-dialog__actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 16px 24px 20px;
+}
+
+.rsu-confirm-dialog__cancel {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1px solid var(--rsu-border);
+    border-radius: var(--rsu-radius-input);
+    background: var(--rsu-bg-light);
+    color: var(--rsu-text);
+    cursor: pointer;
+    transition: background var(--rsu-transition);
+}
+
+.rsu-confirm-dialog__cancel:hover {
+    background: var(--rsu-bg-hover);
+}
+
+.rsu-confirm-dialog__ok {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--rsu-radius-input);
+    background: var(--rsu-error);
+    color: var(--rsu-white);
+    cursor: pointer;
+    transition: background var(--rsu-transition);
+}
+
+.rsu-confirm-dialog__ok:hover {
+    background: #e0352b;
+}
+
+/* ── 14. Responsive ───────────────────────────────────────────── */
 @media screen and (max-width: 782px) {
     .rsu-settings-wrap {
         margin: 20px 12px 0;

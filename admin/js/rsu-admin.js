@@ -1,6 +1,25 @@
 (function ($) {
   'use strict';
 
+  // ── Styled confirm dialog ──
+  function rsuConfirm(message) {
+    return new Promise(function (resolve) {
+      var dialog = document.createElement('dialog');
+      dialog.className = 'rsu-confirm-dialog';
+      dialog.innerHTML =
+        '<div class="rsu-confirm-dialog__body"><p class="rsu-confirm-dialog__message">' + message + '</p></div>' +
+        '<div class="rsu-confirm-dialog__actions">' +
+          '<button type="button" class="rsu-confirm-dialog__cancel">Cancel</button>' +
+          '<button type="button" class="rsu-confirm-dialog__ok">Confirm</button>' +
+        '</div>';
+      document.body.appendChild(dialog);
+      dialog.showModal();
+      dialog.querySelector('.rsu-confirm-dialog__cancel').addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(false); });
+      dialog.querySelector('.rsu-confirm-dialog__ok').addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(true); });
+      dialog.addEventListener('cancel', function () { dialog.remove(); resolve(false); });
+    });
+  }
+
   // ══════════════════════════════════════════════
   // Section Builder — functions
   // ══════════════════════════════════════════════
@@ -25,14 +44,13 @@
     initSortable($builder);
 
     // Auto-resize all textareas after rendering.
-    // Multiple passes to catch late DOM reflows in the Block Editor.
+    // Use rAF for initial pass, single delayed pass for Block Editor reflows.
     var resizeFn = function () {
       $builder.find('.rsu-block__content, .rsu-bullet-row__input').each(function () {
         autoResizeTextarea(this);
       });
     };
-    setTimeout(resizeFn, 0);
-    setTimeout(resizeFn, 100);
+    requestAnimationFrame(resizeFn);
     setTimeout(resizeFn, 500);
   }
 
@@ -224,6 +242,7 @@
     try {
       sections = JSON.parse($jsonInput.val()) || [];
     } catch (e) {
+      console.warn('RSU: Failed to parse sections JSON, starting with empty sections.', e.message);
       sections = [];
     }
 
@@ -342,16 +361,28 @@
     e.preventDefault();
     e.stopPropagation();
 
-    if (!confirm('Remove this section?')) return;
-
     var $builder = $(this).closest('.rsu-section-builder');
     var $section = $(this).closest('.rsu-section');
+    var idx = $section.index();
 
-    readFromDOM($builder);
-    var sections = $builder.data('_sections');
-    sections.splice($section.index(), 1);
-    $builder.data('_sections', sections);
-    renderSections($builder);
+    rsuConfirm('Remove this section?').then(function (ok) {
+      if (!ok) return;
+
+      readFromDOM($builder);
+      var sections = $builder.data('_sections');
+      sections.splice(idx, 1);
+      $builder.data('_sections', sections);
+      renderSections($builder);
+
+      // Move focus to next/previous section or add button.
+      var $remaining = $builder.find('.rsu-section');
+      if ($remaining.length) {
+        var focusIdx = Math.min(idx, $remaining.length - 1);
+        $remaining.eq(focusIdx).find('.rsu-section__heading').focus();
+      } else {
+        $builder.find('.rsu-add-section').focus();
+      }
+    });
   });
 
   // ── Remove Block ──
@@ -362,19 +393,39 @@
     var $builder = $(this).closest('.rsu-section-builder');
     var $section = $(this).closest('.rsu-section');
     var $block = $(this).closest('.rsu-block');
+    var si = $section.index();
+    var bi = $block.index();
 
     readFromDOM($builder);
     var sections = $builder.data('_sections');
-    var si = $section.index();
-    sections[si].blocks.splice($block.index(), 1);
+    sections[si].blocks.splice(bi, 1);
     $builder.data('_sections', sections);
     renderSections($builder);
+
+    // Move focus to next/previous block or section heading.
+    var $sectionEl = $builder.find('.rsu-section').eq(si);
+    if ($sectionEl.length) {
+      var $remainingBlocks = $sectionEl.find('.rsu-block');
+      if ($remainingBlocks.length) {
+        var focusIdx = Math.min(bi, $remainingBlocks.length - 1);
+        $remainingBlocks.eq(focusIdx).find('.rsu-block__content, .rsu-bullet-row__input').first().focus();
+      } else {
+        $sectionEl.find('.rsu-section__heading').focus();
+      }
+    }
   });
+
+  // ── Debounce helper ──
+  var _syncTimer;
+  function debouncedSync($builder) {
+    clearTimeout(_syncTimer);
+    _syncTimer = setTimeout(function () { readFromDOM($builder); }, 300);
+  }
 
   // ── Live sync on input ──
   $(document).on('input', '.rsu-section__heading, .rsu-block__content, .rsu-bullet-row__input', function () {
     var $builder = $(this).closest('.rsu-section-builder');
-    readFromDOM($builder);
+    debouncedSync($builder);
   });
 
   // ── Auto-resize textareas ──
@@ -412,29 +463,37 @@
   });
 
   // ── Copy from: copy sections from one platform to another ──
+  var _copyInProgress = false;
   $(document).on('change', '.rsu-copy-from-select', function () {
+    if (_copyInProgress) return;
     var sourceSlug = $(this).val();
     var targetSlug = $(this).data('target');
 
     if (!sourceSlug) return;
 
-    if (!confirm('Copy sections from the ' + sourceSlug + ' editor? This will overwrite the current sections.')) {
-      $(this).val('');
-      return;
-    }
+    _copyInProgress = true;
+    var $select = $(this);
+    rsuConfirm('Copy sections from the ' + sourceSlug + ' editor? This will overwrite the current sections.').then(function (ok) {
+      if (!ok) {
+        $select.val('');
+        _copyInProgress = false;
+        return;
+      }
 
-    var $sourceBuilder = $('.rsu-section-builder[data-platform="' + sourceSlug + '"]');
-    var $targetBuilder = $('.rsu-section-builder[data-platform="' + targetSlug + '"]');
+      var $sourceBuilder = $('.rsu-section-builder[data-platform="' + sourceSlug + '"]');
+      var $targetBuilder = $('.rsu-section-builder[data-platform="' + targetSlug + '"]');
 
-    ensureBuilder($sourceBuilder);
-    ensureBuilder($targetBuilder);
-    readFromDOM($sourceBuilder);
-    var sourceSections = JSON.parse(JSON.stringify($sourceBuilder.data('_sections')));
+      ensureBuilder($sourceBuilder);
+      ensureBuilder($targetBuilder);
+      readFromDOM($sourceBuilder);
+      var sourceSections = JSON.parse(JSON.stringify($sourceBuilder.data('_sections')));
 
-    $targetBuilder.data('_sections', sourceSections);
-    renderSections($targetBuilder);
+      $targetBuilder.data('_sections', sourceSections);
+      renderSections($targetBuilder);
 
-    $(this).val('');
+      $select.val('');
+      _copyInProgress = false;
+    });
   });
 
   // ══════════════════════════════════════════════

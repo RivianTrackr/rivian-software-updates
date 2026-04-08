@@ -17,6 +17,7 @@ const builds = [
     outfile: 'frontend/js/rsu-frontend.min.js',
     format: 'iife',
     minify: true,
+    sourcemap: 'linked',
     drop: ['console', 'debugger'],
   },
   // Frontend CSS
@@ -33,6 +34,7 @@ const builds = [
     entryPoints: ['admin/js/rsu-admin.js'],
     outfile: 'admin/js/rsu-admin.min.js',
     minify: true,
+    sourcemap: 'linked',
     drop: ['console', 'debugger'],
   },
   // Admin CSS

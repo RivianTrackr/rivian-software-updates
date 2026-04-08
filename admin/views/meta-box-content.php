@@ -97,6 +97,21 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-bullet-add { display: flex; align-items: center; gap: 4px; width: 100%; padding: 7px 12px; margin: 0; background: var(--rsu-bg-light); border: none; border-top: 1px solid var(--rsu-border-light); color: var(--rsu-text-muted); font-size: 11px; font-weight: 600; cursor: pointer; text-align: left; }
 .rsu-bullet-add:hover { background: var(--rsu-bg-info); color: var(--rsu-action); }
 
+/* Drag and drop */
+.rsu-drag-placeholder { border: 2px dashed var(--rsu-border); border-radius: 12px; margin-bottom: 16px; background: var(--rsu-bg-light); }
+.rsu-drag-active { position: fixed; z-index: 10000; opacity: 0.9; box-shadow: 0 8px 24px rgba(0,0,0,0.15); pointer-events: none; transition: none; }
+
+/* Confirm dialog */
+.rsu-confirm-dialog { border: none; border-radius: 12px; padding: 0; box-shadow: 0 8px 32px rgba(0,0,0,0.2); max-width: 400px; width: calc(100% - 32px); font-family: inherit; }
+.rsu-confirm-dialog::backdrop { background: rgba(0,0,0,0.4); }
+.rsu-confirm-dialog__body { padding: 24px 24px 0; }
+.rsu-confirm-dialog__message { font-size: 14px; line-height: 1.6; color: var(--rsu-text); margin: 0; }
+.rsu-confirm-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px 20px; }
+.rsu-confirm-dialog__cancel { padding: 8px 16px; font-size: 13px; font-weight: 500; border: 1px solid var(--rsu-border); border-radius: 8px; background: var(--rsu-bg-light); color: var(--rsu-text); cursor: pointer; }
+.rsu-confirm-dialog__cancel:hover { background: #e8e8ed; }
+.rsu-confirm-dialog__ok { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; background: var(--rsu-error); color: #fff; cursor: pointer; }
+.rsu-confirm-dialog__ok:hover { background: #e0352b; }
+
 /* Generation selector */
 .rsu-gen-select { font-size: 10px; font-weight: 500; padding: 2px 18px 2px 6px; border: 1px solid var(--rsu-border); border-radius: 4px; background: var(--rsu-bg-light); color: var(--rsu-text-muted); cursor: pointer; transition: all 0.15s; line-height: 1.5; flex-shrink: 0; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%2386868b' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 5px center; }
 .rsu-gen-select:hover { border-color: var(--rsu-action); background: var(--rsu-bg-info); color: var(--rsu-text); }
@@ -123,7 +138,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 	<input type="hidden" name="rsu_is_update" value="1" />
 
 	<div class="rsu-fields" id="rsu-fields">
-		<div class="rsu-vehicle-checks">
+		<div class="rsu-vehicle-checks" role="group" aria-label="Select vehicles for this update">
 			<span class="rsu-vehicle-checks__label">Vehicles:</span>
 			<?php foreach ( $all_vehicles as $slug => $vehicle ) : ?>
 				<label class="rsu-vehicle-check">
@@ -257,6 +272,32 @@ var RSUSectionBuilder = (function () {
 	function qsa(sel, ctx) { return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
 	function closest(el, sel) { while (el && !el.matches(sel)) { el = el.parentElement; } return el; }
 
+	// ── Styled confirm dialog ──
+	function rsuConfirm(message) {
+		return new Promise(function (resolve) {
+			var dialog = document.createElement('dialog');
+			dialog.className = 'rsu-confirm-dialog';
+			dialog.innerHTML =
+				'<div class="rsu-confirm-dialog__body"><p class="rsu-confirm-dialog__message">' + message + '</p></div>' +
+				'<div class="rsu-confirm-dialog__actions">' +
+					'<button type="button" class="rsu-confirm-dialog__cancel">Cancel</button>' +
+					'<button type="button" class="rsu-confirm-dialog__ok">Confirm</button>' +
+				'</div>';
+			document.body.appendChild(dialog);
+			dialog.showModal();
+			qs('.rsu-confirm-dialog__cancel', dialog).addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(false); });
+			qs('.rsu-confirm-dialog__ok', dialog).addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(true); });
+			dialog.addEventListener('cancel', function () { dialog.remove(); resolve(false); });
+		});
+	}
+
+	// ── Debounce helper ──
+	var _debounceTimers = {};
+	function debounce(key, fn, delay) {
+		clearTimeout(_debounceTimers[key]);
+		_debounceTimers[key] = setTimeout(fn, delay || 300);
+	}
+
 	function createElement(html) {
 		var div = document.createElement('div');
 		div.innerHTML = html.trim();
@@ -273,11 +314,21 @@ var RSUSectionBuilder = (function () {
 			var jsonInput = qs('.rsu-sections-json[data-vehicle="' + vehicle + '"]', panel);
 			builder._jsonInput = jsonInput;
 			var raw = jsonInput ? jsonInput.value : '[]';
-			try { builder._sections = JSON.parse(raw) || []; } catch (e) { builder._sections = []; }
+			try {
+				builder._sections = JSON.parse(raw) || [];
+			} catch (e) {
+				console.warn('RSU: Failed to parse sections JSON, starting with empty sections.', e.message);
+				builder._sections = [];
+			}
 
 			// Parse generations from data attribute.
 			var genAttr = builder.getAttribute('data-generations');
-			try { builder._generations = JSON.parse(genAttr) || {}; } catch (e) { builder._generations = {}; }
+			try {
+				builder._generations = JSON.parse(genAttr) || {};
+			} catch (e) {
+				console.warn('RSU: Failed to parse generations JSON.', e.message);
+				builder._generations = {};
+			}
 		}
 		return builder;
 	}
@@ -386,8 +437,7 @@ var RSUSectionBuilder = (function () {
 			});
 		});
 
-		setTimeout(autoResize, 0);
-		setTimeout(autoResize, 100);
+		requestAnimationFrame(autoResize);
 		setTimeout(autoResize, 500);
 	}
 
@@ -418,20 +468,15 @@ var RSUSectionBuilder = (function () {
 
 		// Create placeholder.
 		var placeholder = document.createElement('div');
-		placeholder.style.cssText = 'height:' + item.offsetHeight + 'px;border:2px dashed #d2d2d7;border-radius:12px;margin-bottom:16px;background:#f5f5f7;';
 		placeholder.className = 'rsu-drag-placeholder';
+		placeholder.style.height = item.offsetHeight + 'px';
 
 		// Style the dragged item.
 		var rect = item.getBoundingClientRect();
-		item.style.position = 'fixed';
+		item.classList.add('rsu-drag-active');
 		item.style.top = rect.top + 'px';
 		item.style.left = rect.left + 'px';
 		item.style.width = rect.width + 'px';
-		item.style.zIndex = '10000';
-		item.style.opacity = '0.9';
-		item.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
-		item.style.pointerEvents = 'none';
-		item.style.transition = 'none';
 
 		// Insert placeholder.
 		item.parentNode.insertBefore(placeholder, item);
@@ -440,17 +485,25 @@ var RSUSectionBuilder = (function () {
 		dragState.placeholder = placeholder;
 
 		var offsetY = startY - rect.top;
+		var cachedRects = null;
+
+		function cacheRects() {
+			var siblings = qsa(itemSel + ':not(.rsu-drag-active)', container);
+			cachedRects = siblings.map(function (s) {
+				var r = s.getBoundingClientRect();
+				return { el: s, midY: r.top + r.height / 2 };
+			});
+		}
+		cacheRects();
 
 		function onMove(clientY) {
 			item.style.top = (clientY - offsetY) + 'px';
 
-			// Find which item we're hovering over.
-			var siblings = qsa(itemSel + ':not([style*="position: fixed"])', container);
-			for (var i = 0; i < siblings.length; i++) {
-				var sRect = siblings[i].getBoundingClientRect();
-				var midY = sRect.top + sRect.height / 2;
-				if (clientY < midY) {
-					container.insertBefore(placeholder, siblings[i]);
+			// Re-cache rects after placeholder moves (layout shifts).
+			cacheRects();
+			for (var i = 0; i < cachedRects.length; i++) {
+				if (clientY < cachedRects[i].midY) {
+					container.insertBefore(placeholder, cachedRects[i].el);
 					return;
 				}
 			}
@@ -468,15 +521,10 @@ var RSUSectionBuilder = (function () {
 			document.removeEventListener('touchend', finish);
 
 			// Reset styles.
-			item.style.position = '';
+			item.classList.remove('rsu-drag-active');
 			item.style.top = '';
 			item.style.left = '';
 			item.style.width = '';
-			item.style.zIndex = '';
-			item.style.opacity = '';
-			item.style.boxShadow = '';
-			item.style.pointerEvents = '';
-			item.style.transition = '';
 
 			// Insert item where placeholder is.
 			container.insertBefore(item, placeholder);
@@ -519,7 +567,8 @@ var RSUSectionBuilder = (function () {
 		qs('.rsu-section__heading', el).value = section.heading || '';
 
 		qs('.rsu-section__heading', el).addEventListener('input', function () {
-			readFromDOM(getBuilder(this));
+			var b = getBuilder(this);
+			debounce('sync', function () { readFromDOM(b); });
 		});
 
 		// Section-level gen select change handler.
@@ -601,7 +650,8 @@ var RSUSectionBuilder = (function () {
 
 		textarea.addEventListener('input', function () {
 			autoResizeTextarea(this);
-			readFromDOM(getBuilder(this));
+			var b = getBuilder(this);
+			debounce('sync', function () { readFromDOM(b); });
 		});
 
 		textarea.addEventListener('focus', function () {
@@ -642,7 +692,8 @@ var RSUSectionBuilder = (function () {
 
 		input.addEventListener('input', function () {
 			autoResizeTextarea(this);
-			readFromDOM(getBuilder(this));
+			var b = getBuilder(this);
+			debounce('sync', function () { readFromDOM(b); });
 		});
 
 		input.addEventListener('focus', function () {
@@ -717,16 +768,30 @@ var RSUSectionBuilder = (function () {
 	}
 
 	function removeSection(btn) {
-		if (!confirm('Remove this section?')) return;
-
 		var builder = getBuilder(btn);
 		var sectionEl = closest(btn, '.rsu-section');
 		if (!builder || !sectionEl) return;
 
-		readFromDOM(builder);
-		var idx = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
-		builder._sections.splice(idx, 1);
-		renderSections(builder);
+		rsuConfirm('Remove this section?').then(function (ok) {
+			if (!ok) return;
+
+			readFromDOM(builder);
+			var sections = qsa('.rsu-sections-list .rsu-section', builder);
+			var idx = sections.indexOf(sectionEl);
+			builder._sections.splice(idx, 1);
+			renderSections(builder);
+
+			// Move focus to next/previous section or add button.
+			var remaining = qsa('.rsu-sections-list .rsu-section', builder);
+			if (remaining.length) {
+				var focusIdx = Math.min(idx, remaining.length - 1);
+				var heading = qs('.rsu-section__heading', remaining[focusIdx]);
+				if (heading) heading.focus();
+			} else {
+				var addBtn = qs('.rsu-add-section', builder);
+				if (addBtn) addBtn.focus();
+			}
+		});
 	}
 
 	function removeBlock(btn) {
@@ -737,9 +802,24 @@ var RSUSectionBuilder = (function () {
 
 		readFromDOM(builder);
 		var si = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
-		var bi = qsa('.rsu-blocks-list .rsu-block', sectionEl).indexOf(blockEl);
+		var blocks = qsa('.rsu-blocks-list .rsu-block', sectionEl);
+		var bi = blocks.indexOf(blockEl);
 		builder._sections[si].blocks.splice(bi, 1);
 		renderSections(builder);
+
+		// Move focus to next/previous block or section heading.
+		var sectionEls = qsa('.rsu-section', builder);
+		if (sectionEls[si]) {
+			var remainingBlocks = qsa('.rsu-block', sectionEls[si]);
+			if (remainingBlocks.length) {
+				var focusIdx = Math.min(bi, remainingBlocks.length - 1);
+				var input = qs('.rsu-block__content, .rsu-bullet-row__input', remainingBlocks[focusIdx]);
+				if (input) input.focus();
+			} else {
+				var heading = qs('.rsu-section__heading', sectionEls[si]);
+				if (heading) heading.focus();
+			}
+		}
 	}
 
 	function addBullet(btn) {
@@ -852,29 +932,33 @@ var RSUSectionBuilder = (function () {
 	});
 
 	// Copy from.
+	var _copyInProgress = false;
 	document.addEventListener('change', function (e) {
 		if (!e.target.classList.contains('rsu-copy-from-select')) return;
+		if (_copyInProgress) return;
 
 		var sourceSlug = e.target.value;
 		var targetSlug = e.target.getAttribute('data-target');
 		if (!sourceSlug) return;
 
-		if (!confirm('Copy sections from ' + sourceSlug + '? This will overwrite the current sections.')) {
-			e.target.value = '';
-			return;
-		}
+		_copyInProgress = true;
+		var selectEl = e.target;
+		rsuConfirm('Copy sections from ' + sourceSlug + '? This will overwrite the current sections.').then(function (ok) {
+			if (!ok) { selectEl.value = ''; _copyInProgress = false; return; }
 
-		var srcBuilder = qs('.rsu-section-builder[data-vehicle="' + sourceSlug + '"]');
-		var tgtBuilder = qs('.rsu-section-builder[data-vehicle="' + targetSlug + '"]');
-		if (!srcBuilder || !tgtBuilder) { e.target.value = ''; return; }
+			var srcBuilder = qs('.rsu-section-builder[data-vehicle="' + sourceSlug + '"]');
+			var tgtBuilder = qs('.rsu-section-builder[data-vehicle="' + targetSlug + '"]');
+			if (!srcBuilder || !tgtBuilder) { selectEl.value = ''; _copyInProgress = false; return; }
 
-		getBuilder(srcBuilder);
-		getBuilder(tgtBuilder);
-		readFromDOM(srcBuilder);
+			getBuilder(srcBuilder);
+			getBuilder(tgtBuilder);
+			readFromDOM(srcBuilder);
 
-		tgtBuilder._sections = JSON.parse(JSON.stringify(srcBuilder._sections));
-		renderSections(tgtBuilder);
-		e.target.value = '';
+			tgtBuilder._sections = JSON.parse(JSON.stringify(srcBuilder._sections));
+			renderSections(tgtBuilder);
+			selectEl.value = '';
+			_copyInProgress = false;
+		});
 	});
 
 	// Run init immediately, plus retry for Block Editor.

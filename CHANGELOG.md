@@ -2,6 +2,34 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.7.0] - 2026-04-08
+
+### Performance
+- Replaced triple staggered `setTimeout` textarea auto-resize with `requestAnimationFrame` + single delayed pass.
+- Cached `getBoundingClientRect()` calls during drag-and-drop instead of recalculating every mousemove.
+- Debounced `readFromDOM()` on textarea input (300ms) to reduce JSON serialization during typing.
+- Added `contain: layout style` to section cards to isolate reflow scope.
+
+### Fixed
+- BreadcrumbList schema now includes the required `item` URL on the last breadcrumb entry.
+- `softwareVersion` in schema uses explicit `! empty()` guard to prevent empty values.
+- `json_decode()` in schema section extraction now checks `json_last_error()` before using parsed data.
+- Focus now moves to next/previous sibling after deleting a section or block instead of jumping randomly.
+- Copy-from dropdown guarded against double-click race condition with processing flag.
+- JSON parse failures in section builder now log a `console.warn` instead of failing silently.
+
+### Changed
+- Replaced all `confirm()` dialogs with styled `<dialog>` modals matching the RivianTrackr design system.
+- Replaced hardcoded inline drag-and-drop styles with `.rsu-drag-placeholder` and `.rsu-drag-active` CSS classes.
+- Converted LTR-only CSS properties (`border-left`, `padding-left`, `margin-left`, `left`) to logical equivalents (`border-inline-start`, `padding-inline-start`, `margin-inline-start`, `inset-inline-start`) for RTL support.
+- Migration page buttons now show a disabled/loading state during form submission.
+- esbuild now generates linked source maps for minified JS files.
+
+### Accessibility
+- Vehicle checkbox group now has `role="group"` and `aria-label` for screen readers.
+- Added tablet breakpoint (1024px) for admin section builder with flex-wrap on headers and bullet rows.
+- Tightened mobile (782px) styles with reduced blocks-list padding.
+
 ## [2.6.1] - 2026-04-08
 
 ### Fixed
