@@ -375,6 +375,12 @@ class RSU_Admin {
 			return array();
 		}
 
+		// Sanitize HTML before parsing to prevent XSS.
+		$html = wp_kses_post( $html );
+		if ( empty( $html ) ) {
+			return array();
+		}
+
 		// Wrap in a root element for DOMDocument parsing.
 		$doc = new DOMDocument();
 		libxml_use_internal_errors( true );

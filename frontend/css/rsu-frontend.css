@@ -276,6 +276,7 @@
 
 .rsu-panel--enter {
 	animation: rsu-fade-in 0.2s ease;
+	will-change: opacity, transform;
 }
 
 @keyframes rsu-fade-in {
@@ -358,5 +359,82 @@
 
 	.rsu-panel--enter {
 		animation: none;
+	}
+}
+
+
+/* === Small Mobile === */
+
+@media (max-width: 480px) {
+	.rsu-dates {
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.rsu-tab {
+		padding: 10px 14px;
+		font-size: 12px;
+	}
+
+	.rsu-panel__content {
+		padding: 20px 16px;
+	}
+
+	.rsu-panel__content h2 {
+		font-size: 20px;
+	}
+
+	.rsu-panel__content h3 {
+		font-size: 17px;
+	}
+
+	.rsu-panel__content p,
+	.rsu-panel__content li {
+		font-size: 15px;
+	}
+}
+
+
+/* === Print === */
+
+@media print {
+	.rsu-update {
+		--rsu-bg: #ffffff;
+		--rsu-bg-card: #ffffff;
+		--rsu-bg-hover: #f5f5f5;
+		--rsu-text: #000000;
+		--rsu-text-secondary: #333333;
+		--rsu-text-heading: #000000;
+		--rsu-text-muted: #666666;
+		--rsu-text-on-accent: #000000;
+		--rsu-border: #cccccc;
+		--rsu-divider: #dddddd;
+		--rsu-accent: #0071e3;
+		--rsu-accent-tint-8: #f0f5ff;
+		--rsu-accent-tint-15: #dbeafe;
+	}
+
+	.rsu-tabs {
+		display: none;
+	}
+
+	.rsu-panel {
+		border: none;
+		break-inside: avoid;
+	}
+
+	.rsu-panel[hidden] {
+		display: block !important;
+	}
+
+	.rsu-date {
+		border-color: #cccccc;
+		background: #f9f9f9;
+	}
+
+	.rsu-gen-pill {
+		border-color: #cccccc;
+		background: #f0f5ff;
+		color: #0071e3;
 	}
 }

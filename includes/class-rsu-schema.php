@@ -42,14 +42,21 @@ class RSU_Schema {
 					$node['@type']       = 'TechArticle';
 					$node['description'] = $description;
 
-					if ( ! empty( $version ) ) {
-						$node['about'] = array(
-							'@type'               => 'SoftwareApplication',
-							'name'                => 'Rivian Vehicle Software',
-							'softwareVersion'     => $version,
-							'operatingSystem'     => 'Rivian OS',
-							'applicationCategory' => 'DriverApplication',
-						);
+					if ( ! empty( $version ) && ! empty( $active_vehicles ) ) {
+						$about = array();
+						foreach ( $active_vehicles as $v_slug ) {
+							if ( ! isset( $all_vehicles[ $v_slug ] ) ) {
+								continue;
+							}
+							$about[] = array(
+								'@type'               => 'SoftwareApplication',
+								'name'                => $all_vehicles[ $v_slug ]['label'] . ' Vehicle Software',
+								'softwareVersion'     => $version,
+								'operatingSystem'     => 'Rivian OS',
+								'applicationCategory' => 'DriverApplication',
+							);
+						}
+						$node['about'] = count( $about ) === 1 ? $about[0] : $about;
 					}
 
 					if ( ! empty( $sections ) ) {
@@ -111,14 +118,21 @@ class RSU_Schema {
 			'mainEntityOfPage' => get_permalink( $post_id ),
 		);
 
-		if ( ! empty( $version ) ) {
-			$article['about'] = array(
-				'@type'               => 'SoftwareApplication',
-				'name'                => 'Rivian Vehicle Software',
-				'softwareVersion'     => $version,
-				'operatingSystem'     => 'Rivian OS',
-				'applicationCategory' => 'DriverApplication',
-			);
+		if ( ! empty( $version ) && ! empty( $active_vehicles ) ) {
+			$about = array();
+			foreach ( $active_vehicles as $v_slug ) {
+				if ( ! isset( $all_vehicles[ $v_slug ] ) ) {
+					continue;
+				}
+				$about[] = array(
+					'@type'               => 'SoftwareApplication',
+					'name'                => $all_vehicles[ $v_slug ]['label'] . ' Vehicle Software',
+					'softwareVersion'     => $version,
+					'operatingSystem'     => 'Rivian OS',
+					'applicationCategory' => 'DriverApplication',
+				);
+			}
+			$article['about'] = count( $about ) === 1 ? $about[0] : $about;
 		}
 
 		if ( ! empty( $sections ) ) {

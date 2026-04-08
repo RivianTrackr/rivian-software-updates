@@ -185,7 +185,13 @@ class RSU_Platforms {
 	 *
 	 * @return array
 	 */
+	private static $gen_slugs_cache = null;
+
 	public static function get_all_generation_slugs() {
+		if ( null !== self::$gen_slugs_cache ) {
+			return self::$gen_slugs_cache;
+		}
+
 		$slugs = array();
 		foreach ( self::get_all() as $vehicle ) {
 			if ( ! empty( $vehicle['generations'] ) ) {
@@ -194,6 +200,7 @@ class RSU_Platforms {
 				}
 			}
 		}
-		return array_unique( $slugs );
+		self::$gen_slugs_cache = array_unique( $slugs );
+		return self::$gen_slugs_cache;
 	}
 }

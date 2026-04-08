@@ -142,6 +142,15 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-import-dialog__submit { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; background: var(--rsu-action); color: #fff; cursor: pointer; }
 .rsu-import-dialog__submit:hover { background: var(--rsu-action-hover); }
 
+/* Toast notification */
+.rsu-toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); padding: 10px 20px; background: #1d1d1f; color: #fff; font-size: 13px; font-weight: 500; border-radius: 8px; z-index: 100000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; }
+.rsu-toast--visible { opacity: 1; }
+
+/* Undo bar */
+.rsu-undo-bar { display: flex; align-items: center; gap: 8px; padding: 6px 12px; margin-bottom: 12px; background: var(--rsu-bg-info); border: 1px solid rgba(0,113,227,0.2); border-radius: 8px; font-size: 12px; color: var(--rsu-text-secondary); }
+.rsu-undo-bar button { background: none; border: none; color: var(--rsu-action); font-size: 12px; font-weight: 600; cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+.rsu-undo-bar button:hover { background: rgba(0,113,227,0.1); }
+
 /* Generation selector */
 .rsu-gen-select { font-size: 10px; font-weight: 500; padding: 2px 18px 2px 6px; border: 1px solid var(--rsu-border); border-radius: 4px; background: var(--rsu-bg-light); color: var(--rsu-text-muted); cursor: pointer; transition: all 0.15s; line-height: 1.5; flex-shrink: 0; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%2386868b' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 5px center; }
 .rsu-gen-select:hover { border-color: var(--rsu-action); background: var(--rsu-bg-info); color: var(--rsu-text); }
@@ -274,7 +283,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 					<div class="rsu-sections-list">
 						<!-- Sections rendered by JS -->
 					</div>
-					<button type="button" class="button rsu-add-section" onclick="RSUSectionBuilder.addSection(this)">+ Add Section</button>
+					<button type="button" class="button rsu-add-section" data-action="add-section">+ Add Section</button>
 				</div>
 
 				<!-- Hidden input stores the JSON -->
@@ -330,6 +339,34 @@ var RSUSectionBuilder = (function () {
 	function debounce(key, fn, delay) {
 		clearTimeout(_debounceTimers[key]);
 		_debounceTimers[key] = setTimeout(fn, delay || 300);
+	}
+
+	// ── Toast notification ──
+	function showToast(msg, duration) {
+		var existing = qs('.rsu-toast');
+		if (existing) existing.remove();
+		var el = createElement('<div class="rsu-toast">' + msg + '</div>');
+		document.body.appendChild(el);
+		requestAnimationFrame(function () { el.classList.add('rsu-toast--visible'); });
+		setTimeout(function () {
+			el.classList.remove('rsu-toast--visible');
+			setTimeout(function () { el.remove(); }, 300);
+		}, duration || 2000);
+	}
+
+	// ── Undo stack (per builder) ──
+	var MAX_UNDO = 20;
+	function pushUndo(builder) {
+		if (!builder._undoStack) builder._undoStack = [];
+		builder._undoStack.push(JSON.stringify(builder._sections));
+		if (builder._undoStack.length > MAX_UNDO) builder._undoStack.shift();
+	}
+	function popUndo(builder) {
+		if (!builder._undoStack || !builder._undoStack.length) return false;
+		builder._sections = JSON.parse(builder._undoStack.pop());
+		renderSections(builder);
+		showToast('Undone');
+		return true;
 	}
 
 	function createElement(html) {
@@ -583,19 +620,19 @@ var RSUSectionBuilder = (function () {
 		var el = createElement(
 			'<div class="rsu-section' + collapsed + '" data-index="' + si + '">' +
 				'<div class="rsu-section__header">' +
-					'<button type="button" class="rsu-section__toggle" title="Collapse / expand" onclick="RSUSectionBuilder.toggleSection(this)">&#9660;</button>' +
+					'<button type="button" class="rsu-section__toggle" title="Collapse / expand" data-action="toggle-section">&#9660;</button>' +
 					'<span class="rsu-section__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
 					'<input type="text" class="rsu-section__heading" placeholder="Section heading (e.g. Cold Weather Improvements)" />' +
 					genOptionsHTML(builder, sectionGen) +
-					'<button type="button" class="rsu-section__dupe" title="Duplicate section" onclick="RSUSectionBuilder.dupeSection(this)"><span class="dashicons dashicons-admin-page" style="font-size:14px;width:14px;height:14px;"></span></button>' +
-					'<button type="button" class="rsu-section__remove" title="Remove section" onclick="RSUSectionBuilder.removeSection(this)">&times;</button>' +
+					'<button type="button" class="rsu-section__dupe" title="Duplicate section" data-action="dupe-section"><span class="dashicons dashicons-admin-page" style="font-size:14px;width:14px;height:14px;"></span></button>' +
+					'<button type="button" class="rsu-section__remove" title="Remove section" data-action="remove-section">&times;</button>' +
 				'</div>' +
 				'<div class="rsu-blocks-list"></div>' +
 				'<div class="rsu-section__footer">' +
 					'<div class="rsu-add-block-group">' +
-						'<button type="button" class="button button-small rsu-add-block" onclick="RSUSectionBuilder.addBlock(this, \'paragraph\')">+ Paragraph</button>' +
-						'<button type="button" class="button button-small rsu-add-block" onclick="RSUSectionBuilder.addBlock(this, \'list\')">+ Bullet List</button>' +
-						'<button type="button" class="button button-small rsu-add-block" onclick="RSUSectionBuilder.addBlock(this, \'note\')">+ Note</button>' +
+						'<button type="button" class="button button-small rsu-add-block" data-action="add-block" data-type="paragraph">+ Paragraph</button>' +
+						'<button type="button" class="button button-small rsu-add-block" data-action="add-block" data-type="list">+ Bullet List</button>' +
+						'<button type="button" class="button button-small rsu-add-block" data-action="add-block" data-type="note">+ Note</button>' +
 					'</div>' +
 				'</div>' +
 			'</div>'
@@ -641,10 +678,10 @@ var RSUSectionBuilder = (function () {
 						'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
 						'<span class="rsu-block__label">' + label + '</span>' +
 						genOptionsHTML(builder, blockGen) +
-						'<button type="button" class="rsu-block__remove" title="Remove block" onclick="RSUSectionBuilder.removeBlock(this)">&times;</button>' +
+						'<button type="button" class="rsu-block__remove" title="Remove block" data-action="remove-block">&times;</button>' +
 					'</div>' +
 					'<div class="rsu-bullet-list"></div>' +
-					'<button type="button" class="rsu-bullet-add" onclick="RSUSectionBuilder.addBullet(this)" title="Add bullet point">+ Add bullet</button>' +
+					'<button type="button" class="rsu-bullet-add" data-action="add-bullet" title="Add bullet point">+ Add bullet</button>' +
 				'</div>'
 			);
 
@@ -676,7 +713,7 @@ var RSUSectionBuilder = (function () {
 					'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
 					'<span class="rsu-block__label">' + label + '</span>' +
 					genOptionsHTML(builder, blockGen) +
-					'<button type="button" class="rsu-block__remove" title="Remove block" onclick="RSUSectionBuilder.removeBlock(this)">&times;</button>' +
+					'<button type="button" class="rsu-block__remove" title="Remove block" data-action="remove-block">&times;</button>' +
 				'</div>' +
 				'<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="1"></textarea>' +
 			'</div>'
@@ -720,7 +757,7 @@ var RSUSectionBuilder = (function () {
 				'<span class="rsu-bullet-row__marker">&bull;</span>' +
 				'<textarea class="rsu-bullet-row__input" placeholder="Bullet point text..." rows="1"></textarea>' +
 				genCell +
-				'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet" onclick="RSUSectionBuilder.removeBullet(this)">&times;</button>' +
+				'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet" data-action="remove-bullet">&times;</button>' +
 			'</div>'
 		);
 
@@ -813,6 +850,7 @@ var RSUSectionBuilder = (function () {
 			if (!ok) return;
 
 			readFromDOM(builder);
+			pushUndo(builder);
 			var sections = qsa('.rsu-sections-list .rsu-section', builder);
 			var idx = sections.indexOf(sectionEl);
 			builder._sections.splice(idx, 1);
@@ -838,6 +876,7 @@ var RSUSectionBuilder = (function () {
 		if (!builder || !sectionEl || !blockEl) return;
 
 		readFromDOM(builder);
+		pushUndo(builder);
 		var si = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
 		var blocks = qsa('.rsu-blocks-list .rsu-block', sectionEl);
 		var bi = blocks.indexOf(blockEl);
@@ -980,7 +1019,11 @@ var RSUSectionBuilder = (function () {
 
 		_copyInProgress = true;
 		var selectEl = e.target;
+		// Safety timeout: reset flag after 10s in case dialog hangs.
+		var copyTimeout = setTimeout(function () { _copyInProgress = false; selectEl.value = ''; }, 10000);
+
 		rsuConfirm('Copy sections from ' + sourceSlug + '? This will overwrite the current sections.').then(function (ok) {
+			clearTimeout(copyTimeout);
 			if (!ok) { selectEl.value = ''; _copyInProgress = false; return; }
 
 			var srcBuilder = qs('.rsu-section-builder[data-vehicle="' + sourceSlug + '"]');
@@ -990,11 +1033,13 @@ var RSUSectionBuilder = (function () {
 			getBuilder(srcBuilder);
 			getBuilder(tgtBuilder);
 			readFromDOM(srcBuilder);
+			pushUndo(tgtBuilder);
 
 			tgtBuilder._sections = JSON.parse(JSON.stringify(srcBuilder._sections));
 			renderSections(tgtBuilder);
 			selectEl.value = '';
 			_copyInProgress = false;
+			showToast('Sections copied');
 		});
 	});
 
@@ -1012,6 +1057,7 @@ var RSUSectionBuilder = (function () {
 		if (!builder || !sectionEl) return;
 
 		readFromDOM(builder);
+		pushUndo(builder);
 		var idx = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
 		var copy = JSON.parse(JSON.stringify(builder._sections[idx]));
 		copy.heading = copy.heading ? copy.heading + ' (copy)' : '(copy)';
@@ -1061,9 +1107,13 @@ var RSUSectionBuilder = (function () {
 
 			var parsed = parseTextToSections(text);
 			if (parsed.length) {
+				pushUndo(builder);
 				builder._sections = builder._sections.concat(parsed);
 				renderSections(builder);
 				_dirty = true;
+				showToast('Imported ' + parsed.length + ' section' + (parsed.length > 1 ? 's' : ''));
+			} else {
+				showToast('No sections detected in pasted text');
 			}
 		});
 	}
@@ -1186,6 +1236,76 @@ var RSUSectionBuilder = (function () {
 	// Clear dirty flag on form submit.
 	document.addEventListener('submit', function () {
 		_dirty = false;
+	});
+
+	// ── Delegated event handler for data-action buttons ──
+	document.addEventListener('click', function (e) {
+		var actionEl = e.target.closest('[data-action]');
+		if (!actionEl) return;
+		var action = actionEl.getAttribute('data-action');
+
+		switch (action) {
+			case 'add-section': addSection(actionEl); break;
+			case 'add-block': addBlock(actionEl, actionEl.getAttribute('data-type')); break;
+			case 'remove-section': removeSection(actionEl); break;
+			case 'remove-block': removeBlock(actionEl); break;
+			case 'add-bullet': addBullet(actionEl); break;
+			case 'remove-bullet': removeBullet(actionEl); break;
+			case 'toggle-section': toggleSection(actionEl); break;
+			case 'dupe-section': dupeSection(actionEl); break;
+			case 'undo': undoAction(actionEl); break;
+		}
+	});
+
+	// ── Undo action ──
+	function undoAction(btn) {
+		var builder = getBuilder(btn);
+		if (builder) popUndo(builder);
+	}
+
+	// ── Keyboard shortcuts ──
+	document.addEventListener('keydown', function (e) {
+		// Ctrl/Cmd+Z: Undo (when focus is inside a builder)
+		if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+			var focused = document.activeElement;
+			if (focused && closest(focused, '.rsu-section-builder')) {
+				var builder = getBuilder(focused);
+				if (builder && builder._undoStack && builder._undoStack.length) {
+					e.preventDefault();
+					popUndo(builder);
+				}
+			}
+		}
+
+		// Ctrl/Cmd+Shift+S: Add section
+		if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 's' || e.key === 'S')) {
+			var focused = document.activeElement;
+			var builder = focused ? closest(focused, '.rsu-section-builder') : null;
+			if (!builder) {
+				// Find active panel's builder.
+				var activePanel = qs('.rsu-editor-panel:not(.rsu-editor-panel--hidden)');
+				if (activePanel) builder = qs('.rsu-section-builder', activePanel);
+			}
+			if (builder) {
+				e.preventDefault();
+				var addBtn = qs('[data-action="add-section"]', builder);
+				if (addBtn) addSection(addBtn);
+			}
+		}
+
+		// Enter in section heading: add first block if section is empty.
+		if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+			var focused = document.activeElement;
+			if (focused && focused.classList.contains('rsu-section__heading')) {
+				var sectionEl = closest(focused, '.rsu-section');
+				var blocks = sectionEl ? qsa('.rsu-block', sectionEl) : [];
+				if (!blocks.length) {
+					e.preventDefault();
+					var addPara = qs('[data-action="add-block"][data-type="paragraph"]', sectionEl);
+					if (addPara) addBlock(addPara, 'paragraph');
+				}
+			}
+		}
 	});
 
 	// Run init immediately, plus retry for Block Editor.
