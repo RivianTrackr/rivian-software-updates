@@ -76,6 +76,52 @@ $already_done = count( $all_toggle ) - count( $migratable );
 		</form>
 	<?php endif; ?>
 
+	<?php
+	// Diagnostic: check DB directly for all toggle posts.
+	if ( isset( $_POST['rsu_migrate_diagnose'] ) && check_admin_referer( 'rsu_migrate' ) ) :
+		$diag_posts = RSU_Migrate::get_migratable_posts( true );
+		?>
+		<hr>
+		<h2>Database Diagnostic</h2>
+		<table class="widefat striped" style="font-size: 12px;">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Title</th>
+					<th>_rsu_is_update</th>
+					<th>_rsu_vehicles</th>
+					<th>_rsu_sections_r1</th>
+					<th>_rsu_content_r1</th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $diag_posts as $dp ) :
+					$pid = $dp->ID;
+					$is_update  = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id=%d AND meta_key='_rsu_is_update' LIMIT 1", $pid ) );
+					$vehicles   = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id=%d AND meta_key='_rsu_vehicles' LIMIT 1", $pid ) );
+					$sections   = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id=%d AND meta_key='_rsu_sections_r1' LIMIT 1", $pid ) );
+					$content    = $wpdb->get_var( $wpdb->prepare( "SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id=%d AND meta_key='_rsu_content_r1' LIMIT 1", $pid ) );
+					?>
+					<tr>
+						<td><?php echo esc_html( $pid ); ?></td>
+						<td><?php echo esc_html( $dp->post_title ); ?></td>
+						<td><?php echo null === $is_update ? '<em style="color:red;">NOT SET</em>' : esc_html( $is_update ); ?></td>
+						<td><?php echo null === $vehicles ? '<em style="color:red;">NOT SET</em>' : esc_html( substr( $vehicles, 0, 50 ) ); ?></td>
+						<td><?php echo null === $sections ? '<em style="color:red;">NOT SET</em>' : esc_html( strlen( $sections ) ) . ' chars'; ?></td>
+						<td><?php echo null === $content ? '<em style="color:red;">NOT SET</em>' : esc_html( strlen( $content ) ) . ' chars'; ?></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	<?php endif; ?>
+
+	<hr>
+	<h2>Diagnostics</h2>
+	<form method="post" style="margin-top: 10px;">
+		<?php wp_nonce_field( 'rsu_migrate' ); ?>
+		<button type="submit" name="rsu_migrate_diagnose" class="button button-secondary">Check Database Directly</button>
+	</form>
+
 	<?php if ( $dry_run_results || $migrate_results ) :
 		$results = $dry_run_results ? $dry_run_results : $migrate_results;
 		$is_dry  = (bool) $dry_run_results;
