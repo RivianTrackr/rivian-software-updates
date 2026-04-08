@@ -107,10 +107,10 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-confirm-dialog__body { padding: 24px 24px 0; }
 .rsu-confirm-dialog__message { font-size: 14px; line-height: 1.6; color: var(--rsu-text); margin: 0; }
 .rsu-confirm-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px 20px; }
-.rsu-confirm-dialog__cancel { padding: 8px 16px; font-size: 13px; font-weight: 500; border: 1px solid var(--rsu-border); border-radius: 8px; background: var(--rsu-bg-light); color: var(--rsu-text); cursor: pointer; }
-.rsu-confirm-dialog__cancel:hover { background: #e8e8ed; }
-.rsu-confirm-dialog__ok { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; background: var(--rsu-error); color: #fff; cursor: pointer; }
-.rsu-confirm-dialog__ok:hover { background: #e0352b; }
+.rsu-confirm-dialog__cancel { padding: 8px 16px; font-size: 13px; font-weight: 500; border: 1px solid var(--rsu-border) !important; border-radius: 8px !important; background: var(--rsu-bg-light) !important; color: var(--rsu-text-secondary) !important; cursor: pointer; box-shadow: none !important; }
+.rsu-confirm-dialog__cancel:hover { background: #e8e8ed !important; }
+.rsu-confirm-dialog__ok { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none !important; border-radius: 8px !important; background: #ff3b30 !important; color: #ffffff !important; cursor: pointer; box-shadow: none !important; }
+.rsu-confirm-dialog__ok:hover { background: #e0352b !important; }
 
 /* Collapse / expand */
 .rsu-section--collapsed .rsu-blocks-list,

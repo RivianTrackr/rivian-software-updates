@@ -717,32 +717,34 @@
 	padding: 8px 16px;
 	font-size: 13px;
 	font-weight: 500;
-	border: 1px solid #d2d2d7;
-	border-radius: var(--rsu-radius-input, 8px);
-	background: #f5f5f7;
-	color: #1d1d1f;
+	border: 1px solid #d2d2d7 !important;
+	border-radius: var(--rsu-radius-input, 8px) !important;
+	background: #f5f5f7 !important;
+	color: #6e6e73 !important;
 	cursor: pointer;
 	transition: background 0.2s ease;
+	box-shadow: none !important;
 }
 
 .rsu-confirm-dialog__cancel:hover {
-	background: #e8e8ed;
+	background: #e8e8ed !important;
 }
 
 .rsu-confirm-dialog__ok {
 	padding: 8px 16px;
 	font-size: 13px;
 	font-weight: 600;
-	border: none;
-	border-radius: var(--rsu-radius-input, 8px);
-	background: #ff3b30;
-	color: #fff;
+	border: none !important;
+	border-radius: var(--rsu-radius-input, 8px) !important;
+	background: #ff3b30 !important;
+	color: #ffffff !important;
 	cursor: pointer;
 	transition: background 0.2s ease;
+	box-shadow: none !important;
 }
 
 .rsu-confirm-dialog__ok:hover {
-	background: #e0352b;
+	background: #e0352b !important;
 }
 
 /* ═══════════════════════════════════════

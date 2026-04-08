@@ -461,32 +461,34 @@
     padding: 8px 16px;
     font-size: 13px;
     font-weight: 500;
-    border: 1px solid var(--rsu-border);
-    border-radius: var(--rsu-radius-input);
-    background: var(--rsu-bg-light);
-    color: var(--rsu-text);
+    border: 1px solid var(--rsu-border) !important;
+    border-radius: var(--rsu-radius-input) !important;
+    background: var(--rsu-bg-light) !important;
+    color: var(--rsu-text-secondary) !important;
     cursor: pointer;
     transition: background var(--rsu-transition);
+    box-shadow: none !important;
 }
 
 .rsu-confirm-dialog__cancel:hover {
-    background: var(--rsu-bg-hover);
+    background: var(--rsu-bg-hover) !important;
 }
 
 .rsu-confirm-dialog__ok {
     padding: 8px 16px;
     font-size: 13px;
     font-weight: 600;
-    border: none;
-    border-radius: var(--rsu-radius-input);
-    background: var(--rsu-error);
-    color: var(--rsu-white);
+    border: none !important;
+    border-radius: var(--rsu-radius-input) !important;
+    background: #ff3b30 !important;
+    color: #ffffff !important;
     cursor: pointer;
     transition: background var(--rsu-transition);
+    box-shadow: none !important;
 }
 
 .rsu-confirm-dialog__ok:hover {
-    background: #e0352b;
+    background: #e0352b !important;
 }
 
 /* ── 14. Responsive ───────────────────────────────────────────── */
