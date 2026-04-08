@@ -89,6 +89,11 @@ class RSU_Migrate {
 				update_post_meta( $post_id, '_rsu_vehicles', array( 'r1' ) );
 			}
 
+			// Flush persistent object cache for this post so the admin
+			// editor and frontend pick up the new meta immediately.
+			wp_cache_delete( $post_id, 'post_meta' );
+			clean_post_cache( $post_id );
+
 			$result['saved'] = true;
 		}
 
