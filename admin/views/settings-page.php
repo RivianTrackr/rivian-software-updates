@@ -44,6 +44,12 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 						?>
 						<div class="rsu-vehicle-block" data-index="<?php echo esc_attr( $vi ); ?>">
 							<div class="rsu-vehicle-block__header">
+								<div class="rsu-vehicle-field" style="flex: 0 0 auto; padding-top: 18px;">
+									<span class="dashicons dashicons-move rsu-vehicle-drag" title="Drag to reorder" style="cursor:grab;color:#d2d2d7;font-size:16px;"></span>
+									<input type="hidden" name="<?php echo esc_attr( $prefix ); ?>[sort]"
+										class="rsu-vehicle-sort"
+										value="<?php echo esc_attr( $vi * 10 ); ?>" />
+								</div>
 								<div class="rsu-vehicle-field" style="flex: 0 0 120px;">
 									<label class="rsu-vehicle-field__label">Slug</label>
 									<?php if ( $is_existing ) : ?>
@@ -69,13 +75,6 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 										class="rsu-input"
 										value="<?php echo esc_attr( $vehicle['description'] ); ?>"
 										placeholder="e.g. R3 SUV" />
-								</div>
-								<div class="rsu-vehicle-field" style="flex: 0 0 80px;">
-									<label class="rsu-vehicle-field__label">Order</label>
-									<input type="number" name="<?php echo esc_attr( $prefix ); ?>[sort]"
-										class="rsu-input"
-										value="<?php echo esc_attr( isset( $vehicle['sort'] ) ? $vehicle['sort'] : '' ); ?>"
-										min="0" step="10" />
 								</div>
 								<div class="rsu-vehicle-field" style="flex: 0 0 40px; padding-top: 18px;">
 									<button type="button" class="button-link rsu-remove-vehicle rsu-remove-btn" title="Remove vehicle">
@@ -162,6 +161,10 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 				<template id="rsu-vehicle-template">
 					<div class="rsu-vehicle-block" data-index="__VI__">
 						<div class="rsu-vehicle-block__header">
+							<div class="rsu-vehicle-field" style="flex: 0 0 auto; padding-top: 18px;">
+								<span class="dashicons dashicons-move rsu-vehicle-drag" title="Drag to reorder" style="cursor:grab;color:#d2d2d7;font-size:16px;"></span>
+								<input type="hidden" name="rsu_platforms[__VI__][sort]" class="rsu-vehicle-sort" value="0" />
+							</div>
 							<div class="rsu-vehicle-field" style="flex: 0 0 120px;">
 								<label class="rsu-vehicle-field__label">Slug</label>
 								<input type="text" name="rsu_platforms[__VI__][slug]"
@@ -182,13 +185,6 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 									class="rsu-input"
 									value=""
 									placeholder="e.g. R3 SUV" />
-							</div>
-							<div class="rsu-vehicle-field" style="flex: 0 0 80px;">
-								<label class="rsu-vehicle-field__label">Order</label>
-								<input type="number" name="rsu_platforms[__VI__][sort]"
-									class="rsu-input"
-									value=""
-									min="0" step="10" />
 							</div>
 							<div class="rsu-vehicle-field" style="flex: 0 0 40px; padding-top: 18px;">
 								<button type="button" class="button-link rsu-remove-vehicle rsu-remove-btn" title="Remove vehicle">
@@ -443,6 +439,75 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 		});
 	}
 
+	// ── Drag-to-reorder vehicles ──
+	function initVehicleDrag() {
+		manager.querySelectorAll('.rsu-vehicle-drag').forEach(function (handle) {
+			handle.addEventListener('mousedown', function (e) {
+				e.preventDefault();
+				var block = handle.closest('.rsu-vehicle-block');
+				startVehicleDrag(block, e.clientY);
+			});
+		});
+	}
+
+	function startVehicleDrag(item, startY) {
+		var rect = item.getBoundingClientRect();
+		var placeholder = document.createElement('div');
+		placeholder.style.cssText = 'height:' + rect.height + 'px;border:2px dashed #d2d2d7;border-radius:12px;margin-bottom:16px;background:#f5f5f7;';
+
+		item.style.position = 'fixed';
+		item.style.top = rect.top + 'px';
+		item.style.left = rect.left + 'px';
+		item.style.width = rect.width + 'px';
+		item.style.zIndex = '10000';
+		item.style.opacity = '0.9';
+		item.style.boxShadow = '0 8px 24px rgba(0,0,0,0.15)';
+		item.style.pointerEvents = 'none';
+		item.style.transition = 'none';
+
+		item.parentNode.insertBefore(placeholder, item);
+		var offsetY = startY - rect.top;
+
+		function onMove(e) {
+			item.style.top = (e.clientY - offsetY) + 'px';
+			var siblings = Array.from(manager.querySelectorAll('.rsu-vehicle-block:not([style*="position: fixed"])'));
+			for (var i = 0; i < siblings.length; i++) {
+				var sr = siblings[i].getBoundingClientRect();
+				if (e.clientY < sr.top + sr.height / 2) {
+					manager.insertBefore(placeholder, siblings[i]);
+					return;
+				}
+			}
+			manager.appendChild(placeholder);
+		}
+
+		function finish() {
+			document.removeEventListener('mousemove', onMove);
+			document.removeEventListener('mouseup', finish);
+			item.style.cssText = '';
+			manager.insertBefore(item, placeholder);
+			placeholder.remove();
+			updateVehicleSortOrder();
+		}
+
+		document.addEventListener('mousemove', onMove);
+		document.addEventListener('mouseup', finish);
+	}
+
+	function updateVehicleSortOrder() {
+		manager.querySelectorAll('.rsu-vehicle-block').forEach(function (block, i) {
+			block.setAttribute('data-index', i);
+			var sortInput = block.querySelector('.rsu-vehicle-sort');
+			if (sortInput) sortInput.value = i * 10;
+			// Update name attributes to match new index.
+			block.querySelectorAll('[name]').forEach(function (input) {
+				input.name = input.name.replace(/rsu_platforms\[\d+\]/, 'rsu_platforms[' + i + ']');
+			});
+		});
+	}
+
+	initVehicleDrag();
+
 	document.getElementById('rsu-add-vehicle').addEventListener('click', function() {
 		var vi = manager.querySelectorAll('.rsu-vehicle-block').length;
 		var html = vTemplate.innerHTML.replace(/__VI__/g, vi);
@@ -451,6 +516,8 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 		var block = temp.firstElementChild;
 		manager.appendChild(block);
 		block.querySelector('.rsu-vehicle-slug').focus();
+		initVehicleDrag();
+		updateVehicleSortOrder();
 	});
 
 	document.addEventListener('click', function(e) {
