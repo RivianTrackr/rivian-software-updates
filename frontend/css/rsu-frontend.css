@@ -143,6 +143,11 @@
 	border-radius: 0 0 var(--rsu-radius) var(--rsu-radius);
 }
 
+.rsu-panel--solo {
+	border-top: 1px solid var(--rsu-border);
+	border-radius: var(--rsu-radius);
+}
+
 .rsu-panel[hidden] {
 	display: none;
 }
@@ -259,6 +264,16 @@
 		opacity: 1;
 		transform: translateY(0);
 	}
+}
+
+
+/* === Empty State === */
+
+.rsu-panel__empty {
+	text-align: center;
+	color: var(--rsu-text-muted);
+	font-size: 14px;
+	padding: 24px 0;
 }
 
 

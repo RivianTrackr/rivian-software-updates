@@ -198,12 +198,28 @@ class RSU_Schema {
 				continue;
 			}
 
+			// Prefer structured JSON — handles all heading levels correctly.
+			$sections_json = get_post_meta( $post_id, '_rsu_sections_' . $slug, true );
+			if ( $sections_json ) {
+				$parsed = json_decode( $sections_json, true );
+				if ( is_array( $parsed ) ) {
+					foreach ( $parsed as $section ) {
+						$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
+						if ( $heading && ! in_array( $heading, $sections, true ) ) {
+							$sections[] = $heading;
+						}
+					}
+					continue;
+				}
+			}
+
+			// Fallback: parse headings from pre-rendered HTML for legacy posts.
 			$content = get_post_meta( $post_id, $all_vehicles[ $slug ]['meta_key'], true );
 			if ( ! $content ) {
 				continue;
 			}
 
-			if ( preg_match_all( '/<h[23][^>]*>([^<]+)<\/h[23]>/i', $content, $matches ) ) {
+			if ( preg_match_all( '/<h[2-6][^>]*>([^<]+)<\/h[2-6]>/i', $content, $matches ) ) {
 				foreach ( $matches[1] as $heading ) {
 					$heading = trim( wp_strip_all_tags( $heading ) );
 					if ( $heading && ! in_array( $heading, $sections, true ) ) {

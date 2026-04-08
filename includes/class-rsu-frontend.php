@@ -12,8 +12,9 @@ class RSU_Frontend {
 	private $should_enqueue = false;
 
 	public function __construct() {
+		add_action( 'wp_enqueue_scripts', array( $this, 'maybe_enqueue_css' ) );
 		add_filter( 'the_content', array( $this, 'render_update_content' ), 20 );
-		add_action( 'wp_footer', array( $this, 'maybe_enqueue_assets' ) );
+		add_action( 'wp_footer', array( $this, 'maybe_enqueue_js' ) );
 		add_filter( 'aioseo_description_context', array( $this, 'aioseo_clean_content' ) );
 		add_filter( 'aioseo_og_description_context', array( $this, 'aioseo_clean_content' ) );
 		add_filter( 'aioseo_twitter_description_context', array( $this, 'aioseo_clean_content' ) );
@@ -25,17 +26,17 @@ class RSU_Frontend {
 		}
 
 		$post_id = get_the_ID();
-		if ( ! get_post_meta( $post_id, '_rsu_is_update', true ) ) {
-			return $content;
-		}
-
-		$active_vehicles = RSU_Platforms::get_active( $post_id );
-		if ( empty( $active_vehicles ) ) {
+		if ( ! $post_id || ! get_post_meta( $post_id, '_rsu_is_update', true ) ) {
 			return $content;
 		}
 
 		$all_vehicles = RSU_Platforms::get_all();
 		$default      = RSU_Platforms::get_default();
+
+		$active_vehicles = RSU_Platforms::get_active( $post_id );
+		if ( empty( $active_vehicles ) ) {
+			return $content;
+		}
 
 		if ( ! in_array( $default, $active_vehicles, true ) ) {
 			$default = $active_vehicles[0];
@@ -114,7 +115,7 @@ class RSU_Frontend {
 				</div>
 			<?php endif; ?>
 
-			<?php if ( count( $active_vehicles ) >= 1 ) : ?>
+			<?php if ( count( $active_vehicles ) > 1 ) : ?>
 				<div class="rsu-tabs" role="tablist" aria-label="Vehicle model">
 					<?php foreach ( $active_vehicles as $slug ) :
 						$vehicle    = $all_vehicles[ $slug ];
@@ -133,7 +134,9 @@ class RSU_Frontend {
 				</div>
 			<?php endif; ?>
 
-			<?php foreach ( $active_vehicles as $slug ) :
+			<?php
+			$single_vehicle = count( $active_vehicles ) === 1;
+			foreach ( $active_vehicles as $slug ) :
 				$vehicle    = $all_vehicles[ $slug ];
 				$is_default = ( $slug === $default );
 
@@ -151,13 +154,17 @@ class RSU_Frontend {
 					$vehicle_content = get_post_meta( $post_id, $vehicle['meta_key'], true );
 				}
 				?>
-				<div class="rsu-panel <?php echo $is_default ? 'rsu-panel--active' : ''; ?>"
+				<div class="rsu-panel <?php echo $is_default ? 'rsu-panel--active' : ''; ?> <?php echo $single_vehicle ? 'rsu-panel--solo' : ''; ?>"
 					role="tabpanel"
 					id="rsu-panel-<?php echo esc_attr( $slug ); ?>"
 					aria-labelledby="rsu-tab-<?php echo esc_attr( $slug ); ?>"
 					<?php echo $is_default ? '' : 'hidden'; ?>>
 					<div class="rsu-panel__content">
-						<?php echo wp_kses_post( $vehicle_content ); ?>
+						<?php if ( ! empty( $vehicle_content ) ) : ?>
+							<?php echo wp_kses_post( $vehicle_content ); ?>
+						<?php else : ?>
+							<p class="rsu-panel__empty">No release notes available for <?php echo esc_html( $vehicle['label'] ); ?>.</p>
+						<?php endif; ?>
 					</div>
 				</div>
 			<?php endforeach; ?>
@@ -167,8 +174,16 @@ class RSU_Frontend {
 		return $html;
 	}
 
-	public function maybe_enqueue_assets() {
-		if ( ! $this->should_enqueue ) {
+	/**
+	 * Enqueue CSS early in <head> on singular posts to prevent FOUC.
+	 */
+	public function maybe_enqueue_css() {
+		if ( ! is_singular( 'post' ) ) {
+			return;
+		}
+
+		$post_id = get_the_ID();
+		if ( ! $post_id || ! get_post_meta( $post_id, '_rsu_is_update', true ) ) {
 			return;
 		}
 
@@ -192,6 +207,22 @@ class RSU_Frontend {
 				'.rsu-update { --rsu-accent: %1$s; --rsu-accent-hover: color-mix(in srgb, %1$s 80%%, white); --rsu-accent-tint-8: color-mix(in srgb, %1$s 8%%, #0f1a26); --rsu-accent-tint-15: color-mix(in srgb, %1$s 15%%, #0f1a26); }',
 				esc_attr( $accent )
 			) );
+		}
+	}
+
+	/**
+	 * Enqueue JS in footer only when update content was rendered.
+	 */
+	public function maybe_enqueue_js() {
+		if ( ! $this->should_enqueue ) {
+			return;
+		}
+
+		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+
+		$js_file = RSU_PLUGIN_DIR . 'frontend/js/rsu-frontend' . $suffix . '.js';
+		if ( ! file_exists( $js_file ) ) {
+			$suffix = '';
 		}
 
 		wp_enqueue_script(
