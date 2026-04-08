@@ -353,21 +353,18 @@
 /* === History Table ([rsu_history] shortcode) === */
 
 .rsu-history {
-	--rsu-bg: #0f1a26;
-	--rsu-bg-card: #121e2b;
-	--rsu-bg-hover: #1a2a3a;
-	--rsu-accent: #fba919;
-	--rsu-accent-hover: #ffbe4a;
-	--rsu-text: #e5e7eb;
-	--rsu-text-secondary: #9ca3af;
-	--rsu-text-heading: #f3f4f6;
-	--rsu-text-muted: #6b7280;
-	--rsu-border: #374151;
-	--rsu-radius: 12px;
-	--rsu-transition: 0.2s ease;
+	--rtg-accent: #fba919;
+	--rtg-bg-primary: #121e2b;
+	--rtg-bg-card: #121e2b;
+	--rtg-bg-deep: #0f1a26;
+	--rtg-bg-input: #374151;
+	--rtg-text-primary: #e5e7eb;
+	--rtg-text-muted: #e5e7eb;
+	--rtg-text-heading: #e5e7eb;
+	--rtg-border: #374151;
 
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-	color: var(--rsu-text);
+	color: var(--rtg-text-primary);
 	box-sizing: border-box;
 }
 
@@ -381,37 +378,40 @@
 	width: 100%;
 	border-collapse: separate;
 	border-spacing: 0;
-	background: var(--rsu-bg-card);
-	border: 1px solid var(--rsu-border);
-	border-radius: var(--rsu-radius);
+	background: var(--rtg-bg-card);
+	border: 1px solid var(--rtg-border);
+	border-radius: 12px;
 	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .rsu-history__table thead th {
 	padding: 14px 20px;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: var(--rsu-text-muted);
-	background: var(--rsu-bg);
-	border-bottom: 1px solid var(--rsu-border);
+	color: color-mix(in srgb, var(--rtg-text-primary) 50%, transparent);
+	background: var(--rtg-bg-deep);
+	border-bottom: 1px solid var(--rtg-border);
 	text-align: start;
 	white-space: nowrap;
 }
 
 .rsu-history__table tbody tr {
-	transition: background var(--rsu-transition);
+	transition: all 0.15s ease;
+	border-inline-start: 2px solid transparent;
 }
 
 .rsu-history__table tbody tr:hover {
-	background: var(--rsu-bg-hover);
+	background: color-mix(in srgb, var(--rtg-accent) 5%, var(--rtg-bg-card));
+	border-inline-start-color: var(--rtg-accent);
 }
 
 .rsu-history__table tbody td {
-	padding: 14px 20px;
+	padding: 16px 20px;
 	font-size: 14px;
-	border-bottom: 1px solid var(--rsu-border);
+	border-bottom: 1px solid var(--rtg-border);
 	vertical-align: middle;
 }
 
@@ -420,24 +420,26 @@
 }
 
 .rsu-history__version a {
-	color: var(--rsu-accent);
+	color: var(--rtg-accent);
 	text-decoration: none;
 	font-weight: 600;
-	transition: color var(--rsu-transition);
+	font-size: 15px;
+	transition: color 0.15s ease;
 }
 
 .rsu-history__version a:hover {
-	color: var(--rsu-accent-hover);
+	color: #ffbe4a;
 	text-decoration: underline;
 }
 
 .rsu-history__date {
-	color: var(--rsu-text-secondary);
+	color: color-mix(in srgb, var(--rtg-text-primary) 70%, transparent);
 	white-space: nowrap;
+	font-size: 13px;
 }
 
 .rsu-history__na {
-	color: var(--rsu-text-muted);
+	color: color-mix(in srgb, var(--rtg-text-primary) 30%, transparent);
 }
 
 .rsu-history__vehicles {
@@ -448,20 +450,26 @@
 
 .rsu-history__vehicle-badge {
 	display: inline-block;
-	padding: 3px 10px;
+	padding: 4px 12px;
 	font-size: 11px;
-	font-weight: 600;
+	font-weight: 700;
 	letter-spacing: 0.03em;
-	color: var(--rsu-accent);
-	background: color-mix(in srgb, var(--rsu-accent) 10%, var(--rsu-bg));
-	border: 1px solid color-mix(in srgb, var(--rsu-accent) 20%, var(--rsu-bg));
+	color: var(--rtg-accent);
+	background: color-mix(in srgb, var(--rtg-accent) 10%, var(--rtg-bg-deep));
+	border: 1px solid color-mix(in srgb, var(--rtg-accent) 25%, var(--rtg-bg-deep));
 	border-radius: 9999px;
 	white-space: nowrap;
+	transition: all 0.15s ease;
+}
+
+.rsu-history__table tbody tr:hover .rsu-history__vehicle-badge {
+	background: color-mix(in srgb, var(--rtg-accent) 18%, var(--rtg-bg-deep));
+	border-color: color-mix(in srgb, var(--rtg-accent) 40%, var(--rtg-bg-deep));
 }
 
 .rsu-history__empty {
 	text-align: center;
-	color: var(--rsu-text-muted);
+	color: color-mix(in srgb, var(--rtg-text-primary) 50%, transparent);
 	font-size: 14px;
 	padding: 24px 0;
 }
@@ -524,8 +532,9 @@
 	}
 
 	.rsu-history__table tbody tr {
-		padding: 14px 16px;
-		border-bottom: 1px solid var(--rsu-border);
+		padding: 16px;
+		border-bottom: 1px solid var(--rtg-border);
+		border-inline-start: 2px solid transparent;
 	}
 
 	.rsu-history__table tbody tr:last-child {
@@ -546,7 +555,7 @@
 	}
 
 	.rsu-history__vehicles {
-		margin-top: 6px;
+		margin-top: 8px;
 	}
 }
 
@@ -595,14 +604,20 @@
 	}
 
 	.rsu-history {
-		--rsu-bg: #ffffff;
-		--rsu-bg-card: #ffffff;
-		--rsu-bg-hover: #ffffff;
-		--rsu-text: #000000;
-		--rsu-text-secondary: #333333;
-		--rsu-text-muted: #666666;
-		--rsu-accent: #0071e3;
-		--rsu-border: #cccccc;
+		--rtg-bg-primary: #ffffff;
+		--rtg-bg-card: #ffffff;
+		--rtg-bg-deep: #f5f5f7;
+		--rtg-text-primary: #000000;
+		--rtg-accent: #0071e3;
+		--rtg-border: #cccccc;
+	}
+
+	.rsu-history__table {
+		box-shadow: none;
+	}
+
+	.rsu-history__table tbody tr {
+		border-inline-start: none;
 	}
 
 	.rsu-history__vehicle-badge {
