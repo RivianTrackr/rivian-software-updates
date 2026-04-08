@@ -131,8 +131,13 @@
       targetTab.removeAttribute('tabindex');
     }
     if (targetPanel) {
+      // Preserve scroll position across panel height changes.
+      var scrollY = window.scrollY;
+
       targetPanel.classList.add('rsu-panel--active');
       targetPanel.hidden = false;
+
+      window.scrollTo(0, scrollY);
 
       if (animate) {
         targetPanel.classList.add('rsu-panel--enter');
@@ -140,6 +145,7 @@
         targetPanel.addEventListener('animationend', function handler() {
           targetPanel.classList.remove('rsu-panel--enter');
           targetPanel.removeEventListener('animationend', handler);
+          window.scrollTo(0, scrollY);
         });
       }
     }

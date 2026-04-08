@@ -2,6 +2,27 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.9.0] - 2026-04-08
+
+### Added
+- **Undo stack**: Destructive actions (delete section/block, duplicate, copy-from, paste import) now push state to an undo stack (max 20 entries). Undo with Ctrl/Cmd+Z when focused inside the section builder.
+- **Keyboard shortcuts**: Ctrl/Cmd+Shift+S adds a new section. Enter in an empty section heading auto-creates the first paragraph block.
+- **Toast notifications**: Paste import now shows "Imported X sections" confirmation. Copy-from shows "Sections copied". Undo shows "Undone". Failed paste shows "No sections detected".
+- **Mobile breakpoint** (< 480px): Date badges stack vertically, tab and content padding tightened, typography scaled down for small phones.
+- **Print styles**: Dark theme swaps to light colors for printing. Tabs hidden, all panels shown, generation pills and date badges render cleanly on paper.
+- **Multi-vehicle schema**: AIOSEO `about` field now outputs an array of `SoftwareApplication` objects (one per active vehicle) instead of a single generic entry. Standalone schema output matches.
+
+### Changed
+- Migrated all inline `onclick` attributes to `data-action` event delegation. Single delegated listener handles all section builder interactions.
+- `will-change: opacity, transform` added to panel enter animation for smoother GPU compositing.
+- Copy-from `_copyInProgress` flag now auto-resets after 10 seconds to prevent permanent UI lockout.
+- Copy-from and paste import now push undo state before modifying sections.
+
+### Fixed
+- `get_all_generation_slugs()` now uses static cache to avoid rebuilding the array on every call.
+- `parse_html_to_sections()` now runs `wp_kses_post()` on input HTML before DOM parsing for XSS safety.
+- Frontend tab switch preserves scroll position to prevent page jump when panel heights differ.
+
 ## [2.8.0] - 2026-04-08
 
 ### Added
