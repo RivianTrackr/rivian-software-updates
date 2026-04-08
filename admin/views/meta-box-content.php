@@ -175,29 +175,11 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 				$meta_key
 			) );
 
-			// DEBUG: temporary diagnostic — remove after confirming fix.
-			if ( $is_active && $sections_json ) {
+			// Validate JSON — if invalid, discard and fall back to HTML parsing.
+			if ( $sections_json ) {
 				json_decode( $sections_json );
-				$json_err = json_last_error_msg();
-				$json_ok  = ( json_last_error() === JSON_ERROR_NONE );
-				echo '<div style="background:' . ( $json_ok ? '#d4edda' : '#fff3cd' ) . ';border:1px solid ' . ( $json_ok ? '#28a745' : '#ffc107' ) . ';padding:8px 12px;margin-bottom:10px;font-size:12px;border-radius:4px;word-break:break-all;">';
-				echo '<strong>Debug ' . esc_html( $slug ) . ':</strong> ';
-				echo 'len=' . strlen( $sections_json ) . ', ';
-				echo 'json_error=' . esc_html( $json_err ) . ', ';
-				echo 'last_50=...' . esc_html( substr( $sections_json, -50 ) );
-				echo '</div>';
-
-				// Try to fix: strip invalid UTF-8 and re-decode.
-				if ( ! $json_ok ) {
-					$cleaned = preg_replace( '/[^\x20-\x7E\x0A\x0D\xC0-\xFF][\x80-\xBF]*/', '', $sections_json );
-					$cleaned = mb_convert_encoding( $sections_json, 'UTF-8', 'UTF-8' );
-					$test = json_decode( $cleaned );
-					echo '<div style="background:#d4edda;border:1px solid #28a745;padding:8px 12px;margin-bottom:10px;font-size:12px;">';
-					echo 'After cleanup: json_error=' . esc_html( json_last_error_msg() );
-					echo '</div>';
-					if ( json_last_error() === JSON_ERROR_NONE ) {
-						$sections_json = $cleaned;
-					}
+				if ( json_last_error() !== JSON_ERROR_NONE ) {
+					$sections_json = '';
 				}
 			}
 

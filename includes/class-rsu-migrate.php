@@ -75,8 +75,14 @@ class RSU_Migrate {
 		);
 
 		if ( ! $dry_run ) {
-			// Save sections JSON.
-			update_post_meta( $post_id, '_rsu_sections_r1', wp_json_encode( $merged ) );
+			// Save sections JSON — sanitize text to ensure valid JSON encoding.
+			$merged = self::sanitize_sections_text( $merged );
+			$json   = wp_json_encode( $merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+			if ( false === $json || null === json_decode( $json ) ) {
+				// Fallback: try with invalid UTF-8 substitution.
+				$json = json_encode( $merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
+			}
+			update_post_meta( $post_id, '_rsu_sections_r1', $json );
 
 			// Render and save HTML fallback.
 			$html = RSU_Admin::render_sections_to_html( $merged, 'r1' );
@@ -569,6 +575,44 @@ class RSU_Migrate {
 	 */
 	private static function normalize_text( $text ) {
 		return strtolower( trim( preg_replace( '/\s+/', ' ', $text ) ) );
+	}
+
+	/**
+	 * Recursively sanitize text in sections to ensure valid UTF-8 and
+	 * strip control characters that would break JSON encoding.
+	 */
+	private static function sanitize_sections_text( $sections ) {
+		foreach ( $sections as &$section ) {
+			if ( isset( $section['heading'] ) ) {
+				$section['heading'] = self::clean_text( $section['heading'] );
+			}
+			if ( isset( $section['blocks'] ) && is_array( $section['blocks'] ) ) {
+				foreach ( $section['blocks'] as &$block ) {
+					if ( isset( $block['content'] ) ) {
+						$block['content'] = self::clean_text( $block['content'] );
+					}
+					if ( isset( $block['items'] ) && is_array( $block['items'] ) ) {
+						foreach ( $block['items'] as &$item ) {
+							if ( isset( $item['text'] ) ) {
+								$item['text'] = self::clean_text( $item['text'] );
+							}
+						}
+					}
+				}
+			}
+		}
+		return $sections;
+	}
+
+	/**
+	 * Clean a text string for safe JSON encoding.
+	 */
+	private static function clean_text( $text ) {
+		// Ensure valid UTF-8.
+		$text = mb_convert_encoding( $text, 'UTF-8', 'UTF-8' );
+		// Strip control characters except newline and tab.
+		$text = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text );
+		return trim( $text );
 	}
 
 	/**
