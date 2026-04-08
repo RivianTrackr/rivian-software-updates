@@ -166,7 +166,15 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 			$is_active = in_array( $slug, $active_vehicles, true );
 
 			// Load structured sections JSON if available, otherwise parse from HTML.
-			$sections_json = get_post_meta( $post->ID, '_rsu_sections_' . $slug, true );
+			// Read directly from DB to bypass persistent object cache (Redis/Memcached)
+			// which can serve stale data after migration.
+			global $wpdb;
+			$meta_key      = '_rsu_sections_' . $slug;
+			$sections_json = $wpdb->get_var( $wpdb->prepare(
+				"SELECT meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key = %s LIMIT 1",
+				$post->ID,
+				$meta_key
+			) );
 			if ( empty( $sections_json ) ) {
 				$html_content = get_post_meta( $post->ID, $vehicle['meta_key'], true );
 				if ( ! empty( $html_content ) ) {
