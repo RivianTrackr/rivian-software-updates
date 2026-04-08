@@ -2,6 +2,17 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.6.1] - 2026-04-08
+
+### Fixed
+- Removed bottom margin bleed on last element inside frontend panel content sections.
+- Replaced hardcoded note block colors (`#fef9ee`, `#fdf0d5`) and border color (`#f0f0f0`) with CSS custom properties in admin and settings stylesheets.
+- Standardized admin meta box transition duration from 0.15s to 0.2s to match frontend and settings.
+
+### Added
+- Subtle hover states on frontend generation pills (background and border transition).
+- Subtle hover states on frontend date badges ("First Noticed" and "Public Release").
+
 ## [2.6.0] - 2026-04-08
 
 ### Fixed
