@@ -79,6 +79,7 @@ $already_done = count( $all_toggle ) - count( $migratable );
 	<?php
 	// Diagnostic: check DB directly for all toggle posts.
 	if ( isset( $_POST['rsu_migrate_diagnose'] ) && check_admin_referer( 'rsu_migrate' ) ) :
+		global $wpdb;
 		$diag_posts = RSU_Migrate::get_migratable_posts( true );
 		?>
 		<hr>
