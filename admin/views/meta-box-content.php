@@ -166,8 +166,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 			$is_active = in_array( $slug, $active_vehicles, true );
 
 			// Load structured sections JSON if available, otherwise parse from HTML.
-			// Read directly from DB to bypass persistent object cache (Redis/Memcached)
-			// which can serve stale data after migration.
+			// Read directly from DB to bypass persistent object cache (Redis/Memcached).
 			global $wpdb;
 			$meta_key      = '_rsu_sections_' . $slug;
 			$sections_json = $wpdb->get_var( $wpdb->prepare(
@@ -175,6 +174,21 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 				$post->ID,
 				$meta_key
 			) );
+
+			// DEBUG: temporary diagnostic — remove after confirming fix.
+			if ( $is_active ) {
+				$debug_len = $sections_json ? strlen( $sections_json ) : 0;
+				$debug_valid = $sections_json ? ( json_decode( $sections_json ) !== null ? 'valid' : 'INVALID' ) : 'empty';
+				echo '<div style="background:#fff3cd;border:1px solid #ffc107;padding:8px 12px;margin-bottom:10px;font-size:12px;border-radius:4px;">';
+				echo '<strong>Debug ' . esc_html( $slug ) . ':</strong> ';
+				echo 'post_id=' . esc_html( $post->ID ) . ', ';
+				echo 'meta_key=' . esc_html( $meta_key ) . ', ';
+				echo 'json_len=' . esc_html( $debug_len ) . ' chars, ';
+				echo 'json_status=' . esc_html( $debug_valid ) . ', ';
+				echo 'first_50=' . esc_html( substr( $sections_json, 0, 50 ) );
+				echo '</div>';
+			}
+
 			if ( empty( $sections_json ) ) {
 				$html_content = get_post_meta( $post->ID, $vehicle['meta_key'], true );
 				if ( ! empty( $html_content ) ) {
