@@ -350,6 +350,123 @@
 }
 
 
+/* === History Table ([rsu_history] shortcode) === */
+
+.rsu-history {
+	--rsu-bg: #0f1a26;
+	--rsu-bg-card: #121e2b;
+	--rsu-bg-hover: #1a2a3a;
+	--rsu-accent: #fba919;
+	--rsu-accent-hover: #ffbe4a;
+	--rsu-text: #e5e7eb;
+	--rsu-text-secondary: #9ca3af;
+	--rsu-text-heading: #f3f4f6;
+	--rsu-text-muted: #6b7280;
+	--rsu-border: #374151;
+	--rsu-radius: 12px;
+	--rsu-transition: 0.2s ease;
+
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	color: var(--rsu-text);
+	box-sizing: border-box;
+}
+
+.rsu-history *,
+.rsu-history *::before,
+.rsu-history *::after {
+	box-sizing: border-box;
+}
+
+.rsu-history__table {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	background: var(--rsu-bg-card);
+	border: 1px solid var(--rsu-border);
+	border-radius: var(--rsu-radius);
+	overflow: hidden;
+}
+
+.rsu-history__table thead th {
+	padding: 14px 20px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--rsu-text-muted);
+	background: var(--rsu-bg);
+	border-bottom: 1px solid var(--rsu-border);
+	text-align: start;
+	white-space: nowrap;
+}
+
+.rsu-history__table tbody tr {
+	transition: background var(--rsu-transition);
+}
+
+.rsu-history__table tbody tr:hover {
+	background: var(--rsu-bg-hover);
+}
+
+.rsu-history__table tbody td {
+	padding: 14px 20px;
+	font-size: 14px;
+	border-bottom: 1px solid var(--rsu-border);
+	vertical-align: middle;
+}
+
+.rsu-history__table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.rsu-history__version a {
+	color: var(--rsu-accent);
+	text-decoration: none;
+	font-weight: 600;
+	transition: color var(--rsu-transition);
+}
+
+.rsu-history__version a:hover {
+	color: var(--rsu-accent-hover);
+	text-decoration: underline;
+}
+
+.rsu-history__date {
+	color: var(--rsu-text-secondary);
+	white-space: nowrap;
+}
+
+.rsu-history__na {
+	color: var(--rsu-text-muted);
+}
+
+.rsu-history__vehicles {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.rsu-history__vehicle-badge {
+	display: inline-block;
+	padding: 3px 10px;
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.03em;
+	color: var(--rsu-accent);
+	background: color-mix(in srgb, var(--rsu-accent) 10%, var(--rsu-bg));
+	border: 1px solid color-mix(in srgb, var(--rsu-accent) 20%, var(--rsu-bg));
+	border-radius: 9999px;
+	white-space: nowrap;
+}
+
+.rsu-history__empty {
+	text-align: center;
+	color: var(--rsu-text-muted);
+	font-size: 14px;
+	padding: 24px 0;
+}
+
+
 /* === Reduced Motion === */
 
 @media (prefers-reduced-motion: reduce) {
@@ -392,6 +509,45 @@
 	.rsu-panel__content li {
 		font-size: 15px;
 	}
+
+	/* History table: stack into cards on small screens */
+	.rsu-history__table,
+	.rsu-history__table thead,
+	.rsu-history__table tbody,
+	.rsu-history__table tr,
+	.rsu-history__table td {
+		display: block;
+	}
+
+	.rsu-history__table thead {
+		display: none;
+	}
+
+	.rsu-history__table tbody tr {
+		padding: 14px 16px;
+		border-bottom: 1px solid var(--rsu-border);
+	}
+
+	.rsu-history__table tbody tr:last-child {
+		border-bottom: none;
+	}
+
+	.rsu-history__table tbody td {
+		padding: 2px 0;
+		border-bottom: none;
+	}
+
+	.rsu-history__version a {
+		font-size: 15px;
+	}
+
+	.rsu-history__date {
+		font-size: 12px;
+	}
+
+	.rsu-history__vehicles {
+		margin-top: 6px;
+	}
 }
 
 
@@ -433,6 +589,23 @@
 	}
 
 	.rsu-gen-pill {
+		border-color: #cccccc;
+		background: #f0f5ff;
+		color: #0071e3;
+	}
+
+	.rsu-history {
+		--rsu-bg: #ffffff;
+		--rsu-bg-card: #ffffff;
+		--rsu-bg-hover: #ffffff;
+		--rsu-text: #000000;
+		--rsu-text-secondary: #333333;
+		--rsu-text-muted: #666666;
+		--rsu-accent: #0071e3;
+		--rsu-border: #cccccc;
+	}
+
+	.rsu-history__vehicle-badge {
 		border-color: #cccccc;
 		background: #f0f5ff;
 		color: #0071e3;

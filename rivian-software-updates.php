@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Rivian Software Updates
  * Description: Structured release notes for Rivian vehicle software updates with vehicle tabs, generation pills, and SEO schema.
- * Version: 2.9.0
+ * Version: 2.10.0
  * Author: RivianTrackr
  * Text Domain: rivian-software-updates
  * Requires at least: 5.8
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RSU_VERSION', '2.9.0' );
+define( 'RSU_VERSION', '2.10.0' );
 define( 'RSU_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RSU_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'RSU_PLUGIN_FILE', __FILE__ );
@@ -43,4 +43,5 @@ function rsu_init() {
 
 	new RSU_Frontend();
 	new RSU_Schema();
+	new RSU_Shortcode();
 }
