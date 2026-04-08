@@ -2,6 +2,18 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.8.0] - 2026-04-08
+
+### Added
+- **Paste Release Notes**: New "Paste Release Notes" button in the editor toolbar opens a dialog where you can paste plain-text release notes. Headings and bullet points are auto-detected and converted into structured sections.
+- **Section collapse/expand**: Each section now has a toggle arrow to collapse or expand its content, making long posts easier to navigate.
+- **Duplicate section**: New copy button on each section header creates a deep copy of the section (heading, blocks, and generation tags) inserted directly below.
+- **Unsaved changes warning**: Browser now warns before navigating away when you have unsaved edits in the section builder. The warning clears on form submit.
+- **Drag-to-reorder vehicles**: Settings page now uses drag handles to reorder vehicles instead of manual sort number inputs. Sort values are auto-calculated from position.
+
+### Fixed
+- **Date picker UX**: Replaced janky `onfocus` type-switching hack with native `type="date"` inputs. Added `max` date constraint on "First Noticed" field to prevent future dates. Removed unnecessary inline JS for date type initialization.
+
 ## [2.7.0] - 2026-04-08
 
 ### Performance

@@ -38,7 +38,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-editor-panel { padding: 20px; background: var(--rsu-white); }
 .rsu-editor-panel--hidden { position: absolute; left: -9999px; visibility: hidden; }
 
-.rsu-editor-toolbar { display: flex; justify-content: flex-end; margin-bottom: 16px; }
+.rsu-editor-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
 .rsu-copy-from { font-size: 13px; font-weight: 500; color: var(--rsu-text-muted); display: inline-flex; align-items: center; gap: 8px; }
 .rsu-copy-from-select { font-size: 13px; padding: 6px 28px 6px 10px; border-radius: 8px; border: 1px solid var(--rsu-border); background: var(--rsu-white); color: var(--rsu-text); appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; }
 .rsu-copy-from-select:focus { border-color: var(--rsu-action); box-shadow: 0 0 0 3px rgba(0,113,227,0.1); outline: none; }
@@ -111,6 +111,36 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-confirm-dialog__cancel:hover { background: #e8e8ed; }
 .rsu-confirm-dialog__ok { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; background: var(--rsu-error); color: #fff; cursor: pointer; }
 .rsu-confirm-dialog__ok:hover { background: #e0352b; }
+
+/* Collapse / expand */
+.rsu-section--collapsed .rsu-blocks-list,
+.rsu-section--collapsed .rsu-section__footer { display: none; }
+.rsu-section__toggle { background: none; border: none; font-size: 16px; color: var(--rsu-text-muted); cursor: pointer; padding: 2px 4px; flex-shrink: 0; transition: transform 0.2s ease; }
+.rsu-section__toggle:hover { color: var(--rsu-text); }
+.rsu-section--collapsed .rsu-section__toggle { transform: rotate(-90deg); }
+
+/* Duplicate button */
+.rsu-section__dupe { background: none; border: none; font-size: 14px; color: var(--rsu-text-muted); cursor: pointer; padding: 4px 6px; border-radius: 4px; flex-shrink: 0; }
+.rsu-section__dupe:hover { color: var(--rsu-action); background: var(--rsu-bg-info); }
+
+/* Paste import */
+.rsu-import-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.rsu-import-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; font-size: 12px; font-weight: 600; border: 1px solid var(--rsu-border); border-radius: 8px; background: var(--rsu-white); color: var(--rsu-text-secondary); cursor: pointer; transition: all 0.15s ease; }
+.rsu-import-btn:hover { border-color: var(--rsu-action); color: var(--rsu-action); background: var(--rsu-bg-info); }
+.rsu-import-dialog { border: none; border-radius: 12px; padding: 0; box-shadow: 0 8px 32px rgba(0,0,0,0.2); max-width: 560px; width: calc(100% - 32px); font-family: inherit; }
+.rsu-import-dialog::backdrop { background: rgba(0,0,0,0.4); }
+.rsu-import-dialog__header { padding: 20px 24px 0; }
+.rsu-import-dialog__header h3 { font-size: 16px; font-weight: 600; color: var(--rsu-text); margin: 0 0 4px; }
+.rsu-import-dialog__header p { font-size: 12px; color: var(--rsu-text-muted); margin: 0; }
+.rsu-import-dialog__body { padding: 12px 24px; }
+.rsu-import-dialog__textarea { width: 100%; min-height: 200px; border: 1px solid var(--rsu-border); border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.6; font-family: inherit; color: var(--rsu-text); resize: vertical; box-sizing: border-box; }
+.rsu-import-dialog__textarea:focus { border-color: var(--rsu-action); box-shadow: 0 0 0 3px rgba(0,113,227,0.1); outline: none; }
+.rsu-import-dialog__textarea::placeholder { color: var(--rsu-placeholder); }
+.rsu-import-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 24px 20px; }
+.rsu-import-dialog__cancel { padding: 8px 16px; font-size: 13px; font-weight: 500; border: 1px solid var(--rsu-border); border-radius: 8px; background: var(--rsu-bg-light); color: var(--rsu-text); cursor: pointer; }
+.rsu-import-dialog__cancel:hover { background: #e8e8ed; }
+.rsu-import-dialog__submit { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; background: var(--rsu-action); color: #fff; cursor: pointer; }
+.rsu-import-dialog__submit:hover { background: var(--rsu-action-hover); }
 
 /* Generation selector */
 .rsu-gen-select { font-size: 10px; font-weight: 500; padding: 2px 18px 2px 6px; border: 1px solid var(--rsu-border); border-radius: 4px; background: var(--rsu-bg-light); color: var(--rsu-text-muted); cursor: pointer; transition: all 0.15s; line-height: 1.5; flex-shrink: 0; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%2386868b' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 5px center; }
@@ -222,6 +252,10 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 				style="<?php echo $is_active ? '' : 'display:none;'; ?>">
 
 				<div class="rsu-editor-toolbar">
+					<button type="button" class="rsu-import-btn" data-vehicle="<?php echo esc_attr( $slug ); ?>" onclick="RSUSectionBuilder.showImport(this)">
+						<span class="dashicons dashicons-upload" style="font-size:14px;width:14px;height:14px;"></span>
+						Paste Release Notes
+					</button>
 					<label class="rsu-copy-from">
 						Copy from:
 						<select class="rsu-copy-from-select" data-target="<?php echo esc_attr( $slug ); ?>">
@@ -545,12 +579,15 @@ var RSUSectionBuilder = (function () {
 	// ── Build section element ──
 	function buildSectionEl(builder, section, si) {
 		var sectionGen = section.generation || '';
+		var collapsed = section._collapsed ? ' rsu-section--collapsed' : '';
 		var el = createElement(
-			'<div class="rsu-section" data-index="' + si + '">' +
+			'<div class="rsu-section' + collapsed + '" data-index="' + si + '">' +
 				'<div class="rsu-section__header">' +
+					'<button type="button" class="rsu-section__toggle" title="Collapse / expand" onclick="RSUSectionBuilder.toggleSection(this)">&#9660;</button>' +
 					'<span class="rsu-section__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
 					'<input type="text" class="rsu-section__heading" placeholder="Section heading (e.g. Cold Weather Improvements)" />' +
 					genOptionsHTML(builder, sectionGen) +
+					'<button type="button" class="rsu-section__dupe" title="Duplicate section" onclick="RSUSectionBuilder.dupeSection(this)"><span class="dashicons dashicons-admin-page" style="font-size:14px;width:14px;height:14px;"></span></button>' +
 					'<button type="button" class="rsu-section__remove" title="Remove section" onclick="RSUSectionBuilder.removeSection(this)">&times;</button>' +
 				'</div>' +
 				'<div class="rsu-blocks-list"></div>' +
@@ -961,6 +998,196 @@ var RSUSectionBuilder = (function () {
 		});
 	});
 
+	// ── Toggle section collapse ──
+	function toggleSection(btn) {
+		var sectionEl = closest(btn, '.rsu-section');
+		if (!sectionEl) return;
+		sectionEl.classList.toggle('rsu-section--collapsed');
+	}
+
+	// ── Duplicate section ──
+	function dupeSection(btn) {
+		var builder = getBuilder(btn);
+		var sectionEl = closest(btn, '.rsu-section');
+		if (!builder || !sectionEl) return;
+
+		readFromDOM(builder);
+		var idx = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
+		var copy = JSON.parse(JSON.stringify(builder._sections[idx]));
+		copy.heading = copy.heading ? copy.heading + ' (copy)' : '(copy)';
+		builder._sections.splice(idx + 1, 0, copy);
+		renderSections(builder);
+
+		var headings = qsa('.rsu-section__heading', builder);
+		if (headings[idx + 1]) headings[idx + 1].focus();
+	}
+
+	// ── Paste release notes import ──
+	function showImport(btn) {
+		var vehicle = btn.getAttribute('data-vehicle');
+		var dialog = createElement(
+			'<dialog class="rsu-import-dialog">' +
+				'<div class="rsu-import-dialog__header">' +
+					'<h3>Paste Release Notes</h3>' +
+					'<p>Paste plain-text release notes below. Headings and bullet points will be auto-detected and converted to sections.</p>' +
+				'</div>' +
+				'<div class="rsu-import-dialog__body">' +
+					'<textarea class="rsu-import-dialog__textarea" placeholder="Paste release notes here...\n\nCold Weather Improvements\n• Battery preconditioning now more efficient\n• Cabin heating reduced warm-up time\n\nNavigation\nUpdated route planning algorithm."></textarea>' +
+				'</div>' +
+				'<div class="rsu-import-dialog__actions">' +
+					'<button type="button" class="rsu-import-dialog__cancel">Cancel</button>' +
+					'<button type="button" class="rsu-import-dialog__submit">Import</button>' +
+				'</div>' +
+			'</dialog>'
+		);
+		document.body.appendChild(dialog);
+		dialog.showModal();
+		qs('.rsu-import-dialog__textarea', dialog).focus();
+
+		qs('.rsu-import-dialog__cancel', dialog).addEventListener('click', function () {
+			dialog.close(); dialog.remove();
+		});
+		dialog.addEventListener('cancel', function () { dialog.remove(); });
+
+		qs('.rsu-import-dialog__submit', dialog).addEventListener('click', function () {
+			var text = qs('.rsu-import-dialog__textarea', dialog).value;
+			dialog.close(); dialog.remove();
+			if (!text.trim()) return;
+
+			var builder = qs('.rsu-section-builder[data-vehicle="' + vehicle + '"]');
+			if (!builder) return;
+			getBuilder(builder);
+			readFromDOM(builder);
+
+			var parsed = parseTextToSections(text);
+			if (parsed.length) {
+				builder._sections = builder._sections.concat(parsed);
+				renderSections(builder);
+				_dirty = true;
+			}
+		});
+	}
+
+	// ── Parse plain text into sections ──
+	function parseTextToSections(text) {
+		var lines = text.split(/\r?\n/);
+		var sections = [];
+		var current = null;
+		var currentBlock = null;
+
+		function flushBlock() {
+			if (!currentBlock) return;
+			if (currentBlock.type === 'list' && currentBlock.items.length) {
+				if (current) current.blocks.push(currentBlock);
+			} else if (currentBlock.type === 'paragraph' && currentBlock.content.trim()) {
+				if (current) current.blocks.push(currentBlock);
+			}
+			currentBlock = null;
+		}
+
+		function flushSection() {
+			flushBlock();
+			if (current && (current.heading || current.blocks.length)) {
+				sections.push(current);
+			}
+			current = null;
+		}
+
+		for (var i = 0; i < lines.length; i++) {
+			var line = lines[i];
+			var trimmed = line.trim();
+
+			// Skip empty lines.
+			if (!trimmed) {
+				// Flush paragraph block on blank line.
+				if (currentBlock && currentBlock.type === 'paragraph') {
+					flushBlock();
+				}
+				continue;
+			}
+
+			// Detect bullet points: •, -, *, or numbered (1., 2.).
+			var bulletMatch = trimmed.match(/^(?:[•●○▪▸►\-\*]|\d+[\.\)])\s*(.+)/);
+			if (bulletMatch) {
+				// If we're in a paragraph block, flush it first.
+				if (currentBlock && currentBlock.type === 'paragraph') {
+					flushBlock();
+				}
+				if (!current) {
+					current = { heading: '', blocks: [] };
+				}
+				if (!currentBlock || currentBlock.type !== 'list') {
+					flushBlock();
+					currentBlock = { type: 'list', items: [] };
+				}
+				currentBlock.items.push({ text: bulletMatch[1].trim() });
+				continue;
+			}
+
+			// Detect headings: short lines (< 80 chars) that are followed by bullets or blank line,
+			// or lines that look like titles (no trailing punctuation except colon).
+			var isHeading = false;
+			if (trimmed.length < 80 && !trimmed.match(/[.!?,;]$/) && trimmed.length > 1) {
+				// Check next non-empty line for bullets or if this is alone.
+				var nextIdx = i + 1;
+				while (nextIdx < lines.length && !lines[nextIdx].trim()) nextIdx++;
+				if (nextIdx >= lines.length || lines[nextIdx].trim().match(/^(?:[•●○▪▸►\-\*]|\d+[\.\)])\s/)) {
+					isHeading = true;
+				}
+				// If next line is also a short non-bullet line, this might be a heading for a paragraph section.
+				if (!isHeading && nextIdx < lines.length && lines[nextIdx].trim().length > 0) {
+					// Only treat as heading if we don't already have an active section, or line is clearly title-like.
+					if (!current || !current.heading) {
+						isHeading = true;
+					}
+				}
+			}
+
+			if (isHeading) {
+				flushSection();
+				current = { heading: trimmed.replace(/:$/, ''), blocks: [] };
+				currentBlock = null;
+				continue;
+			}
+
+			// Regular text: add to paragraph block.
+			if (!current) {
+				current = { heading: '', blocks: [] };
+			}
+			if (currentBlock && currentBlock.type === 'list') {
+				flushBlock();
+			}
+			if (!currentBlock || currentBlock.type !== 'paragraph') {
+				flushBlock();
+				currentBlock = { type: 'paragraph', content: '' };
+			}
+			currentBlock.content += (currentBlock.content ? '\n' : '') + trimmed;
+		}
+
+		flushSection();
+		return sections;
+	}
+
+	// ── Unsaved changes warning ──
+	var _dirty = false;
+	var _origReadFromDOM = readFromDOM;
+	readFromDOM = function (builder) {
+		_dirty = true;
+		return _origReadFromDOM(builder);
+	};
+
+	window.addEventListener('beforeunload', function (e) {
+		if (_dirty) {
+			e.preventDefault();
+			e.returnValue = '';
+		}
+	});
+
+	// Clear dirty flag on form submit.
+	document.addEventListener('submit', function () {
+		_dirty = false;
+	});
+
 	// Run init immediately, plus retry for Block Editor.
 	init();
 	if (document.readyState === 'loading') {
@@ -983,6 +1210,9 @@ var RSUSectionBuilder = (function () {
 		addBullet: addBullet,
 		removeBullet: removeBullet,
 		activateTab: activateTab,
+		toggleSection: toggleSection,
+		dupeSection: dupeSection,
+		showImport: showImport,
 		init: init
 	};
 })();
