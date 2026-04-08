@@ -580,30 +580,34 @@ class RSU_Migrate {
 	public static function get_migratable_posts( $force = false ) {
 		global $wpdb;
 
-		$posts = $wpdb->get_results(
+		if ( $force ) {
+			return $wpdb->get_results(
+				"SELECT p.ID, p.post_title, p.post_content
+				 FROM {$wpdb->posts} p
+				 WHERE p.post_type = 'post'
+				   AND p.post_status IN ('publish', 'draft')
+				   AND p.post_content LIKE '%eb-toggle%'
+				 ORDER BY p.post_date DESC"
+			);
+		}
+
+		// Use SQL to exclude posts that already have _rsu_sections_r1 meta,
+		// bypassing WordPress object cache which can be stale within a request.
+		return $wpdb->get_results(
 			"SELECT p.ID, p.post_title, p.post_content
 			 FROM {$wpdb->posts} p
 			 WHERE p.post_type = 'post'
 			   AND p.post_status IN ('publish', 'draft')
 			   AND p.post_content LIKE '%eb-toggle%'
+			   AND NOT EXISTS (
+			       SELECT 1 FROM {$wpdb->postmeta} pm
+			       WHERE pm.post_id = p.ID
+			         AND pm.meta_key = '_rsu_sections_r1'
+			         AND pm.meta_value IS NOT NULL
+			         AND pm.meta_value != ''
+			   )
 			 ORDER BY p.post_date DESC"
 		);
-
-		if ( $force ) {
-			return $posts;
-		}
-
-		$migratable = array();
-		foreach ( $posts as $post ) {
-			// Skip posts that already have sections.
-			$existing = get_post_meta( $post->ID, '_rsu_sections_r1', true );
-			if ( $existing && ! empty( json_decode( $existing, true ) ) ) {
-				continue;
-			}
-			$migratable[] = $post;
-		}
-
-		return $migratable;
 	}
 
 	/**
