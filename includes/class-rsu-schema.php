@@ -42,7 +42,7 @@ class RSU_Schema {
 					$node['@type']       = 'TechArticle';
 					$node['description'] = $description;
 
-					if ( $version ) {
+					if ( ! empty( $version ) ) {
 						$node['about'] = array(
 							'@type'               => 'SoftwareApplication',
 							'name'                => 'Rivian Vehicle Software',
@@ -111,7 +111,7 @@ class RSU_Schema {
 			'mainEntityOfPage' => get_permalink( $post_id ),
 		);
 
-		if ( $version ) {
+		if ( ! empty( $version ) ) {
 			$article['about'] = array(
 				'@type'               => 'SoftwareApplication',
 				'name'                => 'Rivian Vehicle Software',
@@ -148,6 +148,7 @@ class RSU_Schema {
 					'@type'    => 'ListItem',
 					'position' => 3,
 					'name'     => $version ? $version : get_the_title( $post_id ),
+					'item'     => get_permalink( $post_id ),
 				),
 			),
 		);
@@ -202,7 +203,7 @@ class RSU_Schema {
 			$sections_json = get_post_meta( $post_id, '_rsu_sections_' . $slug, true );
 			if ( $sections_json ) {
 				$parsed = json_decode( $sections_json, true );
-				if ( is_array( $parsed ) ) {
+				if ( is_array( $parsed ) && json_last_error() === JSON_ERROR_NONE ) {
 					foreach ( $parsed as $section ) {
 						$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
 						if ( $heading && ! in_array( $heading, $sections, true ) ) {
