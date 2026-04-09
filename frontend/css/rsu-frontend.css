@@ -473,6 +473,79 @@
 }
 
 
+/* --- Year Accordion --- */
+
+.rsu-history__year {
+	margin-bottom: 16px;
+}
+
+.rsu-history__year:last-child {
+	margin-bottom: 0;
+}
+
+.rsu-history__year-header {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 14px 20px;
+	background: var(--rsu-bg-card);
+	border: 1px solid var(--rsu-border);
+	border-radius: var(--rsu-radius);
+	cursor: pointer;
+	list-style: none;
+	transition: background var(--rsu-transition), border-color var(--rsu-transition);
+}
+
+/* Hide default marker in Safari/Chrome */
+.rsu-history__year-header::-webkit-details-marker {
+	display: none;
+}
+
+.rsu-history__year-header::marker {
+	display: none;
+	content: '';
+}
+
+.rsu-history__year-header:hover {
+	background: var(--rsu-bg-hover);
+	border-color: color-mix(in srgb, var(--rsu-accent) 30%, var(--rsu-border));
+}
+
+.rsu-history__year-label {
+	font-size: 20px;
+	font-weight: 600;
+	color: var(--rsu-text-heading);
+}
+
+.rsu-history__year-count {
+	font-size: 13px;
+	font-weight: 500;
+	color: var(--rsu-text-muted);
+}
+
+.rsu-history__year-chevron {
+	margin-inline-start: auto;
+	font-size: 14px;
+	color: var(--rsu-text-muted);
+	transition: transform 0.25s ease;
+}
+
+.rsu-history__year[open] > .rsu-history__year-header .rsu-history__year-chevron {
+	transform: rotate(180deg);
+}
+
+.rsu-history__year[open] > .rsu-history__year-header {
+	border-radius: var(--rsu-radius) var(--rsu-radius) 0 0;
+	border-bottom-color: transparent;
+}
+
+.rsu-history__year > .rsu-history__table {
+	border-top-left-radius: 0;
+	border-top-right-radius: 0;
+	border-top: none;
+}
+
+
 /* === Reduced Motion === */
 
 @media (prefers-reduced-motion: reduce) {
@@ -482,6 +555,10 @@
 
 	.rsu-panel--enter {
 		animation: none;
+	}
+
+	.rsu-history__year-chevron {
+		transition: none;
 	}
 }
 
@@ -565,6 +642,18 @@
 
 	.rsu-history__vehicles {
 		margin-top: 8px;
+	}
+
+	.rsu-history__year {
+		margin-bottom: 12px;
+	}
+
+	.rsu-history__year-header {
+		padding: 12px 16px;
+	}
+
+	.rsu-history__year-label {
+		font-size: 17px;
 	}
 }
 
