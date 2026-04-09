@@ -2,7 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
-## [2.11.1] - 2026-04-09
+## [2.12.0] - 2026-04-09
+
+### Added
+- **Year-grouped accordion** on `[rsu_history]` shortcode: Updates are now grouped by public release date year and displayed in collapsible `<details>`/`<summary>` sections. The latest year is expanded by default; older years are collapsed.
+- Year header shows year label, update count badge, and animated chevron indicator.
 
 ### Fixed
 - Mobile shortcode history table now shows "First Noticed" and "Public Release" labels on date cells. Previously, the stacked card layout hid the `<thead>` with no replacement labels, making it impossible to distinguish between the two dates.
