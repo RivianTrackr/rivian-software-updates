@@ -2,6 +2,12 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.13.2] - 2026-04-09
+
+### Changed
+- Widget date text increased to 16px.
+- Added mobile responsive styles for the widget (reduced padding, icon size, and font sizes on small screens).
+
 ## [2.13.1] - 2026-04-09
 
 ### Changed

@@ -596,7 +596,7 @@
 }
 
 .rsu-widget-latest__meta {
-	font-size: 14px;
+	font-size: 16px;
 	font-weight: 700;
 	line-height: 1.4;
 	color: #000000;
@@ -711,6 +711,26 @@
 
 	.rsu-history__year-label {
 		font-size: 17px;
+	}
+
+	/* Latest update widget */
+	.rsu-widget-latest {
+		padding: 16px;
+		gap: 12px;
+		min-height: 0;
+		border-radius: 16px;
+	}
+
+	.rsu-widget-latest__icon {
+		font-size: 28px;
+	}
+
+	.rsu-widget-latest__version {
+		font-size: 18px;
+	}
+
+	.rsu-widget-latest__meta {
+		font-size: 14px;
 	}
 }
 
