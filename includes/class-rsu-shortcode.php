@@ -84,7 +84,7 @@ class RSU_Shortcode {
 							<td class="rsu-history__version">
 								<a href="<?php echo esc_url( $permalink ); ?>"><?php echo esc_html( $version ); ?></a>
 							</td>
-							<td class="rsu-history__date">
+							<td class="rsu-history__date" data-label="First Noticed">
 								<?php if ( $date_noticed ) : ?>
 									<time datetime="<?php echo esc_attr( $date_noticed ); ?>">
 										<?php echo esc_html( date_i18n( 'M j, Y', strtotime( $date_noticed ) ) ); ?>
@@ -93,7 +93,7 @@ class RSU_Shortcode {
 									<span class="rsu-history__na">&mdash;</span>
 								<?php endif; ?>
 							</td>
-							<td class="rsu-history__date">
+							<td class="rsu-history__date" data-label="Public Release">
 								<?php if ( $date_released ) : ?>
 									<time datetime="<?php echo esc_attr( $date_released ); ?>">
 										<?php echo esc_html( date_i18n( 'M j, Y', strtotime( $date_released ) ) ); ?>
