@@ -726,6 +726,24 @@ class RSU_Migrate {
 			return new WP_Error( 'no_sections', 'No parseable sections found in post content.' );
 		}
 
+		// Remove empty sections (e.g. an h2 post title that precedes h5 sub-headings).
+		$sections = array_values( array_filter( $sections, function ( $s ) {
+			return ! empty( $s['blocks'] );
+		} ) );
+
+		if ( empty( $sections ) ) {
+			return new WP_Error( 'no_sections', 'All parsed sections were empty.' );
+		}
+
+		// Consolidate adjacent list blocks within each section (same post-processing
+		// that the Essential Blocks toggle migration applies).
+		foreach ( $sections as &$section ) {
+			if ( ! empty( $section['blocks'] ) ) {
+				$section['blocks'] = self::consolidate_list_blocks( $section['blocks'] );
+			}
+		}
+		unset( $section );
+
 		// Determine target vehicles — use default vehicles from settings.
 		$all_vehicles = RSU_Platforms::get_all();
 		$vehicles     = (array) RSU_Settings::get( 'default_vehicles', array( 'r1' ) );
@@ -734,6 +752,10 @@ class RSU_Migrate {
 			$vehicles = array_slice( array_keys( $all_vehicles ), 0, 1 );
 		}
 
+		$total_blocks = array_sum( array_map( function ( $s ) {
+			return isset( $s['blocks'] ) ? count( $s['blocks'] ) : 0;
+		}, $sections ) );
+
 		$result = array(
 			'post_id'  => $post_id,
 			'title'    => $post->post_title,
@@ -741,9 +763,7 @@ class RSU_Migrate {
 			'vehicles' => $vehicles,
 			'stats'    => array(
 				'sections' => count( $sections ),
-				'blocks'   => array_sum( array_map( function ( $s ) {
-					return isset( $s['blocks'] ) ? count( $s['blocks'] ) : 0;
-				}, $sections ) ),
+				'blocks'   => $total_blocks,
 			),
 		);
 
