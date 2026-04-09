@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Rivian Software Updates
  * Description: Structured release notes for Rivian vehicle software updates with vehicle tabs, generation pills, and SEO schema.
- * Version: 2.13.2
+ * Version: 2.13.3
  * Author: RivianTrackr
  * Text Domain: rivian-software-updates
  * Requires at least: 5.8

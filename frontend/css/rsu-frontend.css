@@ -477,7 +477,6 @@
 
 .rsu-history__year {
 	margin-bottom: 16px;
-	overflow-x: auto;
 }
 
 .rsu-history__year:last-child {
@@ -621,37 +620,9 @@
 }
 
 
-/* === Small Mobile === */
+/* === History Table Card Layout === */
 
-@media (max-width: 480px) {
-	.rsu-dates {
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.rsu-tab {
-		padding: 10px 14px;
-		font-size: 12px;
-	}
-
-	.rsu-panel__content {
-		padding: 20px 16px;
-	}
-
-	.rsu-panel__content h2 {
-		font-size: 20px;
-	}
-
-	.rsu-panel__content h3 {
-		font-size: 17px;
-	}
-
-	.rsu-panel__content p,
-	.rsu-panel__content li {
-		font-size: 15px;
-	}
-
-	/* History table: stack into cards on small screens */
+@media (max-width: 600px) {
 	.rsu-history__table,
 	.rsu-history__table thead,
 	.rsu-history__table tbody,
@@ -712,6 +683,38 @@
 
 	.rsu-history__year-label {
 		font-size: 17px;
+	}
+}
+
+
+/* === Small Mobile === */
+
+@media (max-width: 480px) {
+	.rsu-dates {
+		flex-direction: column;
+		gap: 8px;
+	}
+
+	.rsu-tab {
+		padding: 10px 14px;
+		font-size: 12px;
+	}
+
+	.rsu-panel__content {
+		padding: 20px 16px;
+	}
+
+	.rsu-panel__content h2 {
+		font-size: 20px;
+	}
+
+	.rsu-panel__content h3 {
+		font-size: 17px;
+	}
+
+	.rsu-panel__content p,
+	.rsu-panel__content li {
+		font-size: 15px;
 	}
 
 	/* Latest update widget */
