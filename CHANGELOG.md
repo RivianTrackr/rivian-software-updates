@@ -2,6 +2,16 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.11.0] - 2026-04-09
+
+### Added
+- **WordPress Block Editor migration**: New migration path for posts that use standard Gutenberg blocks (headings, paragraphs, lists) without Essential Blocks toggle wrappers. Parses `post_content` directly and saves sections for all default vehicles.
+- `RSU_Migrate::migrate_block_post()`, `get_block_migratable_posts()`, and `migrate_all_blocks()` methods.
+- Migration page now has a dedicated "WordPress Block Editor Posts" section with preview, migrate, and force re-migrate controls.
+
+### Changed
+- HTML parser (`parse_html_to_sections`) now skips `<nav>`, `<figure>`, `<style>`, `<script>`, `<iframe>`, and `<form>` elements. This filters out Stackable table-of-contents blocks, video/image embeds, and other non-content elements during migration.
+
 ## [2.10.3] - 2026-04-09
 
 ### Fixed

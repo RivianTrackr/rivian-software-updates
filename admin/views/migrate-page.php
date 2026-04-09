@@ -1,10 +1,14 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
-$dry_run_results = null;
-$migrate_results = null;
-$is_force        = false;
+$dry_run_results       = null;
+$migrate_results       = null;
+$block_dry_run_results = null;
+$block_migrate_results = null;
+$is_force              = false;
+$is_block              = false;
 
+// Essential Blocks toggle migration actions.
 if ( isset( $_POST['rsu_migrate_preview'] ) && check_admin_referer( 'rsu_migrate' ) ) {
 	$dry_run_results = RSU_Migrate::migrate_all( true );
 }
@@ -23,9 +27,36 @@ if ( isset( $_POST['rsu_migrate_force_run'] ) && check_admin_referer( 'rsu_migra
 	$is_force = true;
 }
 
+// Block editor migration actions.
+if ( isset( $_POST['rsu_block_preview'] ) && check_admin_referer( 'rsu_migrate' ) ) {
+	$block_dry_run_results = RSU_Migrate::migrate_all_blocks( true );
+	$is_block = true;
+}
+
+if ( isset( $_POST['rsu_block_run'] ) && check_admin_referer( 'rsu_migrate' ) ) {
+	$block_migrate_results = RSU_Migrate::migrate_all_blocks( false );
+	$is_block = true;
+}
+
+if ( isset( $_POST['rsu_block_force_preview'] ) && check_admin_referer( 'rsu_migrate' ) ) {
+	$block_dry_run_results = RSU_Migrate::migrate_all_blocks( true, true );
+	$is_force = true;
+	$is_block = true;
+}
+
+if ( isset( $_POST['rsu_block_force_run'] ) && check_admin_referer( 'rsu_migrate' ) ) {
+	$block_migrate_results = RSU_Migrate::migrate_all_blocks( false, true );
+	$is_force = true;
+	$is_block = true;
+}
+
 $migratable   = RSU_Migrate::get_migratable_posts();
 $all_toggle   = RSU_Migrate::get_migratable_posts( true );
 $already_done = count( $all_toggle ) - count( $migratable );
+
+$block_migratable   = RSU_Migrate::get_block_migratable_posts();
+$all_block          = RSU_Migrate::get_block_migratable_posts( true );
+$block_already_done = count( $all_block ) - count( $block_migratable );
 ?>
 <div class="wrap">
 	<h1>Migrate Essential Blocks Toggle Content</h1>
@@ -72,6 +103,56 @@ $already_done = count( $all_toggle ) - count( $migratable );
 			<p>
 				<button type="submit" name="rsu_migrate_force_preview" class="button button-secondary">Preview Re-migration (Dry Run)</button>
 				<button type="submit" name="rsu_migrate_force_run" class="button button-primary" style="background: #d63638; border-color: #d63638;" data-rsu-confirm="This will OVERWRITE existing RSU section data for all toggle posts. Continue?">Re-migrate All (Force)</button>
+			</p>
+		</form>
+	<?php endif; ?>
+
+	<!-- ═══ Block Editor Migration ═══ -->
+	<hr>
+	<h1 style="margin-top: 30px;">Migrate WordPress Block Editor Posts</h1>
+	<p>This tool converts posts that use standard WordPress block editor content (headings, paragraphs, lists) into the RSU plugin format. Table of contents and video embeds are automatically skipped.</p>
+	<p><strong>How it works:</strong> The post content is parsed directly &mdash; no Gen&nbsp;1 / Gen&nbsp;2 split. The same sections are saved for all default vehicles (<?php echo esc_html( implode( ', ', array_map( 'strtoupper', (array) RSU_Settings::get( 'default_vehicles', array( 'r1' ) ) ) ) ); ?>).</p>
+
+	<hr>
+
+	<h2>Not Yet Migrated (<?php echo count( $block_migratable ); ?>)</h2>
+
+	<?php if ( empty( $block_migratable ) ) : ?>
+		<p>All block editor posts have been migrated (or none found).</p>
+	<?php else : ?>
+		<table class="widefat striped">
+			<thead>
+				<tr><th>ID</th><th>Title</th></tr>
+			</thead>
+			<tbody>
+				<?php foreach ( $block_migratable as $post ) : ?>
+					<tr>
+						<td><?php echo esc_html( $post->ID ); ?></td>
+						<td><a href="<?php echo esc_url( get_edit_post_link( $post->ID ) ); ?>"><?php echo esc_html( $post->post_title ); ?></a></td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+
+		<form method="post" style="margin-top: 20px;" class="rsu-migrate-form">
+			<?php wp_nonce_field( 'rsu_migrate' ); ?>
+			<p>
+				<button type="submit" name="rsu_block_preview" class="button button-secondary">Preview (Dry Run)</button>
+				<button type="submit" name="rsu_block_run" class="button button-primary" data-rsu-confirm="This will write RSU section data to all eligible block editor posts. Continue?">Migrate All</button>
+			</p>
+		</form>
+	<?php endif; ?>
+
+	<?php if ( $block_already_done > 0 ) : ?>
+		<hr>
+		<h2>Re-migrate Already Migrated Block Posts (<?php echo $block_already_done; ?>)</h2>
+		<p>Use this to re-run migration on block editor posts that were already converted. This <strong>overwrites</strong> existing RSU section data.</p>
+
+		<form method="post" style="margin-top: 10px;" class="rsu-migrate-form">
+			<?php wp_nonce_field( 'rsu_migrate' ); ?>
+			<p>
+				<button type="submit" name="rsu_block_force_preview" class="button button-secondary">Preview Re-migration (Dry Run)</button>
+				<button type="submit" name="rsu_block_force_run" class="button button-primary" style="background: #d63638; border-color: #d63638;" data-rsu-confirm="This will OVERWRITE existing RSU section data for all block editor posts. Continue?">Re-migrate All (Force)</button>
 			</p>
 		</form>
 	<?php endif; ?>
@@ -186,7 +267,7 @@ $already_done = count( $all_toggle ) - count( $migratable );
 		$is_dry  = (bool) $dry_run_results;
 		?>
 		<hr>
-		<h2><?php echo $is_dry ? 'Preview Results' : 'Migration Results'; ?><?php echo $is_force ? ' (Force)' : ''; ?></h2>
+		<h2><?php echo $is_dry ? 'Preview Results' : 'Migration Results'; ?> (Toggle)<?php echo $is_force ? ' (Force)' : ''; ?></h2>
 
 		<?php foreach ( $results as $result ) : ?>
 			<?php if ( is_wp_error( $result ) ) : ?>
@@ -207,6 +288,41 @@ $already_done = count( $all_toggle ) - count( $migratable );
 				<?php if ( $is_dry ) : ?>
 					<details style="margin: 0 0 15px 10px;">
 						<summary>View merged sections JSON</summary>
+						<pre style="background: #f0f0f1; padding: 12px; overflow-x: auto; max-height: 400px; font-size: 12px;"><?php
+							echo esc_html( wp_json_encode( $result['sections'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE ) );
+						?></pre>
+					</details>
+				<?php endif; ?>
+			<?php endif; ?>
+		<?php endforeach; ?>
+	<?php endif; ?>
+
+	<?php if ( $block_dry_run_results || $block_migrate_results ) :
+		$results = $block_dry_run_results ? $block_dry_run_results : $block_migrate_results;
+		$is_dry  = (bool) $block_dry_run_results;
+		?>
+		<hr>
+		<h2><?php echo $is_dry ? 'Preview Results' : 'Migration Results'; ?> (Block Editor)<?php echo $is_force ? ' (Force)' : ''; ?></h2>
+
+		<?php foreach ( $results as $result ) : ?>
+			<?php if ( is_wp_error( $result ) ) : ?>
+				<div class="notice notice-warning inline" style="margin: 10px 0; padding: 10px;">
+					<strong>Error:</strong> <?php echo esc_html( $result->get_error_message() ); ?>
+				</div>
+			<?php else : ?>
+				<div class="notice notice-success inline" style="margin: 10px 0; padding: 10px;">
+					<strong><?php echo esc_html( $result['title'] ); ?></strong> (ID: <?php echo esc_html( $result['post_id'] ); ?>)
+					&mdash; <?php echo esc_html( $result['stats']['sections'] ); ?> sections,
+					<?php echo esc_html( $result['stats']['blocks'] ); ?> blocks
+					&rarr; Vehicles: <?php echo esc_html( implode( ', ', array_map( 'strtoupper', $result['vehicles'] ) ) ); ?>
+					<?php if ( ! $is_dry && ! empty( $result['saved'] ) ) : ?>
+						<span style="color: green;">&check; Saved</span>
+					<?php endif; ?>
+				</div>
+
+				<?php if ( $is_dry ) : ?>
+					<details style="margin: 0 0 15px 10px;">
+						<summary>View parsed sections JSON</summary>
 						<pre style="background: #f0f0f1; padding: 12px; overflow-x: auto; max-height: 400px; font-size: 12px;"><?php
 							echo esc_html( wp_json_encode( $result['sections'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE ) );
 						?></pre>
