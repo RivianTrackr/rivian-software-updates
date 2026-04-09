@@ -549,22 +549,29 @@
 /* === Latest Update Widget === */
 
 .rsu-widget-latest {
+	position: relative;
 	display: flex;
+	flex-direction: row;
 	align-items: center;
 	gap: 16px;
-	padding: 20px;
-	background: #4a9ede;
-	border-radius: 12px;
+	width: 100%;
+	min-height: 100px;
+	padding: 24px;
+	background-color: rgb(43, 150, 210);
+	color: rgb(0, 0, 0);
+	border-radius: 20px;
 	text-decoration: none;
-	color: #000000;
-	transition: background 0.2s ease, box-shadow 0.2s ease;
+	font-size: 16px;
+	font-weight: 600;
+	line-height: 1.5;
+	transition: 0.3s;
+	overflow: hidden;
 }
 
 .rsu-widget-latest:hover {
-	background: #ffffff;
+	background-color: #ffffff;
 	color: #000000;
 	text-decoration: none;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .rsu-widget-latest__icon {
