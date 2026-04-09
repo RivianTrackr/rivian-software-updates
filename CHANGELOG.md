@@ -2,6 +2,12 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.13.1] - 2026-04-09
+
+### Changed
+- Widget title font updated to 20px / weight 800, meta text to bold, cloud icon to 32px.
+- Widget card styles matched to existing widget specs (border-radius 20px, padding 24px, min-height 100px, 0.3s transition).
+
 ## [2.13.0] - 2026-04-09
 
 ### Added
