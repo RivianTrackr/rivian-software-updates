@@ -2,6 +2,18 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.10.3] - 2026-04-09
+
+### Fixed
+- iOS-style toggle knob sized to 28px diameter with 2px inset per design language spec (was 24px / 4px).
+- Toggle knob shadow opacity corrected to 0.15 per spec (was 0.2).
+- Monospace font stack updated to match design language (`'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono'`).
+- Replaced hardcoded color values with CSS custom properties in admin confirm dialog and inline meta-box styles.
+- Added missing `--rsu-note-bg`, `--rsu-note-bg-focus`, and `--rsu-bg-hover` tokens to inline Block Editor CSS.
+
+### Added
+- `prefers-reduced-motion: reduce` media query in admin and settings stylesheets (frontend already had it).
+
 ## [2.10.0] - 2026-04-08
 
 ### Added

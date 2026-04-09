@@ -702,7 +702,7 @@
 .rsu-confirm-dialog__message {
 	font-size: 14px;
 	line-height: 1.6;
-	color: #1d1d1f;
+	color: var(--rsu-text);
 	margin: 0;
 }
 
@@ -727,7 +727,7 @@
 }
 
 .rsu-confirm-dialog__cancel:hover {
-	background: #e8e8ed !important;
+	background: var(--rsu-bg-hover) !important;
 }
 
 .rsu-confirm-dialog__ok {
@@ -784,6 +784,24 @@
 		flex-wrap: wrap;
 	}
 }
+
+/* ═══════════════════════════════════════
+   Reduced Motion
+   ═══════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+	.rsu-admin-wrap,
+	.rsu-admin-wrap *,
+	.rsu-admin-wrap *::before,
+	.rsu-admin-wrap *::after {
+		transition-duration: 0s !important;
+		animation-duration: 0s !important;
+	}
+}
+
+/* ═══════════════════════════════════════
+   Responsive
+   ═══════════════════════════════════════ */
 
 @media (max-width: 782px) {
 	.rsu-platform-checks {

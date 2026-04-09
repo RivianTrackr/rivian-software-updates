@@ -22,7 +22,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 
 <style>
 /* RSU Admin — inlined for Block Editor compatibility. Uses RivianTrackr design tokens. */
-.rsu-admin-wrap { --rsu-action: #0071e3; --rsu-action-hover: #0077ed; --rsu-text: #1d1d1f; --rsu-text-secondary: #6e6e73; --rsu-text-muted: #86868b; --rsu-accent: #fba919; --rsu-error: #ff3b30; --rsu-error-light: #ffe5e5; --rsu-border: #d2d2d7; --rsu-border-light: #e8e8ed; --rsu-bg-light: #f5f5f7; --rsu-bg-info: #dbeafe; --rsu-white: #ffffff; --rsu-placeholder: #86868b; margin: -6px -12px -12px; padding: 0; }
+.rsu-admin-wrap { --rsu-action: #0071e3; --rsu-action-hover: #0077ed; --rsu-text: #1d1d1f; --rsu-text-secondary: #6e6e73; --rsu-text-muted: #86868b; --rsu-accent: #fba919; --rsu-error: #ff3b30; --rsu-error-light: #ffe5e5; --rsu-border: #d2d2d7; --rsu-border-light: #e8e8ed; --rsu-bg-light: #f5f5f7; --rsu-bg-hover: #e8e8ed; --rsu-bg-info: #dbeafe; --rsu-white: #ffffff; --rsu-placeholder: #86868b; --rsu-note-bg: #fef9ee; --rsu-note-bg-focus: #fdf0d5; margin: -6px -12px -12px; padding: 0; }
 
 .rsu-vehicle-checks { padding: 14px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px; border-bottom: 1px solid var(--rsu-border); background: var(--rsu-white); }
 .rsu-vehicle-checks__label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--rsu-text-secondary); }
@@ -81,8 +81,8 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-block__content { display: block; width: 100%; padding: 10px 12px; border: none !important; resize: none; font-size: 13px; line-height: 1.65; font-family: inherit; color: var(--rsu-text); overflow: hidden; min-height: 56px; height: auto; box-sizing: border-box; background: var(--rsu-white); box-shadow: none !important; outline: none !important; field-sizing: content; }
 .rsu-block__content:focus { background: var(--rsu-bg-light); }
 .rsu-block__content::placeholder { color: var(--rsu-placeholder); }
-.rsu-block[data-type="note"] .rsu-block__content { background: #fef9ee; }
-.rsu-block[data-type="note"] .rsu-block__content:focus { background: #fdf0d5; }
+.rsu-block[data-type="note"] .rsu-block__content { background: var(--rsu-note-bg); }
+.rsu-block[data-type="note"] .rsu-block__content:focus { background: var(--rsu-note-bg-focus); }
 
 .rsu-bullet-list { padding: 8px 12px 4px; }
 .rsu-bullet-row { display: flex; align-items: flex-start; gap: 0; margin-bottom: 6px; background: var(--rsu-white); border: 1px solid var(--rsu-border-light); border-radius: 8px; padding: 0; overflow: hidden; }
@@ -108,7 +108,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-confirm-dialog__message { font-size: 14px; line-height: 1.6; color: var(--rsu-text); margin: 0; }
 .rsu-confirm-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 24px 20px; }
 .rsu-confirm-dialog__cancel { padding: 8px 16px; font-size: 13px; font-weight: 500; border: 1px solid var(--rsu-border) !important; border-radius: 8px !important; background: var(--rsu-bg-light) !important; color: var(--rsu-text-secondary) !important; cursor: pointer; box-shadow: none !important; }
-.rsu-confirm-dialog__cancel:hover { background: #e8e8ed !important; }
+.rsu-confirm-dialog__cancel:hover { background: var(--rsu-bg-hover) !important; }
 .rsu-confirm-dialog__ok { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none !important; border-radius: 8px !important; background: #ff3b30 !important; color: #ffffff !important; cursor: pointer; box-shadow: none !important; }
 .rsu-confirm-dialog__ok:hover { background: #e0352b !important; }
 
@@ -138,7 +138,7 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-import-dialog__textarea::placeholder { color: var(--rsu-placeholder); }
 .rsu-import-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 24px 20px; }
 .rsu-import-dialog__cancel { padding: 8px 16px; font-size: 13px; font-weight: 500; border: 1px solid var(--rsu-border); border-radius: 8px; background: var(--rsu-bg-light); color: var(--rsu-text); cursor: pointer; }
-.rsu-import-dialog__cancel:hover { background: #e8e8ed; }
+.rsu-import-dialog__cancel:hover { background: var(--rsu-bg-hover); }
 .rsu-import-dialog__submit { padding: 8px 16px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; background: var(--rsu-action); color: #fff; cursor: pointer; }
 .rsu-import-dialog__submit:hover { background: var(--rsu-action-hover); }
 

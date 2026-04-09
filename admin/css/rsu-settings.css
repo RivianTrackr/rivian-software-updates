@@ -194,13 +194,13 @@
 .rsu-toggle__track::after {
     content: "";
     position: absolute;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     background: var(--rsu-white);
     border-radius: 50%;
-    top: 4px;
-    inset-inline-start: 4px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    top: 2px;
+    inset-inline-start: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
     transition: transform 0.3s ease;
 }
 
@@ -318,8 +318,8 @@
     padding: 2px 8px;
     border-radius: 4px;
     font-size: 13px;
-    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
-        "Courier New", monospace;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas,
+        'Courier New', monospace;
 }
 
 /* ── 10. Buttons ───────────────────────────────────────────────── */
@@ -491,7 +491,18 @@
     background: #e0352b !important;
 }
 
-/* ── 14. Responsive ───────────────────────────────────────────── */
+/* ── 14. Reduced Motion ──────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .rsu-settings-wrap,
+    .rsu-settings-wrap *,
+    .rsu-settings-wrap *::before,
+    .rsu-settings-wrap *::after {
+        transition-duration: 0s !important;
+        animation-duration: 0s !important;
+    }
+}
+
+/* ── 15. Responsive ───────────────────────────────────────────── */
 @media screen and (max-width: 782px) {
     .rsu-settings-wrap {
         margin: 20px 12px 0;
