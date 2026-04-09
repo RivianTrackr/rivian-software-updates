@@ -546,6 +546,56 @@
 }
 
 
+/* === Latest Update Widget === */
+
+.rsu-widget-latest {
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 20px;
+	background: #4a9ede;
+	border-radius: 12px;
+	text-decoration: none;
+	color: #000000;
+	transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rsu-widget-latest:hover {
+	background: #ffffff;
+	color: #000000;
+	text-decoration: none;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.rsu-widget-latest__icon {
+	flex-shrink: 0;
+	font-size: 36px;
+	line-height: 1;
+	color: #000000;
+}
+
+.rsu-widget-latest__body {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 0;
+}
+
+.rsu-widget-latest__version {
+	font-size: 18px;
+	font-weight: 700;
+	line-height: 1.3;
+	color: #000000;
+}
+
+.rsu-widget-latest__meta {
+	font-size: 14px;
+	font-weight: 500;
+	line-height: 1.4;
+	color: #000000;
+}
+
+
 /* === Reduced Motion === */
 
 @media (prefers-reduced-motion: reduce) {
