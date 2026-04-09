@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.13.3] - 2026-04-09
+
+### Fixed
+- History table no longer overflows its container on narrow desktop/tablet viewports. The table now switches to the stacked card layout at 600px (up from 480px) so it reflows before columns get cramped.
+
 ## [2.13.2] - 2026-04-09
 
 ### Changed
