@@ -682,4 +682,157 @@ class RSU_Migrate {
 
 		return $results;
 	}
+
+	/* ══════════════════════════════════════════════════════════════
+	   WordPress Block Editor Migration
+	   Posts that use standard Gutenberg blocks (headings, paragraphs,
+	   lists) without Essential Blocks toggle wrappers.
+	   ══════════════════════════════════════════════════════════════ */
+
+	/**
+	 * Migrate a single WordPress block editor post to RSU sections.
+	 *
+	 * Parses post_content directly (no toggle extraction) and saves
+	 * the resulting sections for all default vehicles.
+	 *
+	 * @param int  $post_id Post ID.
+	 * @param bool $dry_run If true, return result without saving.
+	 * @param bool $force   If true, overwrite existing sections data.
+	 * @return array|WP_Error Migration result or error.
+	 */
+	public static function migrate_block_post( $post_id, $dry_run = false, $force = false ) {
+		$post = get_post( $post_id );
+		if ( ! $post ) {
+			return new WP_Error( 'not_found', 'Post not found.' );
+		}
+
+		// Check if already migrated (skip unless forced).
+		if ( ! $force ) {
+			$existing = get_post_meta( $post_id, '_rsu_sections_r1', true );
+			if ( $existing && ! empty( json_decode( $existing, true ) ) ) {
+				return new WP_Error( 'already_migrated', 'Post already has RSU sections data. Use force to overwrite.' );
+			}
+		}
+
+		$content = $post->post_content;
+		if ( empty( trim( $content ) ) ) {
+			return new WP_Error( 'empty_content', 'Post has no content.' );
+		}
+
+		// Parse the block editor HTML into sections.
+		$sections = RSU_Admin::parse_html_to_sections( $content );
+
+		if ( empty( $sections ) ) {
+			return new WP_Error( 'no_sections', 'No parseable sections found in post content.' );
+		}
+
+		// Determine target vehicles — use default vehicles from settings.
+		$all_vehicles = RSU_Platforms::get_all();
+		$vehicles     = (array) RSU_Settings::get( 'default_vehicles', array( 'r1' ) );
+		$vehicles     = array_intersect( $vehicles, array_keys( $all_vehicles ) );
+		if ( empty( $vehicles ) ) {
+			$vehicles = array_slice( array_keys( $all_vehicles ), 0, 1 );
+		}
+
+		$result = array(
+			'post_id'  => $post_id,
+			'title'    => $post->post_title,
+			'sections' => $sections,
+			'vehicles' => $vehicles,
+			'stats'    => array(
+				'sections' => count( $sections ),
+				'blocks'   => array_sum( array_map( function ( $s ) {
+					return isset( $s['blocks'] ) ? count( $s['blocks'] ) : 0;
+				}, $sections ) ),
+			),
+		);
+
+		if ( ! $dry_run ) {
+			$sections = self::sanitize_sections_text( $sections );
+			$json     = wp_json_encode( $sections, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+			if ( false === $json || null === json_decode( $json ) ) {
+				$json = json_encode( $sections, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
+			}
+
+			// Save the same sections for each target vehicle.
+			foreach ( $vehicles as $slug ) {
+				update_post_meta( $post_id, '_rsu_sections_' . $slug, $json );
+
+				$html = RSU_Admin::render_sections_to_html( $sections, $slug );
+				$meta_key = isset( $all_vehicles[ $slug ]['meta_key'] ) ? $all_vehicles[ $slug ]['meta_key'] : '_rsu_content_' . $slug;
+				update_post_meta( $post_id, $meta_key, wp_kses_post( $html ) );
+			}
+
+			// Mark as update and set vehicles.
+			update_post_meta( $post_id, '_rsu_is_update', '1' );
+			update_post_meta( $post_id, '_rsu_vehicles', $vehicles );
+
+			wp_cache_delete( $post_id, 'post_meta' );
+			clean_post_cache( $post_id );
+
+			$result['saved'] = true;
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Get posts with WordPress block content that haven't been migrated.
+	 *
+	 * Finds posts that use Gutenberg blocks but don't have Essential Blocks
+	 * toggle wrappers and haven't been converted to RSU sections yet.
+	 *
+	 * @param bool $force If true, include already-migrated posts.
+	 * @return array Array of post objects.
+	 */
+	public static function get_block_migratable_posts( $force = false ) {
+		global $wpdb;
+
+		if ( $force ) {
+			return $wpdb->get_results(
+				"SELECT p.ID, p.post_title, p.post_content
+				 FROM {$wpdb->posts} p
+				 WHERE p.post_type = 'post'
+				   AND p.post_status IN ('publish', 'draft')
+				   AND p.post_content LIKE '%<!-- wp:%'
+				   AND p.post_content NOT LIKE '%eb-toggle%'
+				 ORDER BY p.post_date DESC"
+			);
+		}
+
+		return $wpdb->get_results(
+			"SELECT p.ID, p.post_title, p.post_content
+			 FROM {$wpdb->posts} p
+			 WHERE p.post_type = 'post'
+			   AND p.post_status IN ('publish', 'draft')
+			   AND p.post_content LIKE '%<!-- wp:%'
+			   AND p.post_content NOT LIKE '%eb-toggle%'
+			   AND NOT EXISTS (
+			       SELECT 1 FROM {$wpdb->postmeta} pm
+			       WHERE pm.post_id = p.ID
+			         AND pm.meta_key = '_rsu_sections_r1'
+			         AND pm.meta_value IS NOT NULL
+			         AND pm.meta_value != ''
+			   )
+			 ORDER BY p.post_date DESC"
+		);
+	}
+
+	/**
+	 * Migrate all eligible WordPress block editor posts.
+	 *
+	 * @param bool $dry_run If true, don't save anything.
+	 * @param bool $force   If true, re-migrate already-migrated posts.
+	 * @return array Results for each post.
+	 */
+	public static function migrate_all_blocks( $dry_run = false, $force = false ) {
+		$posts   = self::get_block_migratable_posts( $force );
+		$results = array();
+
+		foreach ( $posts as $post ) {
+			$results[] = self::migrate_block_post( $post->ID, $dry_run, $force );
+		}
+
+		return $results;
+	}
 }

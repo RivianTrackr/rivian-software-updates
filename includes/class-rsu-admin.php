@@ -412,6 +412,11 @@ class RSU_Admin {
 
 			$tag = strtolower( $node->nodeName );
 
+			// Skip non-content elements (ToC nav, video/image embeds, etc.).
+			if ( in_array( $tag, array( 'nav', 'figure', 'style', 'script', 'iframe', 'form' ), true ) ) {
+				continue;
+			}
+
 			if ( in_array( $tag, array( 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ), true ) ) {
 				if ( null !== $current ) {
 					$sections[] = $current;
