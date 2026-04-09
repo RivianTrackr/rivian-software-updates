@@ -2,6 +2,12 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.13.0] - 2026-04-09
+
+### Added
+- **Latest Software Update widget**: New WordPress sidebar widget (`RSU_Widget`) that automatically displays the most recent OTA version with First Noticed and Public Release dates. Links to the update post. Blue card background turns white on hover with black text/icon throughout.
+- Widget output is cached via a transient and automatically invalidated when any post is saved, so it always reflects the latest OTA.
+
 ## [2.12.0] - 2026-04-09
 
 ### Added
