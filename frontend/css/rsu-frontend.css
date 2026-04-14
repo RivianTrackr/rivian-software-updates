@@ -718,13 +718,6 @@
 	}
 
 	/* Latest update widget */
-	.rsu-widget-latest {
-		padding: 16px;
-		gap: 12px;
-		min-height: 0;
-		border-radius: 16px;
-	}
-
 	.rsu-widget-latest__icon {
 		font-size: 28px;
 	}
