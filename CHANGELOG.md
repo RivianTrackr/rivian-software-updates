@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.13.4] - 2026-04-14
+
+### Fixed
+- Latest-update widget on mobile now matches the padding, border-radius, and min-height of the desktop layout, keeping it visually consistent with neighboring widgets on small screens.
+
 ## [2.13.3] - 2026-04-09
 
 ### Fixed
