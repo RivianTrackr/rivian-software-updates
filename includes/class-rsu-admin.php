@@ -142,6 +142,41 @@ class RSU_Admin {
 	}
 
 	/**
+	 * Sanitize a list's items array (text, optional level 0|1, optional generation).
+	 *
+	 * @param mixed $raw_items         Raw items array.
+	 * @param array $valid_generations Allowed generation slugs.
+	 * @return array
+	 */
+	private static function sanitize_list_items( $raw_items, $valid_generations ) {
+		if ( ! is_array( $raw_items ) ) {
+			return array();
+		}
+
+		$items = array();
+		foreach ( $raw_items as $item ) {
+			if ( is_array( $item ) ) {
+				$clean_item = array(
+					'text' => isset( $item['text'] ) ? sanitize_text_field( $item['text'] ) : '',
+				);
+				if ( isset( $item['level'] ) ) {
+					$clean_item['level'] = max( 0, min( 1, intval( $item['level'] ) ) );
+				}
+				if ( ! empty( $item['generation'] ) ) {
+					$item_gen = sanitize_text_field( $item['generation'] );
+					if ( in_array( $item_gen, $valid_generations, true ) ) {
+						$clean_item['generation'] = $item_gen;
+					}
+				}
+				$items[] = $clean_item;
+			} else {
+				$items[] = array( 'text' => sanitize_text_field( $item ) );
+			}
+		}
+		return $items;
+	}
+
+	/**
 	 * Sanitize sections data from user input.
 	 *
 	 * Supports generation tags on blocks and list items.
@@ -189,32 +224,48 @@ class RSU_Admin {
 					}
 
 					if ( 'list' === $type ) {
-						$raw_items = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
-						$items = array();
-						foreach ( $raw_items as $item ) {
-							if ( is_array( $item ) ) {
-								// New format: { text: "...", generation: "gen1" }
-								$clean_item = array(
-									'text' => isset( $item['text'] ) ? sanitize_text_field( $item['text'] ) : '',
-								);
-								if ( ! empty( $item['generation'] ) ) {
-									$item_gen = sanitize_text_field( $item['generation'] );
-									if ( in_array( $item_gen, $valid_generations, true ) ) {
-										$clean_item['generation'] = $item_gen;
-									}
-								}
-								$items[] = $clean_item;
-							} else {
-								// Backward compat: plain string items.
-								$items[] = array(
-									'text' => sanitize_text_field( $item ),
-								);
-							}
-						}
+						$items = self::sanitize_list_items( isset( $block['items'] ) ? $block['items'] : array(), $valid_generations );
 
 						$clean_block = array(
 							'type'  => 'list',
 							'items' => $items,
+						);
+						if ( $generation ) {
+							$clean_block['generation'] = $generation;
+						}
+						$clean_section['blocks'][] = $clean_block;
+					} elseif ( 'note' === $type ) {
+						// Notes hold nested blocks (paragraphs and lists).
+						$note_blocks = array();
+
+						if ( ! empty( $block['blocks'] ) && is_array( $block['blocks'] ) ) {
+							foreach ( $block['blocks'] as $nb ) {
+								if ( ! is_array( $nb ) ) {
+									continue;
+								}
+								$nb_type = isset( $nb['type'] ) ? sanitize_text_field( $nb['type'] ) : 'paragraph';
+
+								if ( 'list' === $nb_type ) {
+									$nb_items = self::sanitize_list_items( isset( $nb['items'] ) ? $nb['items'] : array(), $valid_generations );
+									$note_blocks[] = array( 'type' => 'list', 'items' => $nb_items );
+								} else {
+									$note_blocks[] = array(
+										'type'    => 'paragraph',
+										'content' => isset( $nb['content'] ) ? sanitize_textarea_field( $nb['content'] ) : '',
+									);
+								}
+							}
+						} elseif ( isset( $block['content'] ) && '' !== trim( $block['content'] ) ) {
+							// Legacy single-content note: convert to a single paragraph block.
+							$note_blocks[] = array(
+								'type'    => 'paragraph',
+								'content' => sanitize_textarea_field( $block['content'] ),
+							);
+						}
+
+						$clean_block = array(
+							'type'   => 'note',
+							'blocks' => $note_blocks,
 						);
 						if ( $generation ) {
 							$clean_block['generation'] = $generation;
@@ -294,26 +345,10 @@ class RSU_Admin {
 						break;
 
 					case 'list':
-						$items = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
-						if ( ! empty( $items ) ) {
-							$html .= "<ul>\n";
-							foreach ( $items as $item ) {
-								$item_text = '';
-								$item_gen  = '';
-
-								if ( is_array( $item ) ) {
-									$item_text = isset( $item['text'] ) ? trim( $item['text'] ) : '';
-									$item_gen  = isset( $item['generation'] ) ? $item['generation'] : '';
-								} else {
-									$item_text = trim( $item );
-								}
-
-								if ( '' !== $item_text ) {
-									$item_pill = self::render_generation_pill( $item_gen, $gen_labels );
-									$html .= '<li>' . esc_html( $item_text ) . $item_pill . '</li>' . "\n";
-								}
-							}
-							$html .= "</ul>\n";
+						$items    = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
+						$list_html = self::render_list_html( $items, $gen_labels );
+						if ( '' !== $list_html ) {
+							$html .= $list_html;
 							// Block-level pill goes after the list.
 							if ( $block_pill ) {
 								$html .= '<p class="rsu-list-pill">' . $block_pill . '</p>' . "\n";
@@ -322,14 +357,108 @@ class RSU_Admin {
 						break;
 
 					case 'note':
-						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
-						if ( $content ) {
-							$html .= '<blockquote><p><strong>' . esc_html( $note_label ) . '</strong></p>' . "\n";
-							$html .= '<p>' . nl2br( esc_html( $content ) ) . $block_pill . '</p></blockquote>' . "\n";
+						$note_blocks = isset( $block['blocks'] ) && is_array( $block['blocks'] ) ? $block['blocks'] : array();
+
+						// Legacy single-content note compatibility.
+						if ( empty( $note_blocks ) && isset( $block['content'] ) ) {
+							$legacy = trim( $block['content'] );
+							if ( '' !== $legacy ) {
+								$note_blocks = array( array( 'type' => 'paragraph', 'content' => $legacy ) );
+							}
+						}
+
+						$note_inner = '';
+						foreach ( $note_blocks as $nb ) {
+							$nb_type = isset( $nb['type'] ) ? $nb['type'] : 'paragraph';
+							if ( 'list' === $nb_type ) {
+								$nb_items = isset( $nb['items'] ) && is_array( $nb['items'] ) ? $nb['items'] : array();
+								$note_inner .= self::render_list_html( $nb_items, $gen_labels );
+							} else {
+								$nb_content = isset( $nb['content'] ) ? trim( $nb['content'] ) : '';
+								if ( '' !== $nb_content ) {
+									$note_inner .= '<p>' . nl2br( esc_html( $nb_content ) ) . '</p>' . "\n";
+								}
+							}
+						}
+
+						if ( '' !== $note_inner ) {
+							$html .= '<blockquote><p><strong>' . esc_html( $note_label ) . '</strong>' . $block_pill . '</p>' . "\n";
+							$html .= $note_inner;
+							$html .= "</blockquote>\n";
 						}
 						break;
 				}
 			}
+		}
+
+		return $html;
+	}
+
+	/**
+	 * Render a flat list of items (with optional level 0|1) into nested <ul> HTML.
+	 *
+	 * Items are walked in order; transitions between levels open/close inner <ul>s.
+	 * Orphan first item with level > 0 is promoted to level 0.
+	 *
+	 * @param array $items      List items.
+	 * @param array $gen_labels Map of generation slug => label.
+	 * @return string
+	 */
+	private static function render_list_html( $items, $gen_labels ) {
+		if ( ! is_array( $items ) || empty( $items ) ) {
+			return '';
+		}
+
+		$html = '';
+		$prev = -1;
+
+		foreach ( $items as $item ) {
+			$text  = '';
+			$gen   = '';
+			$level = 0;
+
+			if ( is_array( $item ) ) {
+				$text  = isset( $item['text'] ) ? trim( $item['text'] ) : '';
+				$gen   = isset( $item['generation'] ) ? $item['generation'] : '';
+				$level = isset( $item['level'] ) ? max( 0, min( 1, intval( $item['level'] ) ) ) : 0;
+			} else {
+				$text = trim( (string) $item );
+			}
+
+			if ( '' === $text ) {
+				continue;
+			}
+
+			// First emitted item must be top-level.
+			if ( -1 === $prev ) {
+				$level = 0;
+			}
+
+			if ( $level > $prev ) {
+				for ( $i = $prev; $i < $level; $i++ ) {
+					$html .= "<ul>\n";
+				}
+			} elseif ( $level < $prev ) {
+				$html .= "</li>\n";
+				for ( $i = $prev; $i > $level; $i-- ) {
+					$html .= "</ul></li>\n";
+				}
+			} elseif ( $prev >= 0 ) {
+				$html .= "</li>\n";
+			}
+
+			$item_pill = self::render_generation_pill( $gen, $gen_labels );
+			$html     .= '<li>' . esc_html( $text ) . $item_pill;
+
+			$prev = $level;
+		}
+
+		if ( $prev >= 0 ) {
+			$html .= "</li>\n";
+			for ( $i = $prev; $i > 0; $i-- ) {
+				$html .= "</ul></li>\n";
+			}
+			$html .= "</ul>\n";
 		}
 
 		return $html;

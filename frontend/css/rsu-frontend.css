@@ -215,6 +215,17 @@
 	padding-inline-start: 24px;
 }
 
+/* Nested list — tighter spacing, hollow circle marker */
+.rsu-panel__content li > ul,
+.rsu-panel__content li > ol {
+	margin: 6px 0 6px;
+	padding-inline-start: 20px;
+}
+
+.rsu-panel__content li > ul li {
+	list-style-type: circle;
+}
+
 .rsu-panel__content li {
 	font-size: 16px;
 	line-height: 1.75;
@@ -257,6 +268,23 @@
 }
 
 .rsu-panel__content blockquote p:last-child {
+	margin-bottom: 0;
+}
+
+/* Lists inside notes — match note's smaller text */
+.rsu-panel__content blockquote ul,
+.rsu-panel__content blockquote ol {
+	margin: 4px 0 8px;
+	padding-inline-start: 22px;
+}
+
+.rsu-panel__content blockquote li {
+	font-size: 14px;
+	line-height: 1.6;
+	margin-bottom: 4px;
+}
+
+.rsu-panel__content blockquote > *:last-child {
 	margin-bottom: 0;
 }
 
