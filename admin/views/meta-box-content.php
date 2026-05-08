@@ -264,6 +264,16 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 						$sections_json = wp_json_encode( $parsed );
 					}
 				}
+			} else {
+				// Heal posts whose JSON was polluted by the pre-fix parse, where pill
+				// text ("Gen 2 Only") got concatenated into bullet/paragraph content.
+				$decoded = json_decode( $sections_json, true );
+				if ( is_array( $decoded ) && ! empty( $decoded ) ) {
+					$cleaned = RSU_Admin::clean_pill_pollution( $decoded, $slug );
+					if ( $cleaned !== $decoded ) {
+						$sections_json = wp_json_encode( $cleaned );
+					}
+				}
 			}
 
 			// Other vehicles for "Copy from" dropdown.

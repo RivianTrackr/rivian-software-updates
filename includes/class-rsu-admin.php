@@ -104,7 +104,7 @@ class RSU_Admin {
 
 				if ( is_array( $sections ) && ! empty( $sections ) ) {
 					// Sanitize section data.
-					$sections = self::sanitize_sections( $sections );
+					$sections = self::sanitize_sections( $sections, $slug );
 
 					// Store structured JSON.
 					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
@@ -146,9 +146,11 @@ class RSU_Admin {
 	 *
 	 * @param mixed $raw_items         Raw items array.
 	 * @param array $valid_generations Allowed generation slugs.
+	 * @param array $gen_labels        Map of generation slug => label, for stripping
+	 *                                 stray "{Label} Only" pollution from item text.
 	 * @return array
 	 */
-	private static function sanitize_list_items( $raw_items, $valid_generations ) {
+	private static function sanitize_list_items( $raw_items, $valid_generations, $gen_labels = array() ) {
 		if ( ! is_array( $raw_items ) ) {
 			return array();
 		}
@@ -156,17 +158,22 @@ class RSU_Admin {
 		$items = array();
 		foreach ( $raw_items as $item ) {
 			if ( is_array( $item ) ) {
-				$clean_item = array(
-					'text' => isset( $item['text'] ) ? sanitize_text_field( $item['text'] ) : '',
-				);
+				$text = isset( $item['text'] ) ? sanitize_text_field( $item['text'] ) : '';
+				$item_gen = '';
+				if ( ! empty( $item['generation'] ) ) {
+					$candidate = sanitize_text_field( $item['generation'] );
+					if ( in_array( $candidate, $valid_generations, true ) ) {
+						$item_gen = $candidate;
+					}
+				}
+				$text = self::strip_pill_pollution( $text, $item_gen, $gen_labels );
+
+				$clean_item = array( 'text' => $text );
 				if ( isset( $item['level'] ) ) {
 					$clean_item['level'] = max( 0, min( 1, intval( $item['level'] ) ) );
 				}
-				if ( ! empty( $item['generation'] ) ) {
-					$item_gen = sanitize_text_field( $item['generation'] );
-					if ( in_array( $item_gen, $valid_generations, true ) ) {
-						$clean_item['generation'] = $item_gen;
-					}
+				if ( $item_gen ) {
+					$clean_item['generation'] = $item_gen;
 				}
 				$items[] = $clean_item;
 			} else {
@@ -177,33 +184,149 @@ class RSU_Admin {
 	}
 
 	/**
+	 * Strip a trailing "{Label} Only" suffix from text when it was concatenated
+	 * by the pre-fix parse_html_to_sections (which read pill text into
+	 * surrounding content). Only strips when the block/item already carries a
+	 * generation tag whose label matches the suffix, so user-authored text is
+	 * untouched.
+	 *
+	 * @param string $text       Sanitized text.
+	 * @param string $generation Generation slug on the item, or empty.
+	 * @param array  $gen_labels Map of generation slug => label.
+	 * @return string
+	 */
+	private static function strip_pill_pollution( $text, $generation, $gen_labels ) {
+		if ( '' === $text || '' === $generation || empty( $gen_labels[ $generation ] ) ) {
+			return $text;
+		}
+		$label = $gen_labels[ $generation ];
+		// Match optional whitespace + "{Label} Only" (case-insensitive) at end.
+		$pattern = '/\s*' . preg_quote( $label, '/' ) . '\s+Only\s*$/i';
+		$cleaned = preg_replace( $pattern, '', $text );
+		return null === $cleaned ? $text : rtrim( $cleaned );
+	}
+
+	/**
+	 * Walk a sections array and strip pre-fix "{Label} Only" pollution from
+	 * every text-bearing field whose owning item/block has a matching
+	 * generation tag. Read-time companion to the save-time cleanup so the
+	 * editor displays clean text without requiring an immediate re-save.
+	 *
+	 * @param array  $sections     Sections array (already JSON-decoded).
+	 * @param string $vehicle_slug Vehicle slug used to resolve generation labels.
+	 * @return array Sections with polluted text fields cleaned.
+	 */
+	public static function clean_pill_pollution( $sections, $vehicle_slug ) {
+		if ( ! is_array( $sections ) || empty( $sections ) || empty( $vehicle_slug ) ) {
+			return $sections;
+		}
+		$gen_labels = RSU_Platforms::get_generations( $vehicle_slug );
+		if ( empty( $gen_labels ) ) {
+			return $sections;
+		}
+
+		foreach ( $sections as &$section ) {
+			if ( ! is_array( $section ) ) {
+				continue;
+			}
+			$section_gen = isset( $section['generation'] ) ? $section['generation'] : '';
+			if ( isset( $section['heading'] ) ) {
+				$section['heading'] = self::strip_pill_pollution( $section['heading'], $section_gen, $gen_labels );
+			}
+			if ( ! empty( $section['blocks'] ) && is_array( $section['blocks'] ) ) {
+				foreach ( $section['blocks'] as &$block ) {
+					self::clean_block_pollution( $block, $gen_labels );
+				}
+				unset( $block );
+			}
+		}
+		unset( $section );
+
+		return $sections;
+	}
+
+	/**
+	 * Clean pollution on a single block (paragraph, list, or note).
+	 *
+	 * @param array $block      Block reference.
+	 * @param array $gen_labels Map of generation slug => label.
+	 */
+	private static function clean_block_pollution( &$block, $gen_labels ) {
+		if ( ! is_array( $block ) ) {
+			return;
+		}
+		$type  = isset( $block['type'] ) ? $block['type'] : 'paragraph';
+		$gen   = isset( $block['generation'] ) ? $block['generation'] : '';
+
+		if ( 'list' === $type ) {
+			if ( ! empty( $block['items'] ) && is_array( $block['items'] ) ) {
+				foreach ( $block['items'] as &$item ) {
+					if ( is_array( $item ) && isset( $item['text'] ) ) {
+						$item_gen   = isset( $item['generation'] ) ? $item['generation'] : '';
+						$item['text'] = self::strip_pill_pollution( $item['text'], $item_gen, $gen_labels );
+					}
+				}
+				unset( $item );
+			}
+			return;
+		}
+
+		if ( 'note' === $type ) {
+			if ( isset( $block['content'] ) ) {
+				$block['content'] = self::strip_pill_pollution( $block['content'], $gen, $gen_labels );
+			}
+			if ( ! empty( $block['blocks'] ) && is_array( $block['blocks'] ) ) {
+				foreach ( $block['blocks'] as &$nb ) {
+					self::clean_block_pollution( $nb, $gen_labels );
+				}
+				unset( $nb );
+			}
+			return;
+		}
+
+		if ( isset( $block['content'] ) ) {
+			$block['content'] = self::strip_pill_pollution( $block['content'], $gen, $gen_labels );
+		}
+	}
+
+	/**
 	 * Sanitize sections data from user input.
 	 *
-	 * Supports generation tags on blocks and list items.
+	 * Supports generation tags on blocks and list items. The $vehicle_slug
+	 * is used to look up generation labels so trailing "{Label} Only" text
+	 * left over from the pre-fix HTML parse can be cleaned out.
 	 *
-	 * @param array $sections Raw sections array.
+	 * @param array  $sections     Raw sections array.
+	 * @param string $vehicle_slug Vehicle slug for generation label lookup.
 	 * @return array Sanitized sections.
 	 */
-	private static function sanitize_sections( $sections ) {
+	private static function sanitize_sections( $sections, $vehicle_slug = '' ) {
 		$clean = array();
 		$valid_generations = RSU_Platforms::get_all_generation_slugs();
+		$gen_labels        = $vehicle_slug ? RSU_Platforms::get_generations( $vehicle_slug ) : array();
 
 		foreach ( $sections as $section ) {
 			if ( ! is_array( $section ) ) {
 				continue;
 			}
 
+			$section_gen = '';
+			if ( ! empty( $section['generation'] ) ) {
+				$candidate = sanitize_text_field( $section['generation'] );
+				if ( in_array( $candidate, $valid_generations, true ) ) {
+					$section_gen = $candidate;
+				}
+			}
+
+			$heading = isset( $section['heading'] ) ? sanitize_text_field( $section['heading'] ) : '';
+			$heading = self::strip_pill_pollution( $heading, $section_gen, $gen_labels );
+
 			$clean_section = array(
-				'heading' => isset( $section['heading'] ) ? sanitize_text_field( $section['heading'] ) : '',
+				'heading' => $heading,
 				'blocks'  => array(),
 			);
-
-			// Section-level generation tag (for headings).
-			if ( ! empty( $section['generation'] ) ) {
-				$section_gen = sanitize_text_field( $section['generation'] );
-				if ( in_array( $section_gen, $valid_generations, true ) ) {
-					$clean_section['generation'] = $section_gen;
-				}
+			if ( $section_gen ) {
+				$clean_section['generation'] = $section_gen;
 			}
 
 			if ( ! empty( $section['blocks'] ) && is_array( $section['blocks'] ) ) {
@@ -224,7 +347,11 @@ class RSU_Admin {
 					}
 
 					if ( 'list' === $type ) {
-						$items = self::sanitize_list_items( isset( $block['items'] ) ? $block['items'] : array(), $valid_generations );
+						$items = self::sanitize_list_items(
+							isset( $block['items'] ) ? $block['items'] : array(),
+							$valid_generations,
+							$gen_labels
+						);
 
 						$clean_block = array(
 							'type'  => 'list',
@@ -246,20 +373,28 @@ class RSU_Admin {
 								$nb_type = isset( $nb['type'] ) ? sanitize_text_field( $nb['type'] ) : 'paragraph';
 
 								if ( 'list' === $nb_type ) {
-									$nb_items = self::sanitize_list_items( isset( $nb['items'] ) ? $nb['items'] : array(), $valid_generations );
+									$nb_items = self::sanitize_list_items(
+										isset( $nb['items'] ) ? $nb['items'] : array(),
+										$valid_generations,
+										$gen_labels
+									);
 									$note_blocks[] = array( 'type' => 'list', 'items' => $nb_items );
 								} else {
+									$nb_content = isset( $nb['content'] ) ? sanitize_textarea_field( $nb['content'] ) : '';
+									$nb_content = self::strip_pill_pollution( $nb_content, $generation, $gen_labels );
 									$note_blocks[] = array(
 										'type'    => 'paragraph',
-										'content' => isset( $nb['content'] ) ? sanitize_textarea_field( $nb['content'] ) : '',
+										'content' => $nb_content,
 									);
 								}
 							}
 						} elseif ( isset( $block['content'] ) && '' !== trim( $block['content'] ) ) {
 							// Legacy single-content note: convert to a single paragraph block.
+							$legacy = sanitize_textarea_field( $block['content'] );
+							$legacy = self::strip_pill_pollution( $legacy, $generation, $gen_labels );
 							$note_blocks[] = array(
 								'type'    => 'paragraph',
-								'content' => sanitize_textarea_field( $block['content'] ),
+								'content' => $legacy,
 							);
 						}
 
@@ -272,9 +407,11 @@ class RSU_Admin {
 						}
 						$clean_section['blocks'][] = $clean_block;
 					} else {
+						$content = isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '';
+						$content = self::strip_pill_pollution( $content, $generation, $gen_labels );
 						$clean_block = array(
 							'type'    => $type,
-							'content' => isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '',
+							'content' => $content,
 						);
 						if ( $generation ) {
 							$clean_block['generation'] = $generation;
@@ -551,11 +688,7 @@ class RSU_Admin {
 					$sections[] = $current;
 				}
 				$gen = self::extract_generation_from_node( $node );
-				$text = trim( $node->textContent );
-				if ( $gen ) {
-					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
-					$text = trim( $text );
-				}
+				$text = self::text_without_pills( $node );
 				$current = array(
 					'heading' => $text,
 					'blocks'  => array(),
@@ -579,14 +712,9 @@ class RSU_Admin {
 				if ( $gen ) {
 					$block['generation'] = $gen;
 				}
-				$text = trim( $node->textContent );
-				$text = preg_replace( '/^\s*NOTE\s*:?\s*/i', '', $text );
-				// Remove pill text.
-				if ( $gen ) {
-					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
-				}
-				$block['content'] = trim( $text );
-				if ( '' !== $block['content'] ) {
+				$note_blocks = self::parse_note_inner_blocks( $node );
+				if ( ! empty( $note_blocks ) ) {
+					$block['blocks']     = $note_blocks;
 					$current['blocks'][] = $block;
 				}
 			} elseif ( 'p' === $tag ) {
@@ -595,12 +723,7 @@ class RSU_Admin {
 				if ( $gen ) {
 					$block['generation'] = $gen;
 				}
-				$text = trim( $node->textContent );
-				// Remove pill text.
-				if ( $gen ) {
-					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
-				}
-				$block['content'] = trim( $text );
+				$block['content'] = self::text_without_pills( $node );
 				if ( '' !== $block['content'] ) {
 					$current['blocks'][] = $block;
 				}
@@ -679,29 +802,20 @@ class RSU_Admin {
 					$pending_items = array();
 				}
 
-				// Get the parent's own text (exclude nested lists and comments).
-				$parent_text = '';
-				foreach ( $li->childNodes as $li_child ) {
-					if ( $li_child === $nested_list ) {
+				// Get the parent's own text: clone the <li>, drop the nested list and
+				// any pill spans, then read textContent. This avoids both pill-text
+				// leaks and walking children manually.
+				$li_clone = $li->cloneNode( true );
+				foreach ( iterator_to_array( $li_clone->childNodes ) as $clone_child ) {
+					if ( XML_ELEMENT_NODE !== $clone_child->nodeType ) {
 						continue;
 					}
-					if ( XML_COMMENT_NODE === $li_child->nodeType ) {
-						continue;
+					$clone_tag = strtolower( $clone_child->nodeName );
+					if ( 'ul' === $clone_tag || 'ol' === $clone_tag ) {
+						$li_clone->removeChild( $clone_child );
 					}
-					if ( XML_ELEMENT_NODE === $li_child->nodeType ) {
-						$child_tag = strtolower( $li_child->nodeName );
-						if ( 'ul' === $child_tag || 'ol' === $child_tag ) {
-							continue;
-						}
-					}
-					$parent_text .= $li_child->textContent;
 				}
-				$parent_text = trim( $parent_text );
-
-				if ( $gen ) {
-					$parent_text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $parent_text );
-					$parent_text = trim( $parent_text );
-				}
+				$parent_text = self::text_without_pills( $li_clone );
 
 				// Emit parent text as a paragraph block (acts as a sub-heading).
 				if ( '' !== $parent_text ) {
@@ -718,16 +832,8 @@ class RSU_Admin {
 					$blocks[] = $nb;
 				}
 			} else {
-				// Simple <li> — collect into pending items.
-				$text = trim( $li->textContent );
-				// Skip comment text that might leak through.
-				if ( XML_COMMENT_NODE === $li->nodeType ) {
-					continue;
-				}
-				if ( $gen ) {
-					$text = preg_replace( '/\s*' . preg_quote( $gen, '/' ) . '\s*Only\s*/i', '', $text );
-					$text = trim( $text );
-				}
+				// Simple <li>: collect into pending items.
+				$text = self::text_without_pills( $li );
 				if ( '' !== $text ) {
 					$item = array( 'text' => $text );
 					if ( $gen ) {
@@ -747,21 +853,125 @@ class RSU_Admin {
 	}
 
 	/**
-	 * Extract generation slug from a node's child rsu-gen-pill span.
+	 * Extract generation slug from a node's own rsu-gen-pill.
+	 *
+	 * Searches direct child spans first (where pills sit on headings, paragraphs,
+	 * and list items). For blockquotes, falls back to the pill on the first inner
+	 * paragraph (the NOTE header) so a block-level pill is found without picking
+	 * up generation tags from inner list items.
 	 *
 	 * @param DOMNode $node DOM node to check.
 	 * @return string Generation slug or empty string.
 	 */
 	private static function extract_generation_from_node( $node ) {
-		$spans = $node->getElementsByTagName( 'span' );
-		if ( $spans->length > 0 ) {
-			foreach ( $spans as $span ) {
-				if ( $span->hasAttribute( 'data-generation' ) ) {
-					return $span->getAttribute( 'data-generation' );
+		foreach ( $node->childNodes as $child ) {
+			if ( XML_ELEMENT_NODE === $child->nodeType
+				&& 'span' === strtolower( $child->nodeName )
+				&& $child->hasAttribute( 'data-generation' ) ) {
+				return $child->getAttribute( 'data-generation' );
+			}
+		}
+
+		// Blockquote: pill is rendered inside the first <p> (NOTE header).
+		if ( 'blockquote' === strtolower( $node->nodeName ) ) {
+			foreach ( $node->childNodes as $child ) {
+				if ( XML_ELEMENT_NODE !== $child->nodeType ) {
+					continue;
+				}
+				if ( 'p' !== strtolower( $child->nodeName ) ) {
+					continue;
+				}
+				foreach ( $child->childNodes as $grand ) {
+					if ( XML_ELEMENT_NODE === $grand->nodeType
+						&& 'span' === strtolower( $grand->nodeName )
+						&& $grand->hasAttribute( 'data-generation' ) ) {
+						return $grand->getAttribute( 'data-generation' );
+					}
+				}
+				return '';
+			}
+		}
+
+		return '';
+	}
+
+	/**
+	 * Read a node's text content with all rsu-gen-pill spans removed.
+	 *
+	 * Pills render as "{Label} Only" (e.g. "Gen 2 Only"), and a naive
+	 * textContent read would concatenate that label into the surrounding
+	 * bullet/paragraph text. Cloning the node and dropping pill spans first
+	 * yields the user-authored text only.
+	 *
+	 * @param DOMNode $node DOM node.
+	 * @return string Trimmed text without pill labels.
+	 */
+	private static function text_without_pills( $node ) {
+		$clone     = $node->cloneNode( true );
+		$to_remove = array();
+		$spans     = $clone->getElementsByTagName( 'span' );
+		foreach ( $spans as $span ) {
+			$class = $span->getAttribute( 'class' );
+			if ( $span->hasAttribute( 'data-generation' )
+				|| ( '' !== $class && false !== strpos( $class, 'rsu-gen-pill' ) ) ) {
+				$to_remove[] = $span;
+			}
+		}
+		foreach ( $to_remove as $span ) {
+			if ( $span->parentNode ) {
+				$span->parentNode->removeChild( $span );
+			}
+		}
+		return trim( $clone->textContent );
+	}
+
+	/**
+	 * Parse a blockquote (note) into an array of inner blocks.
+	 *
+	 * The note's header paragraph (containing <strong>NOTE</strong>) is skipped;
+	 * remaining <p> become paragraph blocks and <ul>/<ol> are expanded via
+	 * parse_list_to_blocks() so multi-block notes round-trip cleanly.
+	 *
+	 * @param DOMNode $blockquote Blockquote element.
+	 * @return array Inner block arrays (paragraph and list).
+	 */
+	private static function parse_note_inner_blocks( $blockquote ) {
+		$blocks         = array();
+		$skipped_header = false;
+
+		foreach ( $blockquote->childNodes as $child ) {
+			if ( XML_ELEMENT_NODE !== $child->nodeType ) {
+				continue;
+			}
+			$tag = strtolower( $child->nodeName );
+
+			// Skip the NOTE header: first <p> containing a <strong>.
+			if ( ! $skipped_header && 'p' === $tag ) {
+				$strongs = $child->getElementsByTagName( 'strong' );
+				if ( $strongs->length > 0 ) {
+					$skipped_header = true;
+					continue;
+				}
+			}
+
+			if ( 'p' === $tag ) {
+				$skipped_header = true;
+				$text = self::text_without_pills( $child );
+				$text = preg_replace( '/^\s*NOTE\s*:?\s*/i', '', $text );
+				$text = trim( $text );
+				if ( '' !== $text ) {
+					$blocks[] = array( 'type' => 'paragraph', 'content' => $text );
+				}
+			} elseif ( 'ul' === $tag || 'ol' === $tag ) {
+				$skipped_header = true;
+				$list_blocks = self::parse_list_to_blocks( $child );
+				foreach ( $list_blocks as $lb ) {
+					$blocks[] = $lb;
 				}
 			}
 		}
-		return '';
+
+		return $blocks;
 	}
 
 	/**
