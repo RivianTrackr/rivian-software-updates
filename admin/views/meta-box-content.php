@@ -87,6 +87,13 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-bullet-list { padding: 8px 12px 4px; }
 .rsu-bullet-row { display: flex; align-items: flex-start; gap: 0; margin-bottom: 6px; background: var(--rsu-white); border: 1px solid var(--rsu-border-light); border-radius: 8px; padding: 0; overflow: hidden; }
 .rsu-bullet-row:focus-within { border-color: var(--rsu-action); }
+.rsu-bullet-row--indent { margin-inline-start: 28px; }
+.rsu-bullet-row__indent { flex-shrink: 0; background: var(--rsu-bg-light); border: none; border-right: 1px solid var(--rsu-border-light); color: var(--rsu-text-muted); cursor: pointer; padding: 0 6px; align-self: stretch; display: flex; align-items: center; opacity: 0.55; transition: opacity 0.15s, color 0.15s, background 0.15s; }
+.rsu-bullet-row:hover .rsu-bullet-row__indent,
+.rsu-bullet-row:focus-within .rsu-bullet-row__indent { opacity: 1; }
+.rsu-bullet-row__indent:hover { color: var(--rsu-action); background: var(--rsu-bg-info); }
+.rsu-bullet-row__indent .dashicons { font-size: 14px; width: 14px; height: 14px; }
+.rsu-bullet-row--indent .rsu-bullet-row__indent { color: var(--rsu-action); opacity: 1; }
 .rsu-bullet-row__marker { flex-shrink: 0; width: 32px; display: flex; align-items: center; justify-content: center; color: var(--rsu-action); font-size: 18px; line-height: 1; padding-top: 8px; user-select: none; background: var(--rsu-bg-light); align-self: stretch; border-right: 1px solid var(--rsu-border-light); }
 .rsu-bullet-row__input { flex: 1; border: none !important; background: var(--rsu-white); font-size: 13px; line-height: 1.65; font-family: inherit; color: var(--rsu-text); padding: 8px 10px; resize: none; overflow: hidden; overflow-wrap: break-word; word-break: break-word; min-height: 36px; height: auto; box-sizing: border-box; box-shadow: none !important; outline: none !important; field-sizing: content; }
 .rsu-bullet-row__input:focus { background: var(--rsu-bg-light); }
@@ -96,6 +103,18 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-bullet-row__remove:hover { color: var(--rsu-error); background: var(--rsu-error-light); }
 .rsu-bullet-add { display: flex; align-items: center; gap: 4px; width: 100%; padding: 7px 12px; margin: 0; background: var(--rsu-bg-light); border: none; border-top: 1px solid var(--rsu-border-light); color: var(--rsu-text-muted); font-size: 11px; font-weight: 600; cursor: pointer; text-align: left; }
 .rsu-bullet-add:hover { background: var(--rsu-bg-info); color: var(--rsu-action); }
+
+/* Note inner blocks (paragraphs / bullet lists nested inside a Note) */
+.rsu-note-blocks { padding: 8px 12px 4px; display: flex; flex-direction: column; gap: 8px; }
+.rsu-note-blocks .rsu-block { border: 1px solid var(--rsu-border-light); border-left-width: 1px; background: var(--rsu-white); margin-bottom: 0; }
+.rsu-note-blocks .rsu-block[data-type="list"] { border-left: 3px solid var(--rsu-accent); }
+.rsu-note-blocks .rsu-block__header { padding: 4px 8px; }
+.rsu-note-blocks .rsu-block__label { color: var(--rsu-accent); font-size: 9px; }
+.rsu-note-add { display: flex; gap: 8px; padding: 8px 12px 12px; border-top: 1px solid var(--rsu-border-light); }
+.rsu-note-add .button { font-size: 11px !important; font-weight: 600; color: var(--rsu-text-secondary) !important; padding: 4px 12px !important; border: 1px solid var(--rsu-border) !important; border-radius: 6px !important; background: var(--rsu-white) !important; cursor: pointer; box-shadow: none !important; line-height: 1.5; }
+.rsu-note-add .button:hover { color: var(--rsu-accent) !important; border-color: var(--rsu-accent) !important; background: var(--rsu-note-bg-focus) !important; }
+.rsu-block[data-type="note"] > .rsu-note-blocks { background: var(--rsu-note-bg); }
+.rsu-block[data-type="note"] > .rsu-note-add { background: var(--rsu-note-bg); }
 
 /* Drag and drop */
 .rsu-drag-placeholder { border: 2px dashed var(--rsu-border); border-radius: 12px; margin-bottom: 16px; background: var(--rsu-bg-light); }
@@ -426,6 +445,51 @@ var RSUSectionBuilder = (function () {
 		}
 	}
 
+	// ── Read a single block element into a block object (recursive for notes) ──
+	function readBlockFromEl(bEl) {
+		var type = bEl.getAttribute('data-type');
+		var genSelect = qs(':scope > .rsu-block__header > .rsu-gen-select', bEl);
+		var blockGen = genSelect ? genSelect.value : '';
+
+		if (type === 'list') {
+			var items = [];
+			qsa(':scope > .rsu-bullet-list > .rsu-bullet-row', bEl).forEach(function (row) {
+				var input = qs('.rsu-bullet-row__input', row);
+				var itemGenSelect = qs('.rsu-bullet-row__gen .rsu-gen-select', row);
+				var val = input ? input.value.trim() : '';
+				if (val !== '') {
+					var item = { text: val };
+					if (row.classList.contains('rsu-bullet-row--indent')) {
+						item.level = 1;
+					}
+					if (itemGenSelect && itemGenSelect.value) {
+						item.generation = itemGenSelect.value;
+					}
+					items.push(item);
+				}
+			});
+			var listBlock = { type: 'list', items: items };
+			if (blockGen) listBlock.generation = blockGen;
+			return listBlock;
+		}
+
+		if (type === 'note') {
+			var noteBlocks = [];
+			qsa(':scope > .rsu-note-blocks > .rsu-block', bEl).forEach(function (innerEl) {
+				noteBlocks.push(readBlockFromEl(innerEl));
+			});
+			var noteBlock = { type: 'note', blocks: noteBlocks };
+			if (blockGen) noteBlock.generation = blockGen;
+			return noteBlock;
+		}
+
+		var textarea = qs(':scope > .rsu-block__content', bEl);
+		var raw = textarea ? textarea.value : '';
+		var paraBlock = { type: type, content: raw.trim() };
+		if (blockGen) paraBlock.generation = blockGen;
+		return paraBlock;
+	}
+
 	// ── Read current DOM state back into data ──
 	function readFromDOM(builder) {
 		var sections = [];
@@ -440,35 +504,8 @@ var RSUSectionBuilder = (function () {
 				section.generation = sectionGenSelect.value;
 			}
 
-			qsa('.rsu-blocks-list .rsu-block', sEl).forEach(function (bEl) {
-				var type = bEl.getAttribute('data-type');
-				var genSelect = qs('.rsu-block__header .rsu-gen-select', bEl);
-				var blockGen = genSelect ? genSelect.value : '';
-
-				if (type === 'list') {
-					var items = [];
-					qsa('.rsu-bullet-row', bEl).forEach(function (row) {
-						var input = qs('.rsu-bullet-row__input', row);
-						var itemGenSelect = qs('.rsu-bullet-row__gen .rsu-gen-select', row);
-						var val = input ? input.value.trim() : '';
-						if (val !== '') {
-							var item = { text: val };
-							if (itemGenSelect && itemGenSelect.value) {
-								item.generation = itemGenSelect.value;
-							}
-							items.push(item);
-						}
-					});
-					var block = { type: 'list', items: items };
-					if (blockGen) block.generation = blockGen;
-					section.blocks.push(block);
-				} else {
-					var textarea = qs('.rsu-block__content', bEl);
-					var raw = textarea ? textarea.value : '';
-					var block = { type: type, content: raw.trim() };
-					if (blockGen) block.generation = blockGen;
-					section.blocks.push(block);
-				}
+			qsa(':scope > .rsu-blocks-list > .rsu-block', sEl).forEach(function (bEl) {
+				section.blocks.push(readBlockFromEl(bEl));
 			});
 
 			sections.push(section);
@@ -704,7 +741,50 @@ var RSUSectionBuilder = (function () {
 			return el;
 		}
 
-		var placeholder = type === 'note' ? 'Note text...' : 'Paragraph text...';
+		if (type === 'note') {
+			// Notes hold nested blocks (paragraphs and lists). Legacy `content` becomes one paragraph.
+			var noteBlocks = Array.isArray(block.blocks) ? block.blocks.slice() : [];
+			if (!noteBlocks.length && typeof block.content === 'string' && block.content.trim() !== '') {
+				noteBlocks = [{ type: 'paragraph', content: block.content }];
+			}
+			if (!noteBlocks.length) {
+				noteBlocks = [{ type: 'paragraph', content: '' }];
+			}
+
+			var noteEl = createElement(
+				'<div class="rsu-block" data-index="' + bi + '" data-type="note">' +
+					'<div class="rsu-block__header">' +
+						'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
+						'<span class="rsu-block__label">' + label + '</span>' +
+						genOptionsHTML(builder, blockGen) +
+						'<button type="button" class="rsu-block__remove" title="Remove block" data-action="remove-block">&times;</button>' +
+					'</div>' +
+					'<div class="rsu-note-blocks"></div>' +
+					'<div class="rsu-note-add">' +
+						'<button type="button" class="button button-small rsu-add-note-block" data-action="add-note-block" data-type="paragraph">+ Paragraph</button>' +
+						'<button type="button" class="button button-small rsu-add-note-block" data-action="add-note-block" data-type="list">+ Bullet List</button>' +
+					'</div>' +
+				'</div>'
+			);
+
+			var inner = qs('.rsu-note-blocks', noteEl);
+			noteBlocks.forEach(function (nb, ni) {
+				inner.appendChild(buildBlockEl(builder, nb, ni));
+			});
+
+			// Gen select change handler (own header only).
+			var noteGen = qs(':scope > .rsu-block__header > .rsu-gen-select', noteEl);
+			if (noteGen) {
+				noteGen.addEventListener('change', function() {
+					this.classList.toggle('rsu-gen-select--active', !!this.value);
+					readFromDOM(getBuilder(this));
+				});
+			}
+
+			return noteEl;
+		}
+
+		var placeholder = 'Paragraph text...';
 		var content = block.content || '';
 
 		var el = createElement(
@@ -732,8 +812,8 @@ var RSUSectionBuilder = (function () {
 			autoResizeTextarea(this);
 		});
 
-		// Gen select change handler.
-		var genSel = qs('.rsu-gen-select', el);
+		// Gen select change handler (own header only).
+		var genSel = qs(':scope > .rsu-block__header > .rsu-gen-select', el);
 		if (genSel) {
 			genSel.addEventListener('change', function() {
 				this.classList.toggle('rsu-gen-select--active', !!this.value);
@@ -748,13 +828,19 @@ var RSUSectionBuilder = (function () {
 	function buildBulletRow(builder, item) {
 		if (typeof item === 'string') item = { text: item };
 		var text = item.text || '';
+		var level = (item.level === 1) ? 1 : 0;
 		var itemGen = item.generation || '';
 		var genHTML = genOptionsHTML(builder, itemGen);
 		var genCell = genHTML ? '<div class="rsu-bullet-row__gen">' + genHTML + '</div>' : '';
+		var indentClass = level === 1 ? ' rsu-bullet-row--indent' : '';
+		var marker = level === 1 ? '&#9702;' : '&bull;';
 
 		var row = createElement(
-			'<div class="rsu-bullet-row">' +
-				'<span class="rsu-bullet-row__marker">&bull;</span>' +
+			'<div class="rsu-bullet-row' + indentClass + '">' +
+				'<span class="rsu-bullet-row__marker">' + marker + '</span>' +
+				'<button type="button" class="rsu-bullet-row__indent" title="Indent / outdent (Tab / Shift+Tab)" data-action="toggle-bullet-indent" aria-label="Toggle indent">' +
+					'<span class="dashicons dashicons-editor-indent"></span>' +
+				'</button>' +
 				'<textarea class="rsu-bullet-row__input" placeholder="Bullet point text..." rows="1"></textarea>' +
 				genCell +
 				'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet" data-action="remove-bullet">&times;</button>' +
@@ -774,6 +860,14 @@ var RSUSectionBuilder = (function () {
 			autoResizeTextarea(this);
 		});
 
+		input.addEventListener('keydown', function (e) {
+			if (e.key === 'Tab') {
+				e.preventDefault();
+				setBulletIndent(row, e.shiftKey ? 0 : 1);
+				readFromDOM(getBuilder(this));
+			}
+		});
+
 		// Gen select change handler.
 		var genSel = qs('.rsu-gen-select', row);
 		if (genSel) {
@@ -784,6 +878,23 @@ var RSUSectionBuilder = (function () {
 		}
 
 		return row;
+	}
+
+	// ── Set a bullet row's indent level (0 or 1) and update its marker ──
+	function setBulletIndent(row, level) {
+		// First row in a list cannot be indented.
+		var listContainer = row.parentNode;
+		if (listContainer && listContainer.firstElementChild === row) {
+			level = 0;
+		}
+		var marker = qs('.rsu-bullet-row__marker', row);
+		if (level === 1) {
+			row.classList.add('rsu-bullet-row--indent');
+			if (marker) marker.innerHTML = '&#9702;';
+		} else {
+			row.classList.remove('rsu-bullet-row--indent');
+			if (marker) marker.innerHTML = '&bull;';
+		}
 	}
 
 	// ── Auto-resize a single textarea ──
@@ -829,7 +940,14 @@ var RSUSectionBuilder = (function () {
 		readFromDOM(builder);
 
 		var sectionIndex = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
-		var newBlock = type === 'list' ? { type: 'list', items: [] } : { type: type, content: '' };
+		var newBlock;
+		if (type === 'list') {
+			newBlock = { type: 'list', items: [] };
+		} else if (type === 'note') {
+			newBlock = { type: 'note', blocks: [] };
+		} else {
+			newBlock = { type: type, content: '' };
+		}
 
 		builder._sections[sectionIndex].blocks.push(newBlock);
 		renderSections(builder);
@@ -870,32 +988,50 @@ var RSUSectionBuilder = (function () {
 	}
 
 	function removeBlock(btn) {
-		var builder = getBuilder(btn);
-		var sectionEl = closest(btn, '.rsu-section');
 		var blockEl = closest(btn, '.rsu-block');
-		if (!builder || !sectionEl || !blockEl) return;
+		if (!blockEl) return;
+		var builder = getBuilder(btn);
+		if (!builder) return;
 
 		readFromDOM(builder);
 		pushUndo(builder);
-		var si = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
-		var blocks = qsa('.rsu-blocks-list .rsu-block', sectionEl);
-		var bi = blocks.indexOf(blockEl);
-		builder._sections[si].blocks.splice(bi, 1);
+		blockEl.remove();
+		readFromDOM(builder);
 		renderSections(builder);
+	}
 
-		// Move focus to next/previous block or section heading.
-		var sectionEls = qsa('.rsu-section', builder);
-		if (sectionEls[si]) {
-			var remainingBlocks = qsa('.rsu-block', sectionEls[si]);
-			if (remainingBlocks.length) {
-				var focusIdx = Math.min(bi, remainingBlocks.length - 1);
-				var input = qs('.rsu-block__content, .rsu-bullet-row__input', remainingBlocks[focusIdx]);
-				if (input) input.focus();
-			} else {
-				var heading = qs('.rsu-section__heading', sectionEls[si]);
-				if (heading) heading.focus();
-			}
-		}
+	// Add a paragraph or list block inside the closest note block.
+	function addNoteBlock(btn, type) {
+		var noteEl = closest(btn, '.rsu-block[data-type="note"]');
+		if (!noteEl) return;
+		var builder = getBuilder(btn);
+		if (!builder) return;
+
+		var inner = qs(':scope > .rsu-note-blocks', noteEl);
+		if (!inner) return;
+
+		readFromDOM(builder);
+		pushUndo(builder);
+
+		var newBlock = type === 'list' ? { type: 'list', items: [] } : { type: 'paragraph', content: '' };
+		var newEl = buildBlockEl(builder, newBlock, inner.children.length);
+		inner.appendChild(newEl);
+		readFromDOM(builder);
+
+		var input = qs('.rsu-block__content, .rsu-bullet-row__input', newEl);
+		if (input) input.focus();
+	}
+
+	// Toggle indent on a bullet row (action button or programmatic).
+	function toggleBulletIndent(btn) {
+		var row = closest(btn, '.rsu-bullet-row');
+		if (!row) return;
+		var nextLevel = row.classList.contains('rsu-bullet-row--indent') ? 0 : 1;
+		setBulletIndent(row, nextLevel);
+		var builder = getBuilder(btn);
+		if (builder) readFromDOM(builder);
+		var input = qs('.rsu-bullet-row__input', row);
+		if (input) input.focus();
 	}
 
 	function addBullet(btn) {
@@ -1247,10 +1383,12 @@ var RSUSectionBuilder = (function () {
 		switch (action) {
 			case 'add-section': addSection(actionEl); break;
 			case 'add-block': addBlock(actionEl, actionEl.getAttribute('data-type')); break;
+			case 'add-note-block': addNoteBlock(actionEl, actionEl.getAttribute('data-type')); break;
 			case 'remove-section': removeSection(actionEl); break;
 			case 'remove-block': removeBlock(actionEl); break;
 			case 'add-bullet': addBullet(actionEl); break;
 			case 'remove-bullet': removeBullet(actionEl); break;
+			case 'toggle-bullet-indent': toggleBulletIndent(actionEl); break;
 			case 'toggle-section': toggleSection(actionEl); break;
 			case 'dupe-section': dupeSection(actionEl); break;
 			case 'undo': undoAction(actionEl); break;
@@ -1325,10 +1463,12 @@ var RSUSectionBuilder = (function () {
 	return {
 		addSection: addSection,
 		addBlock: addBlock,
+		addNoteBlock: addNoteBlock,
 		removeSection: removeSection,
 		removeBlock: removeBlock,
 		addBullet: addBullet,
 		removeBullet: removeBullet,
+		toggleBulletIndent: toggleBulletIndent,
 		activateTab: activateTab,
 		toggleSection: toggleSection,
 		dupeSection: dupeSection,
