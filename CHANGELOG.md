@@ -2,6 +2,16 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.13.5] - 2026-05-07
+
+### Added
+- Note callouts can now contain a sequence of paragraphs and bullet lists (was previously a single text block).
+- Bullet lists support one level of indentation. Use the indent toggle next to the marker, or Tab / Shift+Tab on the focused bullet.
+
+### Changed
+- Note paragraphs and bullets render at body 16px / 1.75 (previously 14px) so callouts read at full importance. The yellow tint and accent border still differentiate notes from regular content.
+- Mobile h3 and history accordion year-label nudged from 17px to 18px to land on the canonical heading scale.
+
 ## [2.13.4] - 2026-04-14
 
 ### Fixed
