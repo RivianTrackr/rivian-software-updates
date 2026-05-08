@@ -263,25 +263,21 @@
 }
 
 .rsu-panel__content blockquote p {
-	margin: 0 0 8px;
-	font-size: 14px;
+	margin: 0 0 12px;
 }
 
 .rsu-panel__content blockquote p:last-child {
 	margin-bottom: 0;
 }
 
-/* Lists inside notes — match note's smaller text */
+/* Lists inside notes inherit body sizing; tighten margins to fit the callout */
 .rsu-panel__content blockquote ul,
 .rsu-panel__content blockquote ol {
-	margin: 4px 0 8px;
-	padding-inline-start: 22px;
+	margin: 8px 0 12px;
 }
 
 .rsu-panel__content blockquote li {
-	font-size: 14px;
-	line-height: 1.6;
-	margin-bottom: 4px;
+	margin-bottom: 6px;
 }
 
 .rsu-panel__content blockquote > *:last-child {
@@ -710,7 +706,7 @@
 	}
 
 	.rsu-history__year-label {
-		font-size: 17px;
+		font-size: 18px;
 	}
 }
 
@@ -737,7 +733,7 @@
 	}
 
 	.rsu-panel__content h3 {
-		font-size: 17px;
+		font-size: 18px;
 	}
 
 	.rsu-panel__content p,
