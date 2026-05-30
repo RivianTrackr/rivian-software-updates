@@ -1,6 +1,11 @@
 <?php
 defined( 'ABSPATH' ) || exit;
 
+// Enforce capability at the point of the privileged action, not just at menu render.
+if ( ! current_user_can( 'manage_options' ) ) {
+	wp_die( esc_html__( 'You do not have permission to run migrations.', 'rivian-software-updates' ) );
+}
+
 $dry_run_results       = null;
 $migrate_results       = null;
 $block_dry_run_results = null;

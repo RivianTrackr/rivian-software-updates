@@ -116,7 +116,7 @@ class RSU_Frontend {
 			<?php endif; ?>
 
 			<?php if ( count( $active_vehicles ) > 1 ) : ?>
-				<div class="rsu-tabs" role="tablist" aria-label="Vehicle model">
+				<div class="rsu-tabs" role="tablist" aria-label="Vehicle model" aria-orientation="horizontal">
 					<?php foreach ( $active_vehicles as $slug ) :
 						$vehicle    = $all_vehicles[ $slug ];
 						$is_default = ( $slug === $default );
@@ -156,6 +156,7 @@ class RSU_Frontend {
 				?>
 				<div class="rsu-panel <?php echo $is_default ? 'rsu-panel--active' : ''; ?> <?php echo $single_vehicle ? 'rsu-panel--solo' : ''; ?>"
 					role="tabpanel"
+					tabindex="0"
 					id="rsu-panel-<?php echo esc_attr( $slug ); ?>"
 					aria-labelledby="rsu-tab-<?php echo esc_attr( $slug ); ?>"
 					<?php echo $is_default ? '' : 'hidden'; ?>>

@@ -231,18 +231,18 @@ class RSU_Migrate {
 			}
 		}
 
-		// Ensure "Additional Improvements" is always last.
-		usort( $merged, function ( $a, $b ) {
-			$a_is_additional = ( self::normalize_heading( $a['heading'] ) === 'additional improvements' );
-			$b_is_additional = ( self::normalize_heading( $b['heading'] ) === 'additional improvements' );
-			if ( $a_is_additional && ! $b_is_additional ) {
-				return 1;
+		// Ensure "Additional Improvements" is always last while preserving the
+		// original order of every other section (stable on all PHP versions).
+		$additional = array();
+		$rest       = array();
+		foreach ( $merged as $section ) {
+			if ( self::normalize_heading( $section['heading'] ) === 'additional improvements' ) {
+				$additional[] = $section;
+			} else {
+				$rest[] = $section;
 			}
-			if ( $b_is_additional && ! $a_is_additional ) {
-				return -1;
-			}
-			return 0;
-		} );
+		}
+		$merged = array_merge( $rest, $additional );
 
 		return $merged;
 	}
@@ -706,12 +706,11 @@ class RSU_Migrate {
 			return new WP_Error( 'not_found', 'Post not found.' );
 		}
 
-		// Check if already migrated (skip unless forced).
-		if ( ! $force ) {
-			$existing = get_post_meta( $post_id, '_rsu_sections_r1', true );
-			if ( $existing && ! empty( json_decode( $existing, true ) ) ) {
-				return new WP_Error( 'already_migrated', 'Post already has RSU sections data. Use force to overwrite.' );
-			}
+		// Check if already migrated (skip unless forced). Block migration writes
+		// to the configured default vehicles, which may not include r1, so test
+		// for sections on any vehicle rather than a hardcoded key.
+		if ( ! $force && self::has_any_sections( $post_id ) ) {
+			return new WP_Error( 'already_migrated', 'Post already has RSU sections data. Use force to overwrite.' );
 		}
 
 		$content = $post->post_content;
@@ -830,12 +829,28 @@ class RSU_Migrate {
 			   AND NOT EXISTS (
 			       SELECT 1 FROM {$wpdb->postmeta} pm
 			       WHERE pm.post_id = p.ID
-			         AND pm.meta_key = '_rsu_sections_r1'
+			         AND pm.meta_key LIKE '\\_rsu\\_sections\\_%'
 			         AND pm.meta_value IS NOT NULL
 			         AND pm.meta_value != ''
 			   )
 			 ORDER BY p.post_date DESC"
 		);
+	}
+
+	/**
+	 * Whether a post already has RSU section data for any registered vehicle.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return bool
+	 */
+	private static function has_any_sections( $post_id ) {
+		foreach ( array_keys( RSU_Platforms::get_all() ) as $slug ) {
+			$existing = get_post_meta( $post_id, '_rsu_sections_' . $slug, true );
+			if ( $existing && ! empty( json_decode( $existing, true ) ) ) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

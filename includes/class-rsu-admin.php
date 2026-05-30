@@ -84,19 +84,27 @@ class RSU_Admin {
 		}
 
 		// Vehicles (replaces old platforms).
-		$valid_slugs = array_keys( RSU_Platforms::get_all() );
+		$valid_slugs   = array_keys( RSU_Platforms::get_all() );
+		$active_slugs  = array();
 		if ( isset( $_POST['rsu_vehicles'] ) && is_array( $_POST['rsu_vehicles'] ) ) {
-			$vehicles = array_intersect(
+			$active_slugs = array_values( array_intersect(
 				array_map( 'sanitize_text_field', wp_unslash( $_POST['rsu_vehicles'] ) ),
 				$valid_slugs
-			);
-			update_post_meta( $post_id, '_rsu_vehicles', $vehicles );
+			) );
+			update_post_meta( $post_id, '_rsu_vehicles', $active_slugs );
 		} else {
 			delete_post_meta( $post_id, '_rsu_vehicles' );
 		}
 
 		// Vehicle content via section builder.
 		foreach ( RSU_Platforms::get_all() as $slug => $vehicle ) {
+			// Deselected vehicles never persist content — clear any stale meta.
+			if ( ! in_array( $slug, $active_slugs, true ) ) {
+				delete_post_meta( $post_id, '_rsu_sections_' . $slug );
+				delete_post_meta( $post_id, $vehicle['meta_key'] );
+				continue;
+			}
+
 			$json_field = 'rsu_sections_' . $slug;
 			if ( isset( $_POST[ $json_field ] ) ) {
 				$raw_json = wp_unslash( $_POST[ $json_field ] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- JSON decoded and sanitized below.

@@ -27,16 +27,6 @@ const builds = [
     bundle: false,
     minify: true,
   },
-  // Admin JS
-  {
-    ...jsDefaults,
-    bundle: false,
-    entryPoints: ['admin/js/rsu-admin.js'],
-    outfile: 'admin/js/rsu-admin.min.js',
-    minify: true,
-    sourcemap: 'linked',
-    drop: ['console', 'debugger'],
-  },
   // Admin CSS
   {
     entryPoints: ['admin/css/rsu-admin.css'],
