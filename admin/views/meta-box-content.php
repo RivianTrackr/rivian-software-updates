@@ -350,11 +350,13 @@ var RSUSectionBuilder = (function () {
 			var dialog = document.createElement('dialog');
 			dialog.className = 'rsu-confirm-dialog';
 			dialog.innerHTML =
-				'<div class="rsu-confirm-dialog__body"><p class="rsu-confirm-dialog__message">' + message + '</p></div>' +
+				'<div class="rsu-confirm-dialog__body"><p class="rsu-confirm-dialog__message"></p></div>' +
 				'<div class="rsu-confirm-dialog__actions">' +
 					'<button type="button" class="rsu-confirm-dialog__cancel">Cancel</button>' +
 					'<button type="button" class="rsu-confirm-dialog__ok">Confirm</button>' +
 				'</div>';
+			// Set message as text, never markup, so dynamic values can't inject HTML.
+			qs('.rsu-confirm-dialog__message', dialog).textContent = message;
 			document.body.appendChild(dialog);
 			dialog.showModal();
 			qs('.rsu-confirm-dialog__cancel', dialog).addEventListener('click', function () { dialog.close(); dialog.remove(); resolve(false); });
@@ -1088,6 +1090,10 @@ var RSUSectionBuilder = (function () {
 			var hasActive = visibleTabs.some(function (t) { return t.classList.contains('rsu-editor-tab--active'); });
 			if (visibleTabs.length && !hasActive) {
 				activateTab(visibleTabs[0].getAttribute('data-vehicle'));
+			} else if (hasActive) {
+				// Normalize roving tabindex for the active tab rendered by PHP.
+				var preActive = visibleTabs.filter(function (t) { return t.classList.contains('rsu-editor-tab--active'); })[0];
+				if (preActive) activateTab(preActive.getAttribute('data-vehicle'));
 			}
 		}
 
@@ -1101,7 +1107,7 @@ var RSUSectionBuilder = (function () {
 
 		qsa('.rsu-editor-tab', tabs).forEach(function (t) {
 			t.classList.remove('rsu-editor-tab--active');
-			t.setAttribute('aria-selected', 'false');
+			t.setAttribute('aria-selected', 'false'); t.setAttribute('tabindex', '-1');
 		});
 		qsa('.rsu-editor-panel').forEach(function (p) {
 			p.classList.add('rsu-editor-panel--hidden');
@@ -1110,7 +1116,7 @@ var RSUSectionBuilder = (function () {
 		var tab = qs('[data-vehicle="' + vehicle + '"]', tabs);
 		if (tab) {
 			tab.classList.add('rsu-editor-tab--active');
-			tab.setAttribute('aria-selected', 'true');
+			tab.setAttribute('aria-selected', 'true'); tab.setAttribute('tabindex', '0');
 		}
 
 		var panel = document.getElementById('rsu-editor-panel-' + vehicle);
@@ -1150,6 +1156,28 @@ var RSUSectionBuilder = (function () {
 		if (tab) {
 			e.preventDefault();
 			activateTab(tab.getAttribute('data-vehicle'));
+		}
+	});
+
+	// Tab keyboard navigation (WAI-ARIA: arrows, Home/End, Enter/Space).
+	document.addEventListener('keydown', function (e) {
+		var tab = closest(e.target, '.rsu-editor-tab');
+		if (!tab) return;
+		var tabsEl = document.getElementById('rsu-editor-tabs');
+		if (!tabsEl) return;
+		var list = qsa('.rsu-editor-tab', tabsEl).filter(function (t) { return t.style.display !== 'none'; });
+		var idx = list.indexOf(tab);
+		if (idx === -1) return;
+		var newIdx = -1;
+		if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); newIdx = (idx + 1) % list.length; }
+		else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); newIdx = (idx - 1 + list.length) % list.length; }
+		else if (e.key === 'Home') { e.preventDefault(); newIdx = 0; }
+		else if (e.key === 'End') { e.preventDefault(); newIdx = list.length - 1; }
+		else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateTab(tab.getAttribute('data-vehicle')); return; }
+		if (newIdx >= 0) {
+			var target = list[newIdx];
+			activateTab(target.getAttribute('data-vehicle'));
+			target.focus();
 		}
 	});
 

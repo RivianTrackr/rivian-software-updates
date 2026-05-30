@@ -57,7 +57,7 @@ class RSU_Shortcode {
 			$query->the_post();
 			$post_id       = get_the_ID();
 			$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
-			$year          = $date_released ? date( 'Y', strtotime( $date_released ) ) : get_the_date( 'Y' );
+			$year          = $date_released ? date_i18n( 'Y', strtotime( $date_released ) ) : get_the_date( 'Y' );
 
 			if ( ! isset( $grouped[ $year ] ) ) {
 				$grouped[ $year ] = array();

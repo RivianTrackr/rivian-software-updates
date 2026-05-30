@@ -38,7 +38,7 @@ class RSU_Schema {
 
 				$type = is_array( $node['@type'] ) ? $node['@type'] : array( $node['@type'] );
 
-				if ( array_intersect( $type, array( 'Article', 'BlogPosting', 'WebPage' ) ) ) {
+				if ( array_intersect( $type, array( 'Article', 'BlogPosting' ) ) ) {
 					$node['@type']       = 'TechArticle';
 					$node['description'] = $description;
 

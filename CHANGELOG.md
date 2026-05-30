@@ -2,6 +2,28 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.13.6] - 2026-05-30
+
+### Fixed
+- Deselecting a vehicle in the editor now clears that vehicle's stored release notes on save, instead of leaving stale content behind that could resurface if the vehicle was re-checked.
+- Block-editor migration is now correctly idempotent when the default vehicles don't include `r1`. The "already migrated" check and the migratable-posts query now detect sections on any vehicle rather than a hardcoded `_rsu_sections_r1` key, so eligible posts no longer re-migrate on every run.
+- AIOSEO schema enrichment no longer rewrites `WebPage` graph nodes to `TechArticle` (only `Article`/`BlogPosting` are converted), preventing semantically incorrect or duplicate structured data.
+- Section merge during migration preserves the original order of all non-"Additional Improvements" sections on PHP 7.4 (replaced an unstable `usort` with a stable partition).
+- History table year grouping uses `date_i18n` for timezone consistency with the rest of the output.
+
+### Accessibility
+- Vehicle tabs in the post editor now support full keyboard navigation (Arrow keys, Home/End, Enter/Space) with a roving tabindex, matching the WAI-ARIA tab pattern already used on the frontend.
+- Frontend tab panels are now focusable (`tabindex="0"`) so keyboard users have an entry point into panel content, and the tablist declares `aria-orientation`.
+
+### Changed
+- Frontend tab switching cancels any in-flight enter animation before activating a new panel, preventing stacked `animationend` listeners (and redundant scroll restoration) during rapid tab switching.
+- Removed the non-functional "Title" field from the Latest Software Update widget (it was collected but never rendered).
+- Removed the unused `admin/js/rsu-admin.js` bundle (and its esbuild target). It was never enqueued — the editor's JavaScript lives inline in the meta box view.
+
+### Security
+- The migration admin page now performs an explicit `current_user_can( 'manage_options' )` check at the point of action.
+- The styled confirm dialog sets its message via `textContent` instead of `innerHTML`, hardening against HTML injection from dynamic values.
+
 ## [2.13.5] - 2026-05-07
 
 ### Added

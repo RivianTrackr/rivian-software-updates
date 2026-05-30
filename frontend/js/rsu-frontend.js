@@ -118,6 +118,13 @@
     });
     panels.forEach(function (panel) {
       panel.classList.remove('rsu-panel--active');
+      // Cancel any in-flight enter animation so rapid switching can't stack
+      // multiple animationend listeners (each firing a stale scrollTo).
+      panel.classList.remove('rsu-panel--enter');
+      if (panel._rsuAnimHandler) {
+        panel.removeEventListener('animationend', panel._rsuAnimHandler);
+        panel._rsuAnimHandler = null;
+      }
       panel.hidden = true;
     });
 
@@ -141,12 +148,16 @@
 
       if (animate) {
         targetPanel.classList.add('rsu-panel--enter');
-        // Remove animation class after it completes.
-        targetPanel.addEventListener('animationend', function handler() {
+        // Remove animation class after it completes. Track the handler so a
+        // subsequent activation can detach it if the animation is interrupted.
+        var handler = function () {
           targetPanel.classList.remove('rsu-panel--enter');
           targetPanel.removeEventListener('animationend', handler);
+          targetPanel._rsuAnimHandler = null;
           window.scrollTo(0, scrollY);
-        });
+        };
+        targetPanel._rsuAnimHandler = handler;
+        targetPanel.addEventListener('animationend', handler);
       }
     }
   }

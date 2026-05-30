@@ -33,7 +33,7 @@ class RSU_Widget extends WP_Widget {
 		$html = get_transient( self::CACHE_KEY );
 
 		if ( false === $html ) {
-			$html = $this->build_html( $instance );
+			$html = $this->build_html();
 			set_transient( self::CACHE_KEY, $html, DAY_IN_SECONDS );
 		}
 
@@ -51,7 +51,7 @@ class RSU_Widget extends WP_Widget {
 	/**
 	 * Build the widget markup from the latest update post.
 	 */
-	private function build_html( $instance ) {
+	private function build_html() {
 		$query = new WP_Query( array(
 			'post_type'      => 'post',
 			'posts_per_page' => 1,
@@ -80,8 +80,6 @@ class RSU_Widget extends WP_Widget {
 		$noticed_display  = $date_noticed ? date_i18n( 'm/d/Y', strtotime( $date_noticed ) ) : 'TBD';
 		$released_display = $date_released ? date_i18n( 'm/d/Y', strtotime( $date_released ) ) : 'TBD';
 
-		$title = ! empty( $instance['title'] ) ? esc_html( $instance['title'] ) : '';
-
 		ob_start();
 		?>
 		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-latest">
@@ -102,16 +100,7 @@ class RSU_Widget extends WP_Widget {
 	 * Admin form.
 	 */
 	public function form( $instance ) {
-		$title = ! empty( $instance['title'] ) ? $instance['title'] : '';
 		?>
-		<p>
-			<label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>">Title (optional):</label>
-			<input class="widefat"
-				id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"
-				name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>"
-				type="text"
-				value="<?php echo esc_attr( $title ); ?>">
-		</p>
 		<p class="description">The widget automatically shows the latest software update post.</p>
 		<?php
 	}
@@ -120,10 +109,8 @@ class RSU_Widget extends WP_Widget {
 	 * Save admin form.
 	 */
 	public function update( $new_instance, $old_instance ) {
-		$instance          = array();
-		$instance['title'] = sanitize_text_field( $new_instance['title'] );
 		$this->flush_cache();
-		return $instance;
+		return array();
 	}
 
 	/**
