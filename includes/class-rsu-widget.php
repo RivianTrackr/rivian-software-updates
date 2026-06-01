@@ -82,15 +82,31 @@ class RSU_Widget extends WP_Widget {
 
 		ob_start();
 		?>
-		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-latest">
-			<div class="rsu-widget-latest__icon">
-				<i class="fa-solid fa-cloud-arrow-down"></i>
-			</div>
-			<div class="rsu-widget-latest__body">
-				<span class="rsu-widget-latest__version"><?php echo esc_html( $version ); ?></span>
-				<span class="rsu-widget-latest__meta">First Noticed: <?php echo esc_html( $noticed_display ); ?></span>
-				<span class="rsu-widget-latest__meta">Public Release: <?php echo esc_html( $released_display ); ?></span>
-			</div>
+		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-latest"
+			aria-label="Latest Rivian software update — <?php echo esc_attr( $version ); ?>">
+			<span class="rsu-widget-latest__overlay"></span>
+
+			<span class="rsu-widget-latest__head">
+				<span class="rsu-widget-latest__icon">
+					<i class="fa-solid fa-cloud-arrow-down"></i>
+				</span>
+				<span class="rsu-widget-latest__eyebrow">Latest Update</span>
+			</span>
+
+			<span class="rsu-widget-latest__version"><?php echo esc_html( $version ); ?></span>
+
+			<span class="rsu-widget-latest__dates">
+				<span class="rsu-widget-latest__meta">
+					<span class="rsu-widget-latest__meta-label">First Noticed</span>
+					<span class="rsu-widget-latest__meta-value"><?php echo esc_html( $noticed_display ); ?></span>
+				</span>
+				<span class="rsu-widget-latest__meta">
+					<span class="rsu-widget-latest__meta-label">Public Release</span>
+					<span class="rsu-widget-latest__meta-value"><?php echo esc_html( $released_display ); ?></span>
+				</span>
+			</span>
+
+			<span class="rsu-widget-latest__btn">Read the Release Notes</span>
 		</a>
 		<?php
 		return ob_get_clean();
