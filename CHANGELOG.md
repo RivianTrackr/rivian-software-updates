@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.14.2] - 2026-06-01
+
+### Fixed
+- The Latest Update widget cached its rendered HTML in a transient that was only invalidated on post save, so template/markup changes from a plugin update (e.g. the new emoji header and CTA) could keep serving stale HTML for up to a day. The cache key is now scoped to the plugin version, so every update automatically serves freshly rendered markup.
+
 ## [2.14.1] - 2026-06-01
 
 ### Changed
