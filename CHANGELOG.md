@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.14.0] - 2026-06-01
+
+### Changed
+- Redesigned the Latest Update widget to match the site-wide tire-guide CTA: a vertical dark-gradient card with a radial blue accent glow, an uppercase "Latest Update" eyebrow, a large version title, labeled First Noticed / Public Release date pairs, and a rounded "Read the Release Notes" pill button that lifts on hover. The blue accent is scoped to the widget so it doesn't affect the gold-themed tabs and history table on the same page.
+
 ## [2.13.5] - 2026-05-07
 
 ### Added
