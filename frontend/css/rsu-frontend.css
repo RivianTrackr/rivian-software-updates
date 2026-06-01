@@ -573,8 +573,12 @@
 /* === Latest Update Widget === */
 
 .rsu-widget-latest {
-	--rsu-widget-blue: #3b82f6;
-	--rsu-widget-blue-hover: #5b9bf8;
+	/* Lighter blue for text/accents (eyebrow, focus ring) — meets AA on the dark card. */
+	--rsu-widget-blue: #60a5fa;
+	/* Darker blue for the button so white label text clears AA 4.5:1. Hover darkens
+	   further (a lighter hover would drop the white text back below 4.5:1). */
+	--rsu-widget-btn: #2563eb;
+	--rsu-widget-btn-hover: #1d4ed8;
 
 	position: relative;
 	display: flex;
@@ -672,7 +676,7 @@
 	margin-top: 6px;
 	padding: 13px 20px;
 	border-radius: 9999px;
-	background-color: var(--rsu-widget-blue);
+	background-color: var(--rsu-widget-btn);
 	color: #ffffff;
 	font-size: 15px;
 	font-weight: 700;
@@ -681,7 +685,7 @@
 }
 
 .rsu-widget-latest:hover .rsu-widget-latest__btn {
-	background-color: var(--rsu-widget-blue-hover);
+	background-color: var(--rsu-widget-btn-hover);
 }
 
 

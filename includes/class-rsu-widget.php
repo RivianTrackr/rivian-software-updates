@@ -91,9 +91,8 @@ class RSU_Widget extends WP_Widget {
 
 		ob_start();
 		?>
-		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-latest"
-			aria-label="Latest Rivian software update — <?php echo esc_attr( $version ); ?>">
-			<span class="rsu-widget-latest__overlay"></span>
+		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-latest">
+			<span class="rsu-widget-latest__overlay" aria-hidden="true"></span>
 
 			<span class="rsu-widget-latest__head">
 				<span class="rsu-widget-latest__icon" aria-hidden="true">💿</span>
