@@ -10,8 +10,16 @@ defined( 'ABSPATH' ) || exit;
 
 class RSU_Widget extends WP_Widget {
 
-	/** Transient key for cached widget HTML. */
+	/** Base transient key for cached widget HTML (suffixed with the plugin version). */
 	const CACHE_KEY = 'rsu_latest_update_widget';
+
+	/**
+	 * Version-scoped transient key. Bumping RSU_VERSION changes the key so a
+	 * deploy with new markup can never serve HTML cached by an older version.
+	 */
+	private function cache_key() {
+		return self::CACHE_KEY . '_' . RSU_VERSION;
+	}
 
 	public function __construct() {
 		parent::__construct(
@@ -30,11 +38,12 @@ class RSU_Widget extends WP_Widget {
 	 * Front-end display.
 	 */
 	public function widget( $args, $instance ) {
-		$html = get_transient( self::CACHE_KEY );
+		$cache_key = $this->cache_key();
+		$html      = get_transient( $cache_key );
 
 		if ( false === $html ) {
 			$html = $this->build_html();
-			set_transient( self::CACHE_KEY, $html, DAY_IN_SECONDS );
+			set_transient( $cache_key, $html, DAY_IN_SECONDS );
 		}
 
 		if ( ! $html ) {
@@ -131,7 +140,7 @@ class RSU_Widget extends WP_Widget {
 	 * Delete the cached widget HTML.
 	 */
 	public function flush_cache() {
-		delete_transient( self::CACHE_KEY );
+		delete_transient( $this->cache_key() );
 	}
 
 	/**
