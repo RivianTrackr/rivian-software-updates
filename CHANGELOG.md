@@ -2,6 +2,12 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.14.3] - 2026-06-01
+
+### Accessibility
+- Latest Update widget now meets WCAG 2.1 AA contrast. The eyebrow uses a lighter blue (`#60a5fa`, 5.8:1) and the CTA button a darker blue (`#2563eb`, white text at 5.2:1); previously both used `#3b82f6`, which fell just short of 4.5:1. The button now darkens on hover so its label stays compliant.
+- Removed the link's `aria-label`, which had overridden the card's text and hidden the version dates and CTA from screen readers. The link now derives its accessible name from its visible content, so it reads in full ("Latest Software Update, <version>, First Noticed …, Public Release …, Read Release Notes"). The decorative glow overlay is marked `aria-hidden`.
+
 ## [2.14.2] - 2026-06-01
 
 ### Fixed
