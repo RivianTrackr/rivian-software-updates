@@ -87,10 +87,8 @@ class RSU_Widget extends WP_Widget {
 			<span class="rsu-widget-latest__overlay"></span>
 
 			<span class="rsu-widget-latest__head">
-				<span class="rsu-widget-latest__icon">
-					<i class="fa-solid fa-cloud-arrow-down"></i>
-				</span>
-				<span class="rsu-widget-latest__eyebrow">Latest Update</span>
+				<span class="rsu-widget-latest__icon" aria-hidden="true">💿</span>
+				<span class="rsu-widget-latest__eyebrow">Latest Software Update</span>
 			</span>
 
 			<span class="rsu-widget-latest__version"><?php echo esc_html( $version ); ?></span>
@@ -106,7 +104,7 @@ class RSU_Widget extends WP_Widget {
 				</span>
 			</span>
 
-			<span class="rsu-widget-latest__btn">Read the Release Notes</span>
+			<span class="rsu-widget-latest__btn">Read Release Notes</span>
 		</a>
 		<?php
 		return ob_get_clean();

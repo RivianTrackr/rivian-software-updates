@@ -2,6 +2,12 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.14.1] - 2026-06-01
+
+### Changed
+- Latest Update widget header now leads with a 💿 software emoji and reads "Latest Software Update" (was a cloud-download icon and "Latest Update"), aligning it with the emoji-led header pattern used by the other site widgets.
+- Widget CTA button shortened to "Read Release Notes".
+
 ## [2.14.0] - 2026-06-01
 
 ### Changed

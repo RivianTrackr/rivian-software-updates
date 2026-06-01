@@ -621,7 +621,6 @@
 	flex-shrink: 0;
 	font-size: 18px;
 	line-height: 1;
-	color: var(--rsu-widget-blue);
 }
 
 .rsu-widget-latest__eyebrow {
