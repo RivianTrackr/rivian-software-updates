@@ -142,19 +142,28 @@ $all_vehicles = RSU_Platforms::get_all();
 	// empty or still matches our own suggestion — never clobber a manual title.
 	var lastApplied = '';
 
-	// Build the suggested title: distinct build numbers in field order,
-	// joined with " / ", suffixed with " Hotfix" (e.g. "2026.15.01 / 2026.15.30 Hotfix").
+	// Reduce a build number to its release family by dropping the trailing patch
+	// segment (e.g. "2026.15.30" -> "2026.15"). Builds with fewer than three
+	// dot-separated parts are used as-is.
+	function familyOf( build ) {
+		var parts = build.split( '.' );
+		if ( parts.length >= 3 ) {
+			parts.pop();
+			return parts.join( '.' );
+		}
+		return build;
+	}
+
+	// Build the suggested title from the base release family of the first build,
+	// suffixed with " Hotfix" (e.g. "2026.15.30" -> "2026.15 Hotfix").
 	function suggestedTitle() {
-		var seen   = {};
-		var values = [];
-		builds.forEach( function ( input ) {
-			var v = input.value.trim();
-			if ( v && ! seen[ v ] ) {
-				seen[ v ] = true;
-				values.push( v );
+		for ( var i = 0; i < builds.length; i++ ) {
+			var v = builds[ i ].value.trim();
+			if ( v ) {
+				return familyOf( v ) + ' Hotfix';
 			}
-		} );
-		return values.length ? values.join( ' / ' ) + ' Hotfix' : '';
+		}
+		return '';
 	}
 
 	// Read/write the post title across both the block and classic editors.
