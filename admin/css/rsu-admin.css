@@ -624,6 +624,112 @@
 	outline: none;
 }
 
+/* Hotfix fields (literal tokens — this box renders outside .rsu-admin-wrap). */
+.rsu-details-wrap .rsu-hotfix {
+	border-top: 1px solid #e8e8ed;
+	padding-top: 14px;
+}
+
+.rsu-hotfix-toggle {
+	display: flex !important;
+	align-items: center;
+	gap: 8px;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d1d1f;
+	cursor: pointer;
+	margin-bottom: 0;
+}
+
+.rsu-hotfix-toggle input {
+	margin: 0;
+}
+
+.rsu-hotfix-fields {
+	margin-top: 12px;
+}
+
+.rsu-hotfix-fields[hidden] {
+	display: none;
+}
+
+.rsu-hotfix-desc {
+	font-size: 12px;
+	color: #86868b;
+	margin: 0 0 12px;
+	line-height: 1.5;
+}
+
+.rsu-hotfix-row {
+	margin-bottom: 16px;
+}
+
+.rsu-hotfix-row label {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	color: #1d1d1f;
+	margin-bottom: 6px;
+}
+
+.rsu-hotfix-row select {
+	width: 100%;
+	padding: 8px 10px;
+	border: 1px solid #d2d2d7;
+	border-radius: 8px;
+	font-size: 14px;
+	color: #1d1d1f;
+	background: #ffffff;
+	box-sizing: border-box;
+}
+
+.rsu-hotfix-row select:focus {
+	border-color: #0071e3;
+	box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1);
+	outline: none;
+}
+
+.rsu-hotfix-builds__label {
+	display: block;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: #6e6e73;
+	margin-bottom: 8px;
+}
+
+.rsu-hotfix-vehicle {
+	margin-bottom: 12px;
+}
+
+.rsu-hotfix-vehicle__label {
+	display: block;
+	font-size: 12px;
+	font-weight: 700;
+	color: #1d1d1f;
+	margin-bottom: 6px;
+}
+
+.rsu-hotfix-build {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.rsu-hotfix-build__gen {
+	flex: 0 0 64px;
+	font-size: 12px;
+	font-weight: 500 !important;
+	color: #6e6e73;
+	margin-bottom: 0 !important;
+}
+
+.rsu-hotfix-build input[type="text"] {
+	flex: 1;
+}
+
 /* ═══════════════════════════════════════
    Generation Selectors
    ═══════════════════════════════════════ */

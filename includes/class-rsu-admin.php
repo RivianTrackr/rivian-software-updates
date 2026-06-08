@@ -147,6 +147,56 @@ class RSU_Admin {
 				}
 			}
 		}
+
+		// Hotfix details: flag, parent release, and per-generation build numbers.
+		if ( ! empty( $_POST['rsu_is_hotfix'] ) ) {
+			update_post_meta( $post_id, '_rsu_is_hotfix', '1' );
+
+			// Parent release must be another published update post (not a hotfix, not self).
+			$parent = isset( $_POST['rsu_parent_release'] ) ? intval( wp_unslash( $_POST['rsu_parent_release'] ) ) : 0;
+			if ( $parent > 0 && $parent !== (int) $post_id
+				&& get_post_meta( $parent, '_rsu_is_update', true )
+				&& ! get_post_meta( $parent, '_rsu_is_hotfix', true ) ) {
+				update_post_meta( $post_id, '_rsu_parent_release', $parent );
+			} else {
+				delete_post_meta( $post_id, '_rsu_parent_release' );
+			}
+
+			// Per-vehicle, per-generation build numbers (e.g. 2026.15.01 for R1 Gen 1).
+			$builds = array();
+			if ( isset( $_POST['rsu_hotfix_builds'] ) && is_array( $_POST['rsu_hotfix_builds'] ) ) {
+				$all = RSU_Platforms::get_all();
+				foreach ( wp_unslash( $_POST['rsu_hotfix_builds'] ) as $v_slug => $gens ) {
+					$v_slug = sanitize_key( $v_slug );
+					if ( ! isset( $all[ $v_slug ] ) || ! is_array( $gens ) ) {
+						continue;
+					}
+					$valid_gens = ! empty( $all[ $v_slug ]['generations'] )
+						? array_keys( $all[ $v_slug ]['generations'] )
+						: array();
+					foreach ( $gens as $g_slug => $build ) {
+						$g_slug = sanitize_key( $g_slug );
+						if ( ! in_array( $g_slug, $valid_gens, true ) ) {
+							continue;
+						}
+						$build = sanitize_text_field( $build );
+						if ( '' !== $build ) {
+							$builds[ $v_slug ][ $g_slug ] = $build;
+						}
+					}
+				}
+			}
+
+			if ( ! empty( $builds ) ) {
+				update_post_meta( $post_id, '_rsu_hotfix_builds', $builds );
+			} else {
+				delete_post_meta( $post_id, '_rsu_hotfix_builds' );
+			}
+		} else {
+			delete_post_meta( $post_id, '_rsu_is_hotfix' );
+			delete_post_meta( $post_id, '_rsu_parent_release' );
+			delete_post_meta( $post_id, '_rsu_hotfix_builds' );
+		}
 	}
 
 	/**

@@ -84,7 +84,10 @@ class RSU_Widget extends WP_Widget {
 		$permalink     = get_permalink();
 		$date_noticed  = get_post_meta( $post_id, '_rsu_date_noticed', true );
 		$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
+		$is_hotfix     = get_post_meta( $post_id, '_rsu_is_hotfix', true );
 		wp_reset_postdata();
+
+		$eyebrow = $is_hotfix ? 'Latest Hotfix' : 'Latest Software Update';
 
 		$noticed_display  = $date_noticed ? date_i18n( 'm/d/Y', strtotime( $date_noticed ) ) : 'TBD';
 		$released_display = $date_released ? date_i18n( 'm/d/Y', strtotime( $date_released ) ) : 'TBD';
@@ -96,7 +99,7 @@ class RSU_Widget extends WP_Widget {
 
 			<span class="rsu-widget-latest__head">
 				<span class="rsu-widget-latest__icon" aria-hidden="true">💿</span>
-				<span class="rsu-widget-latest__eyebrow">Latest Software Update</span>
+				<span class="rsu-widget-latest__eyebrow"><?php echo esc_html( $eyebrow ); ?></span>
 			</span>
 
 			<span class="rsu-widget-latest__version"><?php echo esc_html( $version ); ?></span>
