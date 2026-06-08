@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.15.1] - 2026-06-08
+
+### Added
+- **Hotfix title auto-suggest.** When a post is marked as a hotfix, the editor now suggests a title built from the distinct build numbers (e.g. `2026.15.01 / 2026.15.30 Hotfix`). The title auto-fills while it's empty (or still matches a prior suggestion) so a manually edited title is never overwritten, and a "Use title" button applies the suggestion on demand. Works in both the block and classic editors.
+
 ## [2.15.0] - 2026-06-08
 
 ### Added
