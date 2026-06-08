@@ -532,6 +532,50 @@
 	text-decoration: underline;
 }
 
+.rsu-history__version-row {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.rsu-history__hotfix-badge {
+	display: inline-block;
+	padding: 1px 8px;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	line-height: 1.7;
+	color: var(--rsu-text-on-accent);
+	background: var(--rsu-accent);
+	border-radius: 9999px;
+	white-space: nowrap;
+}
+
+.rsu-history__builds {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 10px;
+	margin-top: 6px;
+}
+
+.rsu-history__build {
+	display: inline-flex;
+	align-items: baseline;
+	gap: 5px;
+	font-size: 12px;
+}
+
+.rsu-history__build-label {
+	color: var(--rsu-text-secondary);
+}
+
+.rsu-history__build-value {
+	color: var(--rsu-accent);
+	font-weight: 600;
+	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
 .rsu-history__date {
 	color: var(--rsu-text-secondary);
 	white-space: nowrap;

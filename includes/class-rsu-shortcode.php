@@ -71,12 +71,39 @@ class RSU_Shortcode {
 				}
 			}
 
+			// Hotfix metadata: flag and per-generation build numbers.
+			$is_hotfix   = (bool) get_post_meta( $post_id, '_rsu_is_hotfix', true );
+			$builds_meta = get_post_meta( $post_id, '_rsu_hotfix_builds', true );
+			$builds      = array();
+			if ( is_array( $builds_meta ) ) {
+				foreach ( $builds_meta as $v_slug => $gens ) {
+					if ( ! isset( $all_vehicles[ $v_slug ] ) || ! is_array( $gens ) ) {
+						continue;
+					}
+					$v_label  = $all_vehicles[ $v_slug ]['label'];
+					$gen_defs = ! empty( $all_vehicles[ $v_slug ]['generations'] ) ? $all_vehicles[ $v_slug ]['generations'] : array();
+					$multi    = count( $gen_defs ) > 1;
+					foreach ( $gens as $g_slug => $build ) {
+						$label = $v_label;
+						if ( $multi && isset( $gen_defs[ $g_slug ]['label'] ) ) {
+							$label .= ' ' . $gen_defs[ $g_slug ]['label'];
+						}
+						$builds[] = array(
+							'label' => $label,
+							'value' => $build,
+						);
+					}
+				}
+			}
+
 			$grouped[ $year ][] = array(
 				'version'        => get_the_title(),
 				'permalink'      => get_permalink(),
 				'date_noticed'   => get_post_meta( $post_id, '_rsu_date_noticed', true ),
 				'date_released'  => $date_released,
 				'vehicle_labels' => $vehicle_labels,
+				'is_hotfix'      => $is_hotfix,
+				'builds'         => $builds,
 			);
 		}
 		wp_reset_postdata();
@@ -109,7 +136,22 @@ class RSU_Shortcode {
 							<?php foreach ( $posts as $post_data ) : ?>
 								<tr>
 									<td class="rsu-history__version">
-										<a href="<?php echo esc_url( $post_data['permalink'] ); ?>"><?php echo esc_html( $post_data['version'] ); ?></a>
+										<span class="rsu-history__version-row">
+											<a href="<?php echo esc_url( $post_data['permalink'] ); ?>"><?php echo esc_html( $post_data['version'] ); ?></a>
+											<?php if ( $post_data['is_hotfix'] ) : ?>
+												<span class="rsu-history__hotfix-badge">Hotfix</span>
+											<?php endif; ?>
+										</span>
+										<?php if ( ! empty( $post_data['builds'] ) ) : ?>
+											<span class="rsu-history__builds">
+												<?php foreach ( $post_data['builds'] as $build ) : ?>
+													<span class="rsu-history__build">
+														<span class="rsu-history__build-label"><?php echo esc_html( $build['label'] ); ?></span>
+														<span class="rsu-history__build-value"><?php echo esc_html( $build['value'] ); ?></span>
+													</span>
+												<?php endforeach; ?>
+											</span>
+										<?php endif; ?>
 									</td>
 									<td class="rsu-history__date" data-label="First Noticed">
 										<?php if ( $post_data['date_noticed'] ) : ?>
