@@ -555,15 +555,19 @@
 .rsu-history__builds {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 4px 10px;
-	margin-top: 6px;
+	gap: 6px;
+	margin-top: 8px;
 }
 
 .rsu-history__build {
 	display: inline-flex;
 	align-items: baseline;
-	gap: 5px;
+	gap: 6px;
+	padding: 3px 10px;
 	font-size: 12px;
+	background: var(--rsu-bg);
+	border: 1px solid var(--rsu-border);
+	border-radius: 9999px;
 }
 
 .rsu-history__build-label {
