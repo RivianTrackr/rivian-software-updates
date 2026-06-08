@@ -76,6 +76,17 @@ class RSU_Shortcode {
 			$builds_meta = get_post_meta( $post_id, '_rsu_hotfix_builds', true );
 			$builds      = array();
 			if ( is_array( $builds_meta ) ) {
+				// Prefix labels with the vehicle name only when more than one
+				// vehicle carries builds; otherwise the "Available For" column
+				// already identifies the vehicle and the prefix is just noise.
+				$vehicles_with_builds = 0;
+				foreach ( $builds_meta as $v_slug => $gens ) {
+					if ( isset( $all_vehicles[ $v_slug ] ) && is_array( $gens ) && array_filter( $gens, 'strlen' ) ) {
+						$vehicles_with_builds++;
+					}
+				}
+				$prefix_vehicle = $vehicles_with_builds > 1;
+
 				foreach ( $builds_meta as $v_slug => $gens ) {
 					if ( ! isset( $all_vehicles[ $v_slug ] ) || ! is_array( $gens ) ) {
 						continue;
@@ -84,12 +95,18 @@ class RSU_Shortcode {
 					$gen_defs = ! empty( $all_vehicles[ $v_slug ]['generations'] ) ? $all_vehicles[ $v_slug ]['generations'] : array();
 					$multi    = count( $gen_defs ) > 1;
 					foreach ( $gens as $g_slug => $build ) {
-						$label = $v_label;
+						if ( '' === trim( (string) $build ) ) {
+							continue;
+						}
+						$parts = array();
+						if ( $prefix_vehicle ) {
+							$parts[] = $v_label;
+						}
 						if ( $multi && isset( $gen_defs[ $g_slug ]['label'] ) ) {
-							$label .= ' ' . $gen_defs[ $g_slug ]['label'];
+							$parts[] = $gen_defs[ $g_slug ]['label'];
 						}
 						$builds[] = array(
-							'label' => $label,
+							'label' => implode( ' ', $parts ),
 							'value' => $build,
 						);
 					}
@@ -146,7 +163,9 @@ class RSU_Shortcode {
 											<span class="rsu-history__builds">
 												<?php foreach ( $post_data['builds'] as $build ) : ?>
 													<span class="rsu-history__build">
-														<span class="rsu-history__build-label"><?php echo esc_html( $build['label'] ); ?></span>
+														<?php if ( '' !== $build['label'] ) : ?>
+															<span class="rsu-history__build-label"><?php echo esc_html( $build['label'] ); ?></span>
+														<?php endif; ?>
 														<span class="rsu-history__build-value"><?php echo esc_html( $build['value'] ); ?></span>
 													</span>
 												<?php endforeach; ?>

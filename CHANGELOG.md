@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.15.3] - 2026-06-08
+
+### Changed
+- Tidied the per-generation build numbers shown under a hotfix in the `[rsu_history]` table. Each build now renders as its own pill so the values read as distinct chips instead of running together, and the vehicle name is dropped from the build label when only one vehicle has builds (the "Available For" column already identifies it) — e.g. `Gen 1 2026.15.01` / `Gen 2 2026.15.30` instead of `R1T & R1S Gen 1 2026.15.01 …`. The vehicle prefix is kept only when more than one vehicle carries builds.
+
 ## [2.15.2] - 2026-06-08
 
 ### Changed
