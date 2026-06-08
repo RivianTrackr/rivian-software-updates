@@ -86,6 +86,84 @@
 }
 
 
+/* === Hotfix Banner === */
+
+.rsu-hotfix-banner {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 24px;
+	padding: 10px 16px;
+	border-radius: 10px;
+	background: var(--rsu-accent-tint-8);
+	border: 1px solid var(--rsu-accent-tint-15);
+	font-size: 14px;
+}
+
+.rsu-hotfix-banner__badge {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	color: var(--rsu-text-on-accent);
+	background: var(--rsu-accent);
+	padding: 3px 10px;
+	border-radius: 9999px;
+}
+
+.rsu-hotfix-banner__text {
+	color: var(--rsu-text-secondary);
+}
+
+.rsu-hotfix-banner__text a {
+	color: var(--rsu-accent);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.rsu-hotfix-banner__text a:hover {
+	color: var(--rsu-accent-hover);
+	text-decoration: underline;
+}
+
+
+/* === Per-generation build numbers === */
+
+.rsu-builds {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-bottom: 18px;
+}
+
+.rsu-build {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 6px 12px;
+	border-radius: 9999px;
+	background: var(--rsu-bg);
+	border: 1px solid var(--rsu-border);
+	font-size: 13px;
+	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.rsu-build__label {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--rsu-text-secondary);
+}
+
+.rsu-build__value {
+	color: var(--rsu-accent);
+	font-weight: 600;
+}
+
+
 /* === Platform Tabs === */
 
 .rsu-tabs {

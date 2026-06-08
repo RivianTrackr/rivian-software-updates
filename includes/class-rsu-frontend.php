@@ -83,6 +83,19 @@ class RSU_Frontend {
 		$date_noticed   = get_post_meta( $post_id, '_rsu_date_noticed', true );
 		$date_released  = get_post_meta( $post_id, '_rsu_date_released', true );
 
+		$is_hotfix      = get_post_meta( $post_id, '_rsu_is_hotfix', true );
+		$parent_id      = (int) get_post_meta( $post_id, '_rsu_parent_release', true );
+		$hotfix_builds  = get_post_meta( $post_id, '_rsu_hotfix_builds', true );
+		if ( ! is_array( $hotfix_builds ) ) {
+			$hotfix_builds = array();
+		}
+		$parent_link = ( $is_hotfix && $parent_id && 'publish' === get_post_status( $parent_id ) )
+			? array(
+				'title' => get_the_title( $parent_id ),
+				'url'   => get_permalink( $parent_id ),
+			)
+			: null;
+
 		if ( ! in_array( $default, $active_vehicles, true ) ) {
 			$default = $active_vehicles[0];
 		}
@@ -92,6 +105,19 @@ class RSU_Frontend {
 		ob_start();
 		?>
 		<div class="rsu-update" data-rsu-version="<?php echo esc_attr( $version ); ?>" data-rsu-default="<?php echo esc_attr( $default ); ?>">
+
+			<?php if ( $is_hotfix ) : ?>
+				<div class="rsu-hotfix-banner">
+					<span class="rsu-hotfix-banner__badge">Hotfix</span>
+					<?php if ( $parent_link ) : ?>
+						<span class="rsu-hotfix-banner__text">
+							Patch for <a href="<?php echo esc_url( $parent_link['url'] ); ?>"><?php echo esc_html( $parent_link['title'] ); ?></a>
+						</span>
+					<?php else : ?>
+						<span class="rsu-hotfix-banner__text">Patch release</span>
+					<?php endif; ?>
+				</div>
+			<?php endif; ?>
 
 			<?php if ( $date_noticed || $date_released ) : ?>
 				<div class="rsu-dates">
@@ -161,6 +187,23 @@ class RSU_Frontend {
 					aria-labelledby="rsu-tab-<?php echo esc_attr( $slug ); ?>"
 					<?php echo $is_default ? '' : 'hidden'; ?>>
 					<div class="rsu-panel__content">
+						<?php
+						$v_builds = isset( $hotfix_builds[ $slug ] ) && is_array( $hotfix_builds[ $slug ] ) ? $hotfix_builds[ $slug ] : array();
+						if ( $v_builds ) :
+							$gen_labels = RSU_Platforms::get_generations( $slug );
+							$multi_gen  = count( $gen_labels ) > 1;
+							?>
+							<div class="rsu-builds">
+								<?php foreach ( $v_builds as $g_slug => $build ) : ?>
+									<span class="rsu-build">
+										<?php if ( $multi_gen && isset( $gen_labels[ $g_slug ] ) ) : ?>
+											<span class="rsu-build__label"><?php echo esc_html( $gen_labels[ $g_slug ] ); ?></span>
+										<?php endif; ?>
+										<span class="rsu-build__value"><?php echo esc_html( $build ); ?></span>
+									</span>
+								<?php endforeach; ?>
+							</div>
+						<?php endif; ?>
 						<?php if ( ! empty( $vehicle_content ) ) : ?>
 							<?php echo wp_kses_post( $vehicle_content ); ?>
 						<?php else : ?>

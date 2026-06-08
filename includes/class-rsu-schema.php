@@ -43,20 +43,15 @@ class RSU_Schema {
 					$node['description'] = $description;
 
 					if ( ! empty( $version ) && ! empty( $active_vehicles ) ) {
-						$about = array();
-						foreach ( $active_vehicles as $v_slug ) {
-							if ( ! isset( $all_vehicles[ $v_slug ] ) ) {
-								continue;
-							}
-							$about[] = array(
-								'@type'               => 'SoftwareApplication',
-								'name'                => $all_vehicles[ $v_slug ]['label'] . ' Vehicle Software',
-								'softwareVersion'     => $version,
-								'operatingSystem'     => 'Rivian OS',
-								'applicationCategory' => 'DriverApplication',
-							);
+						$about = $this->build_about( $post_id, $version, $active_vehicles, $all_vehicles );
+						if ( ! empty( $about ) ) {
+							$node['about'] = count( $about ) === 1 ? $about[0] : $about;
 						}
-						$node['about'] = count( $about ) === 1 ? $about[0] : $about;
+					}
+
+					$based_on = $this->build_based_on( $post_id );
+					if ( $based_on ) {
+						$node['isBasedOn'] = $based_on;
 					}
 
 					if ( ! empty( $sections ) ) {
@@ -119,20 +114,15 @@ class RSU_Schema {
 		);
 
 		if ( ! empty( $version ) && ! empty( $active_vehicles ) ) {
-			$about = array();
-			foreach ( $active_vehicles as $v_slug ) {
-				if ( ! isset( $all_vehicles[ $v_slug ] ) ) {
-					continue;
-				}
-				$about[] = array(
-					'@type'               => 'SoftwareApplication',
-					'name'                => $all_vehicles[ $v_slug ]['label'] . ' Vehicle Software',
-					'softwareVersion'     => $version,
-					'operatingSystem'     => 'Rivian OS',
-					'applicationCategory' => 'DriverApplication',
-				);
+			$about = $this->build_about( $post_id, $version, $active_vehicles, $all_vehicles );
+			if ( ! empty( $about ) ) {
+				$article['about'] = count( $about ) === 1 ? $about[0] : $about;
 			}
-			$article['about'] = count( $about ) === 1 ? $about[0] : $about;
+		}
+
+		$based_on = $this->build_based_on( $post_id );
+		if ( $based_on ) {
+			$article['isBasedOn'] = $based_on;
 		}
 
 		if ( ! empty( $sections ) ) {
@@ -175,6 +165,88 @@ class RSU_Schema {
 		echo '<script type="application/ld+json">';
 		echo wp_json_encode( $schema, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT );
 		echo '</script>' . "\n";
+	}
+
+	/**
+	 * Build the SoftwareApplication "about" entries for a post.
+	 *
+	 * For hotfixes with per-generation build numbers, one entry is emitted per
+	 * vehicle+generation using the specific build as softwareVersion. Otherwise a
+	 * single entry per vehicle uses the post title version.
+	 *
+	 * @param int    $post_id         Post ID.
+	 * @param string $version         Post version (title).
+	 * @param array  $active_vehicles Active vehicle slugs.
+	 * @param array  $all_vehicles    All registered vehicles.
+	 * @return array List of SoftwareApplication node arrays.
+	 */
+	private function build_about( $post_id, $version, $active_vehicles, $all_vehicles ) {
+		$builds = get_post_meta( $post_id, '_rsu_hotfix_builds', true );
+		if ( ! is_array( $builds ) ) {
+			$builds = array();
+		}
+
+		$about = array();
+
+		foreach ( $active_vehicles as $v_slug ) {
+			if ( ! isset( $all_vehicles[ $v_slug ] ) ) {
+				continue;
+			}
+
+			$label    = $all_vehicles[ $v_slug ]['label'];
+			$gen_defs = ! empty( $all_vehicles[ $v_slug ]['generations'] ) ? $all_vehicles[ $v_slug ]['generations'] : array();
+			$v_builds = isset( $builds[ $v_slug ] ) && is_array( $builds[ $v_slug ] ) ? $builds[ $v_slug ] : array();
+
+			if ( ! empty( $v_builds ) ) {
+				$multi_gen = count( $gen_defs ) > 1;
+				foreach ( $v_builds as $g_slug => $build ) {
+					$name = $label . ' Vehicle Software';
+					if ( $multi_gen && isset( $gen_defs[ $g_slug ]['label'] ) ) {
+						$name = $label . ' ' . $gen_defs[ $g_slug ]['label'] . ' Vehicle Software';
+					}
+					$about[] = array(
+						'@type'               => 'SoftwareApplication',
+						'name'                => $name,
+						'softwareVersion'     => $build,
+						'operatingSystem'     => 'Rivian OS',
+						'applicationCategory' => 'DriverApplication',
+					);
+				}
+			} else {
+				$about[] = array(
+					'@type'               => 'SoftwareApplication',
+					'name'                => $label . ' Vehicle Software',
+					'softwareVersion'     => $version,
+					'operatingSystem'     => 'Rivian OS',
+					'applicationCategory' => 'DriverApplication',
+				);
+			}
+		}
+
+		return $about;
+	}
+
+	/**
+	 * Build an isBasedOn node pointing at a hotfix's parent base release.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array|null TechArticle reference, or null when not an applicable hotfix.
+	 */
+	private function build_based_on( $post_id ) {
+		if ( ! get_post_meta( $post_id, '_rsu_is_hotfix', true ) ) {
+			return null;
+		}
+
+		$parent_id = (int) get_post_meta( $post_id, '_rsu_parent_release', true );
+		if ( ! $parent_id || 'publish' !== get_post_status( $parent_id ) ) {
+			return null;
+		}
+
+		return array(
+			'@type' => 'TechArticle',
+			'name'  => get_the_title( $parent_id ),
+			'url'   => get_permalink( $parent_id ),
+		);
 	}
 
 	/**

@@ -2,6 +2,14 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.15.0] - 2026-06-08
+
+### Added
+- **Hotfix releases.** A software update post can now be marked as a hotfix in the Update Details box. A hotfix links to a base release (e.g. `2026.15`) and carries per-vehicle, per-generation build numbers (e.g. `2026.15.01` for R1 Gen 1, `2026.15.30` for R1 Gen 2), reflecting that Rivian ships generation-specific patch builds under one release family.
+  - **Frontend:** hotfixes show a "Hotfix" banner that links back to the base release, and each vehicle panel displays its generation-specific build numbers as badges.
+  - **Schema:** per-generation builds are emitted as distinct `SoftwareApplication` `softwareVersion` values, and the article gains an `isBasedOn` reference to the base release.
+  - **Widget:** the Latest Update widget reads "Latest Hotfix" when the newest update is a hotfix.
+
 ## [2.14.3] - 2026-06-01
 
 ### Accessibility
