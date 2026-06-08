@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.15.2] - 2026-06-08
+
+### Changed
+- Hotfix title suggestion now uses the base release family instead of listing every build (e.g. `2026.15 Hotfix` rather than `2026.15.01 / 2026.15.30 Hotfix`). The family is derived from the first build by dropping its trailing patch segment, keeping the H1/breadcrumb/slug clean; the exact per-generation builds remain fully indexed via the on-page badges, history table, and schema `softwareVersion`.
+
 ## [2.15.1] - 2026-06-08
 
 ### Added
