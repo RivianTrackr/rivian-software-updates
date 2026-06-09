@@ -546,8 +546,9 @@
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	line-height: 1.7;
-	color: var(--rsu-text-on-accent);
-	background: var(--rsu-accent);
+	color: var(--rsu-accent);
+	background: var(--rsu-accent-tint-8);
+	border: 1px solid var(--rsu-accent-tint-15);
 	border-radius: 9999px;
 	white-space: nowrap;
 }
@@ -555,23 +556,24 @@
 .rsu-history__builds {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 6px;
-	margin-top: 8px;
+	align-items: baseline;
+	gap: 4px 14px;
+	margin-top: 5px;
 }
 
 .rsu-history__build {
 	display: inline-flex;
 	align-items: baseline;
-	gap: 6px;
-	padding: 3px 10px;
+	gap: 5px;
 	font-size: 12px;
-	background: var(--rsu-bg);
-	border: 1px solid var(--rsu-border);
-	border-radius: 9999px;
 }
 
 .rsu-history__build-label {
-	color: var(--rsu-text-secondary);
+	color: var(--rsu-text-muted);
+	text-transform: uppercase;
+	font-size: 10px;
+	font-weight: 600;
+	letter-spacing: 0.04em;
 }
 
 .rsu-history__build-value {
@@ -589,9 +591,14 @@
 	color: var(--rsu-text-muted);
 }
 
+.rsu-history__table thead th:last-child {
+	text-align: center;
+}
+
 .rsu-history__vehicles {
 	display: flex;
 	flex-wrap: wrap;
+	justify-content: center;
 	gap: 6px;
 }
 
