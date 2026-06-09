@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.15.5] - 2026-06-09
+
+### Fixed
+- Actually center the "Available For" pills in the `[rsu_history]` table. The previous attempt set `justify-content: center` on the cell, but the cell uses `display: flex`, which collapses a table cell to its content width — so there was nothing to center within and the pill stayed left. Switched to `text-align: center` on the table cell with inline-block badges (spaced via margin), which fills the column and centers correctly. Mobile stacked cards keep left alignment.
+
 ## [2.15.4] - 2026-06-09
 
 ### Changed

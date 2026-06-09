@@ -596,10 +596,7 @@
 }
 
 .rsu-history__vehicles {
-	display: flex;
-	flex-wrap: wrap;
-	justify-content: center;
-	gap: 6px;
+	text-align: center;
 }
 
 .rsu-history__vehicle-badge {
@@ -614,6 +611,7 @@
 	border: 1px solid var(--rsu-accent-tint-15);
 	border-radius: 9999px;
 	white-space: nowrap;
+	margin: 2px 3px;
 	transition: background var(--rsu-transition), border-color var(--rsu-transition);
 }
 
@@ -899,6 +897,7 @@
 
 	.rsu-history__vehicles {
 		margin-top: 8px;
+		text-align: start;
 	}
 
 	.rsu-history__year {
