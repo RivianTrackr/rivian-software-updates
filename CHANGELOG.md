@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.15.6] - 2026-06-09
+
+### Added
+- Hotfix updates are now flagged with a "Hotfix" state label in the WordPress Posts list table (next to the title, the same way core marks "Draft" or "Sticky"). Since a hotfix and its base release can share an identical title (e.g. both `2026.15`), they were previously indistinguishable in the admin list. Implemented via the `display_post_states` filter reading the `_rsu_is_hotfix` meta.
+
 ## [2.15.5] - 2026-06-09
 
 ### Fixed

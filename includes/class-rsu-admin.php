@@ -13,6 +13,24 @@ class RSU_Admin {
 		add_action( 'add_meta_boxes', array( $this, 'register_meta_boxes' ) );
 		add_action( 'save_post', array( $this, 'save_meta' ), 10, 2 );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
+		add_filter( 'display_post_states', array( $this, 'add_hotfix_post_state' ), 10, 2 );
+	}
+
+	/**
+	 * Flag hotfix updates in the Posts list table with a "Hotfix" state label,
+	 * the same way core marks "Draft" or "Sticky" next to a title. Without it,
+	 * a hotfix and its base release share an identical title and are
+	 * indistinguishable in the admin list.
+	 *
+	 * @param array   $states Existing post state labels.
+	 * @param WP_Post $post   The post being listed.
+	 * @return array
+	 */
+	public function add_hotfix_post_state( $states, $post ) {
+		if ( $post && get_post_meta( $post->ID, '_rsu_is_hotfix', true ) ) {
+			$states['rsu_hotfix'] = __( 'Hotfix', 'rivian-software-updates' );
+		}
+		return $states;
 	}
 
 	/**
