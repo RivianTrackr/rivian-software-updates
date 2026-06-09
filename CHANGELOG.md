@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.15.4] - 2026-06-09
+
+### Changed
+- Restyled the hotfix row in the `[rsu_history]` table so it no longer reads heavier and louder than the other rows. The "Hotfix" badge is softened from a solid-gold pill to an outlined, accent-tinted badge matching the vehicle badges; the per-generation build chips lose their pill chrome and render as a light secondary line (uppercase muted labels with mono build numbers); and the "Available For" column header and pills are now center-aligned. Bumps `RSU_VERSION` to break the cached stylesheet.
+
 ## [2.15.3] - 2026-06-08
 
 ### Changed
