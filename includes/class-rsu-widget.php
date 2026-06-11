@@ -140,7 +140,10 @@ class RSU_Widget extends WP_Widget {
 			}
 		}
 
-		$noticed_display  = $date_noticed ? date_i18n( 'm/d/Y', strtotime( $date_noticed ) ) : 'TBD';
+		// Hide the First Noticed field when it has no date — a bare "TBD" next to
+		// a real release date reads as unfinished. Public Release keeps its TBD
+		// since "not yet public" is meaningful.
+		$noticed_display  = $date_noticed ? date_i18n( 'm/d/Y', strtotime( $date_noticed ) ) : '';
 		$released_display = $date_released ? date_i18n( 'm/d/Y', strtotime( $date_released ) ) : 'TBD';
 
 		ob_start();
@@ -158,10 +161,12 @@ class RSU_Widget extends WP_Widget {
 			<span class="rsu-widget-latest__version"><?php echo esc_html( $version ); ?></span>
 
 			<span class="rsu-widget-latest__dates">
-				<span class="rsu-widget-latest__meta">
-					<span class="rsu-widget-latest__meta-label">First Noticed</span>
-					<span class="rsu-widget-latest__meta-value"><?php echo esc_html( $noticed_display ); ?></span>
-				</span>
+				<?php if ( '' !== $noticed_display ) : ?>
+					<span class="rsu-widget-latest__meta">
+						<span class="rsu-widget-latest__meta-label">First Noticed</span>
+						<span class="rsu-widget-latest__meta-value"><?php echo esc_html( $noticed_display ); ?></span>
+					</span>
+				<?php endif; ?>
 				<span class="rsu-widget-latest__meta">
 					<span class="rsu-widget-latest__meta-label">Public Release</span>
 					<span class="rsu-widget-latest__meta-value"><?php echo esc_html( $released_display ); ?></span>
