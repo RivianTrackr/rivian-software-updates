@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.22.0] - 2026-06-11
+
+### Changed
+- **Revamped the "Latest Software Update" widget to match the site's brand** instead of the generic blue "info card" look. Dropped the blue gradient background, the radial glow overlay, and the 💿 emoji. It's now a flat dark card matching the `.card` component (solid `#121e2b`, `1px #374151` border, 12px radius), led by the gold accent (`#fba919`) for vehicle tags, the hotfix badge, and the "Read Release Notes" link. The version number renders in **monospace** so it reads like a software build, and the icon is now a Font Awesome OTA cloud-download glyph (`fa-cloud-arrow-down`) kept in blue as a single deliberate accent. Hover warms the card border toward gold with a subtle lift. No markup-breaking changes — same classes/structure, restyled.
+
 ## [2.21.0] - 2026-06-11
 
 ### Added
