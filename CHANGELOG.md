@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.19.1] - 2026-06-11
+
+### Changed
+- In the "Latest Software Update" widget, the **First Noticed** field is now hidden for a row when it has no date, instead of rendering "TBD". A bare "First Noticed: TBD" next to a real public release date (e.g. an R2 launch release) read as unfinished. Public Release still shows "TBD" when empty, since "not yet public" is meaningful information.
+
 ## [2.19.0] - 2026-06-11
 
 ### Changed
