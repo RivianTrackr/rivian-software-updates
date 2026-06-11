@@ -91,19 +91,18 @@ class RSU_Widget extends WP_Widget {
 		$is_hotfix     = get_post_meta( $post_id, '_rsu_is_hotfix', true );
 		wp_reset_postdata();
 
-		// Name the vehicle in the eyebrow so stacked R1/R2 cards are never
-		// ambiguous — including when both resolve to the same shared version.
+		// Vehicle name on its own tag above the eyebrow so stacked R1/R2 cards
+		// are never ambiguous — including when both resolve to the same shared
+		// version. Shown only for vehicle-scoped instances (not Automatic).
 		$vehicle_label = '';
 		if ( '' !== $vehicle ) {
 			$all = RSU_Platforms::get_all();
 			if ( isset( $all[ $vehicle ]['label'] ) ) {
-				$vehicle_label = $all[ $vehicle ]['label'] . ' ';
+				$vehicle_label = $all[ $vehicle ]['label'];
 			}
 		}
 
-		$eyebrow = $is_hotfix
-			? 'Latest ' . $vehicle_label . 'Hotfix'
-			: 'Latest ' . $vehicle_label . 'Software Update';
+		$eyebrow = $is_hotfix ? 'Latest Hotfix' : 'Latest Software Update';
 
 		$noticed_display  = $date_noticed ? date_i18n( 'm/d/Y', strtotime( $date_noticed ) ) : 'TBD';
 		$released_display = $date_released ? date_i18n( 'm/d/Y', strtotime( $date_released ) ) : 'TBD';
@@ -112,6 +111,10 @@ class RSU_Widget extends WP_Widget {
 		?>
 		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-latest">
 			<span class="rsu-widget-latest__overlay" aria-hidden="true"></span>
+
+			<?php if ( '' !== $vehicle_label ) : ?>
+				<span class="rsu-widget-latest__vehicle"><?php echo esc_html( $vehicle_label ); ?></span>
+			<?php endif; ?>
 
 			<span class="rsu-widget-latest__head">
 				<span class="rsu-widget-latest__icon" aria-hidden="true">💿</span>

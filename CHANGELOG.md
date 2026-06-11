@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.17.1] - 2026-06-11
+
+### Changed
+- In the per-vehicle "Latest Software Update" widget, the vehicle now appears as its own pill above the eyebrow instead of being folded into the eyebrow text. The eyebrow reads simply "Latest Hotfix" / "Latest Software Update" again, with the vehicle (e.g. "R1T & R1S") shown as a separate tag — previously a long vehicle label like "R1T & R1S" crowded the eyebrow ("Latest R1T & R1S Hotfix"). Automatic (latest-overall) instances show no vehicle tag, as before.
+
 ## [2.17.0] - 2026-06-11
 
 ### Added
