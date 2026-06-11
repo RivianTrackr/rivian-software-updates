@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.19.3] - 2026-06-11
+
+### Changed
+- Unified the widget card's background glow to the same blue as its text/pills (`#60a5fa`); it previously used a slightly different blue (`#3b82f6`). Cosmetic consistency fix following a full brand/CSS audit — all core color tokens were confirmed to match the brand system, and the print-only high-contrast colors are intentional.
+
 ## [2.19.2] - 2026-06-11
 
 ### Changed
