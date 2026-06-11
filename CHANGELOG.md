@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.17.0] - 2026-06-11
+
+### Added
+- The `[rsu_history]` update timeline can now be filtered by vehicle. A segmented control ("All Vehicles · R1 · R2") above the year list filters rows client-side so an owner can see just the updates relevant to their vehicle — increasingly useful now that R1 and R2 are on separate OTA tracks. Years with no matching updates are hidden, the per-year counts update live to reflect the filter, and the selection is remembered across visits via `localStorage` (`rsu_history_filter`). The control only appears when more than one vehicle is present in the timeline, and the whole thing degrades gracefully without JS (defaults to showing all). Implemented in a new `frontend/js/rsu-history.js` with each row carrying a `data-vehicles` attribute.
+
 ## [2.16.1] - 2026-06-11
 
 ### Added

@@ -494,6 +494,48 @@
 	box-sizing: border-box;
 }
 
+/* Vehicle filter — segmented control shown only when >1 vehicle is present. */
+.rsu-history__filter {
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 4px;
+	margin-bottom: 20px;
+	background: var(--rsu-bg);
+	border: 1px solid var(--rsu-border);
+	border-radius: 10px;
+}
+
+.rsu-history__filter-btn {
+	appearance: none;
+	border: none;
+	background: transparent;
+	color: var(--rsu-text-secondary);
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	padding: 8px 16px;
+	border-radius: 7px;
+	cursor: pointer;
+	transition: background var(--rsu-transition), color var(--rsu-transition);
+}
+
+.rsu-history__filter-btn:hover {
+	color: var(--rsu-text);
+	background: var(--rsu-bg-hover);
+}
+
+.rsu-history__filter-btn--active,
+.rsu-history__filter-btn--active:hover {
+	background: var(--rsu-accent);
+	color: #0f172a;
+}
+
+.rsu-history__filter-btn:focus-visible {
+	outline: 2px solid var(--rsu-accent);
+	outline-offset: 2px;
+}
+
 .rsu-history__table {
 	width: 100%;
 	border-collapse: separate;
