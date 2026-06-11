@@ -48,11 +48,13 @@ class RSU_Shortcode {
 			return '<p class="rsu-history__empty">No software updates found.</p>';
 		}
 
-		// Enqueue styles.
+		// Enqueue styles and the filter script.
 		$this->enqueue_css();
+		$this->enqueue_js();
 
 		// Group posts by year based on public release date.
-		$grouped = array();
+		$grouped          = array();
+		$present_vehicles = array();
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$post_id       = get_the_ID();
@@ -63,11 +65,14 @@ class RSU_Shortcode {
 				$grouped[ $year ] = array();
 			}
 
-			$vehicles      = RSU_Platforms::get_active( $post_id );
+			$vehicles       = RSU_Platforms::get_active( $post_id );
 			$vehicle_labels = array();
+			$vehicle_slugs  = array();
 			foreach ( $vehicles as $slug ) {
 				if ( isset( $all_vehicles[ $slug ] ) ) {
-					$vehicle_labels[] = $all_vehicles[ $slug ]['label'];
+					$vehicle_labels[]            = $all_vehicles[ $slug ]['label'];
+					$vehicle_slugs[]             = $slug;
+					$present_vehicles[ $slug ]   = true;
 				}
 			}
 
@@ -119,6 +124,7 @@ class RSU_Shortcode {
 				'date_noticed'   => get_post_meta( $post_id, '_rsu_date_noticed', true ),
 				'date_released'  => $date_released,
 				'vehicle_labels' => $vehicle_labels,
+				'vehicle_slugs'  => $vehicle_slugs,
 				'is_hotfix'      => $is_hotfix,
 				'builds'         => $builds,
 			);
@@ -130,9 +136,28 @@ class RSU_Shortcode {
 
 		$is_first = true;
 
+		// Filter chips appear only when more than one vehicle is present across
+		// the timeline — a lone vehicle needs no filter. Ordered by the platform
+		// registry sort so it matches the tabs and widget.
+		$filter_vehicles = array();
+		foreach ( $all_vehicles as $slug => $vehicle ) {
+			if ( isset( $present_vehicles[ $slug ] ) ) {
+				$filter_vehicles[ $slug ] = $vehicle['label'];
+			}
+		}
+		$show_filter = count( $filter_vehicles ) > 1;
+
 		ob_start();
 		?>
 		<div class="rsu-history">
+			<?php if ( $show_filter ) : ?>
+				<div class="rsu-history__filter" role="group" aria-label="Filter updates by vehicle">
+					<button type="button" class="rsu-history__filter-btn rsu-history__filter-btn--active" data-vehicle="all" aria-pressed="true">All Vehicles</button>
+					<?php foreach ( $filter_vehicles as $slug => $label ) : ?>
+						<button type="button" class="rsu-history__filter-btn" data-vehicle="<?php echo esc_attr( $slug ); ?>" aria-pressed="false"><?php echo esc_html( $label ); ?></button>
+					<?php endforeach; ?>
+				</div>
+			<?php endif; ?>
 			<?php foreach ( $grouped as $year => $posts ) : ?>
 				<details class="rsu-history__year" <?php echo $is_first ? 'open' : ''; ?>>
 					<summary class="rsu-history__year-header">
@@ -151,7 +176,7 @@ class RSU_Shortcode {
 						</thead>
 						<tbody>
 							<?php foreach ( $posts as $post_data ) : ?>
-								<tr>
+								<tr data-vehicles="<?php echo esc_attr( implode( ' ', $post_data['vehicle_slugs'] ) ); ?>">
 									<td class="rsu-history__version">
 										<span class="rsu-history__version-row">
 											<a href="<?php echo esc_url( $post_data['permalink'] ); ?>"><?php echo esc_html( $post_data['version'] ); ?></a>
@@ -226,6 +251,26 @@ class RSU_Shortcode {
 			RSU_PLUGIN_URL . 'frontend/css/rsu-frontend' . $suffix . '.css',
 			array(),
 			RSU_VERSION
+		);
+	}
+
+	/**
+	 * Enqueue the vehicle-filter script for the history timeline.
+	 */
+	private function enqueue_js() {
+		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
+
+		$js_file = RSU_PLUGIN_DIR . 'frontend/js/rsu-history' . $suffix . '.js';
+		if ( ! file_exists( $js_file ) ) {
+			$suffix = '';
+		}
+
+		wp_enqueue_script(
+			'rsu-history',
+			RSU_PLUGIN_URL . 'frontend/js/rsu-history' . $suffix . '.js',
+			array(),
+			RSU_VERSION,
+			true
 		);
 	}
 }

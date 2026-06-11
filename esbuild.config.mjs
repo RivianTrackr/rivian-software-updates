@@ -20,6 +20,17 @@ const builds = [
     sourcemap: 'linked',
     drop: ['console', 'debugger'],
   },
+  // History timeline filter JS
+  {
+    ...jsDefaults,
+    bundle: true,
+    entryPoints: ['frontend/js/rsu-history.js'],
+    outfile: 'frontend/js/rsu-history.min.js',
+    format: 'iife',
+    minify: true,
+    sourcemap: 'linked',
+    drop: ['console', 'debugger'],
+  },
   // Frontend CSS
   {
     entryPoints: ['frontend/css/rsu-frontend.css'],
