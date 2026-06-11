@@ -105,9 +105,8 @@ class RSU_Widget extends WP_Widget {
 		ob_start();
 		?>
 		<div class="rsu-widget-latest">
-			<span class="rsu-widget-latest__overlay" aria-hidden="true"></span>
 			<span class="rsu-widget-latest__header">
-				<span class="rsu-widget-latest__icon" aria-hidden="true">💿</span>
+				<i class="fa-solid fa-cloud-arrow-down rsu-widget-latest__icon" aria-hidden="true"></i>
 				<span class="rsu-widget-latest__title">Latest Software Updates</span>
 			</span>
 			<div class="rsu-widget-latest__entries">
