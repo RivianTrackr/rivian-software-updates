@@ -800,6 +800,21 @@
 	outline-offset: 3px;
 }
 
+.rsu-widget-latest__vehicle {
+	align-self: flex-start;
+	margin-bottom: -4px;
+	padding: 3px 10px;
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.6px;
+	text-transform: uppercase;
+	color: #e5e7eb;
+	background: rgba(96, 165, 250, 0.14);
+	border: 1px solid rgba(96, 165, 250, 0.3);
+	border-radius: 9999px;
+	line-height: 1.4;
+}
+
 .rsu-widget-latest__head {
 	display: flex;
 	align-items: center;
