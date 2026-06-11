@@ -771,6 +771,13 @@
 	overflow: hidden;
 	box-sizing: border-box;
 	isolation: isolate;
+	transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Subtle lift so the whole card has a little life on hover. */
+.rsu-widget-latest:hover {
+	transform: translateY(-3px);
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 /* Subtle accent glow so the dark card has a little life */
@@ -942,9 +949,14 @@
 		transition: none;
 	}
 
+	.rsu-widget-latest,
 	.rsu-widget-entry,
 	.rsu-widget-entry__cta-arrow {
 		transition: none;
+	}
+
+	.rsu-widget-latest:hover {
+		transform: none;
 	}
 }
 

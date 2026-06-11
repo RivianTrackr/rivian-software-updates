@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.19.2] - 2026-06-11
+
+### Changed
+- Restored the subtle hover lift on the "Latest Software Update" widget card (a 3px rise + shadow), which was dropped in the single-card redesign. The per-row highlight still indicates which row will be clicked. Respects `prefers-reduced-motion`.
+
 ## [2.19.1] - 2026-06-11
 
 ### Changed
