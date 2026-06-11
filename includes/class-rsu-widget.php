@@ -58,15 +58,16 @@ class RSU_Widget extends WP_Widget {
 	}
 
 	/**
-	 * Build the widget markup: one card per vehicle's latest update, with
-	 * vehicles that share a version collapsed into a single card.
+	 * Build the widget markup: a single card listing each vehicle's latest
+	 * update as its own row, with vehicles that share a version collapsed into
+	 * one row.
 	 */
 	private function build_html() {
 		$all_vehicles = RSU_Platforms::get_all();
 
 		// Resolve each vehicle to its latest update post, then group vehicles by
-		// the post they land on — vehicles on the same version share one card.
-		// Iterating in registry order keeps the cards (and grouped labels) in a
+		// the post they land on — vehicles on the same version share one row.
+		// Iterating in registry order keeps the rows (and grouped labels) in a
 		// stable R1-then-R2 order.
 		$groups = array();
 		$index  = array();
@@ -92,27 +93,40 @@ class RSU_Widget extends WP_Widget {
 			$groups[] = array( 'post_id' => $post_id, 'slugs' => array() );
 		}
 
-		$cards = '';
+		$entries = '';
 		foreach ( $groups as $group ) {
-			$cards .= $this->render_card( $group['post_id'], $group['slugs'], $all_vehicles );
+			$entries .= $this->render_entry( $group['post_id'], $group['slugs'], $all_vehicles );
 		}
 
-		if ( '' === $cards ) {
+		if ( '' === $entries ) {
 			return '';
 		}
 
-		return '<div class="rsu-widget-latest-group">' . $cards . '</div>';
+		ob_start();
+		?>
+		<div class="rsu-widget-latest">
+			<span class="rsu-widget-latest__overlay" aria-hidden="true"></span>
+			<span class="rsu-widget-latest__header">
+				<span class="rsu-widget-latest__icon" aria-hidden="true">💿</span>
+				<span class="rsu-widget-latest__title">Latest Software Updates</span>
+			</span>
+			<div class="rsu-widget-latest__entries">
+				<?php echo $entries; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built from escaped parts in render_entry(). ?>
+			</div>
+		</div>
+		<?php
+		return ob_get_clean();
 	}
 
 	/**
-	 * Render a single update card.
+	 * Render a single vehicle's update row within the widget card.
 	 *
 	 * @param int   $post_id      Update post ID.
 	 * @param array $slugs        Vehicle slugs sharing this version (may be empty).
 	 * @param array $all_vehicles Platform registry from RSU_Platforms::get_all().
 	 * @return string
 	 */
-	private function render_card( $post_id, $slugs, $all_vehicles ) {
+	private function render_entry( $post_id, $slugs, $all_vehicles ) {
 		$version       = get_the_title( $post_id );
 		$permalink     = get_permalink( $post_id );
 		$date_noticed  = get_post_meta( $post_id, '_rsu_date_noticed', true );
@@ -126,27 +140,19 @@ class RSU_Widget extends WP_Widget {
 			}
 		}
 
-		$eyebrow = $is_hotfix ? 'Latest Hotfix' : 'Latest Software Update';
-
 		$noticed_display  = $date_noticed ? date_i18n( 'm/d/Y', strtotime( $date_noticed ) ) : 'TBD';
 		$released_display = $date_released ? date_i18n( 'm/d/Y', strtotime( $date_released ) ) : 'TBD';
 
 		ob_start();
 		?>
-		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-latest">
-			<span class="rsu-widget-latest__overlay" aria-hidden="true"></span>
-
-			<?php if ( ! empty( $labels ) ) : ?>
-				<span class="rsu-widget-latest__vehicles">
-					<?php foreach ( $labels as $label ) : ?>
-						<span class="rsu-widget-latest__vehicle"><?php echo esc_html( $label ); ?></span>
-					<?php endforeach; ?>
-				</span>
-			<?php endif; ?>
-
-			<span class="rsu-widget-latest__head">
-				<span class="rsu-widget-latest__icon" aria-hidden="true">💿</span>
-				<span class="rsu-widget-latest__eyebrow"><?php echo esc_html( $eyebrow ); ?></span>
+		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-entry">
+			<span class="rsu-widget-entry__head">
+				<?php foreach ( $labels as $label ) : ?>
+					<span class="rsu-widget-latest__vehicle"><?php echo esc_html( $label ); ?></span>
+				<?php endforeach; ?>
+				<?php if ( $is_hotfix ) : ?>
+					<span class="rsu-widget-entry__tag">Hotfix</span>
+				<?php endif; ?>
 			</span>
 
 			<span class="rsu-widget-latest__version"><?php echo esc_html( $version ); ?></span>
@@ -162,7 +168,10 @@ class RSU_Widget extends WP_Widget {
 				</span>
 			</span>
 
-			<span class="rsu-widget-latest__btn">Read Release Notes</span>
+			<span class="rsu-widget-entry__cta">
+				Read Release Notes
+				<span class="rsu-widget-entry__cta-arrow" aria-hidden="true">→</span>
+			</span>
 		</a>
 		<?php
 		return ob_get_clean();

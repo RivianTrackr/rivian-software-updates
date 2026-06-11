@@ -758,27 +758,19 @@
 /* === Latest Update Widget === */
 
 .rsu-widget-latest {
-	/* Lighter blue for text/accents (eyebrow, focus ring) — meets AA on the dark card. */
+	/* Lighter blue for text/accents (header, CTA, focus ring) — meets AA on the dark card. */
 	--rsu-widget-blue: #60a5fa;
-	/* Darker blue for the button so white label text clears AA 4.5:1. Hover darkens
-	   further (a lighter hover would drop the white text back below 4.5:1). */
-	--rsu-widget-btn: #2563eb;
-	--rsu-widget-btn-hover: #1d4ed8;
 
 	position: relative;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+	display: block;
 	width: 100%;
-	padding: 20px;
+	padding: 8px;
 	border-radius: 18px;
-	text-decoration: none;
 	color: #e5e7eb;
 	background: linear-gradient(160deg, #1b2a39 0%, #0e1822 100%);
 	overflow: hidden;
 	box-sizing: border-box;
 	isolation: isolate;
-	transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Subtle accent glow so the dark card has a little life */
@@ -789,31 +781,73 @@
 	background: radial-gradient(110% 75% at 0% 0%, rgba(59, 130, 246, 0.16) 0%, rgba(59, 130, 246, 0) 60%);
 }
 
-.rsu-widget-latest:hover {
-	transform: translateY(-3px);
-	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+/* Shared header — gives the combined widget one identity. */
+.rsu-widget-latest__header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 12px 8px;
+}
+
+.rsu-widget-latest__icon {
+	flex-shrink: 0;
+	font-size: 18px;
+	line-height: 1;
+}
+
+.rsu-widget-latest__title {
+	font-size: 11px;
+	font-weight: 700;
+	letter-spacing: 0.8px;
+	text-transform: uppercase;
+	color: var(--rsu-widget-blue);
+}
+
+.rsu-widget-latest__entries {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+/* Each vehicle's latest update — a clickable row within the card. */
+.rsu-widget-entry {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 14px 12px;
+	border-radius: 12px;
+	text-decoration: none;
+	color: inherit;
+	transition: background-color 0.2s ease;
+}
+
+.rsu-widget-entry:hover {
+	background-color: rgba(255, 255, 255, 0.04);
 	text-decoration: none;
 }
 
-.rsu-widget-latest:focus-visible {
+.rsu-widget-entry:focus-visible {
 	outline: 2px solid var(--rsu-widget-blue);
-	outline-offset: 3px;
+	outline-offset: -2px;
 }
 
-/* Stack multiple vehicle cards (e.g. R1 and R2 on different versions). */
-.rsu-widget-latest-group {
-	display: flex;
-	flex-direction: column;
-	gap: 16px;
+/* Hairline divider between rows (not before the first). */
+.rsu-widget-entry + .rsu-widget-entry::before {
+	content: "";
+	position: absolute;
+	top: -2px;
+	left: 12px;
+	right: 12px;
+	height: 1px;
+	background: rgba(255, 255, 255, 0.08);
 }
 
-/* Row of vehicle pills above the eyebrow — one pill per vehicle, so a card
-   shared by R1 and R2 (same version) shows both. */
-.rsu-widget-latest__vehicles {
+.rsu-widget-entry__head {
 	display: flex;
 	flex-wrap: wrap;
+	align-items: center;
 	gap: 6px;
-	margin-bottom: -4px;
 }
 
 .rsu-widget-latest__vehicle {
@@ -829,24 +863,16 @@
 	line-height: 1.4;
 }
 
-.rsu-widget-latest__head {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-}
-
-.rsu-widget-latest__icon {
-	flex-shrink: 0;
-	font-size: 18px;
-	line-height: 1;
-}
-
-.rsu-widget-latest__eyebrow {
-	font-size: 11px;
+.rsu-widget-entry__tag {
+	padding: 3px 10px;
+	font-size: 10px;
 	font-weight: 700;
-	letter-spacing: 0.8px;
+	letter-spacing: 0.5px;
 	text-transform: uppercase;
-	color: var(--rsu-widget-blue);
+	color: #0f172a;
+	background: var(--rsu-accent, #fba919);
+	border-radius: 9999px;
+	line-height: 1.4;
 }
 
 .rsu-widget-latest__version {
@@ -883,23 +909,21 @@
 	color: #e5e7eb;
 }
 
-.rsu-widget-latest__btn {
-	display: flex;
+.rsu-widget-entry__cta {
+	display: inline-flex;
 	align-items: center;
-	justify-content: center;
-	margin-top: 6px;
-	padding: 13px 20px;
-	border-radius: 9999px;
-	background-color: var(--rsu-widget-btn);
-	color: #ffffff;
-	font-size: 15px;
+	gap: 6px;
+	font-size: 13px;
 	font-weight: 700;
-	white-space: nowrap;
-	transition: background-color 0.2s ease;
+	color: var(--rsu-widget-blue);
 }
 
-.rsu-widget-latest:hover .rsu-widget-latest__btn {
-	background-color: var(--rsu-widget-btn-hover);
+.rsu-widget-entry__cta-arrow {
+	transition: transform 0.2s ease;
+}
+
+.rsu-widget-entry:hover .rsu-widget-entry__cta-arrow {
+	transform: translateX(3px);
 }
 
 
@@ -918,13 +942,9 @@
 		transition: none;
 	}
 
-	.rsu-widget-latest,
-	.rsu-widget-latest__btn {
+	.rsu-widget-entry,
+	.rsu-widget-entry__cta-arrow {
 		transition: none;
-	}
-
-	.rsu-widget-latest:hover {
-		transform: none;
 	}
 }
 

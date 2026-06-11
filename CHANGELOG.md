@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.19.0] - 2026-06-11
+
+### Changed
+- The "Latest Software Update" widget now renders as a **single combined card** rather than a separate card per vehicle. A shared "Latest Software Updates" header sits above one clickable row per vehicle (vehicle pill, version, dates), divided by hairlines; vehicles on the same version still collapse into one row showing both pills. Each row links to its own release notes and the per-row call-to-action is now a compact "Read Release Notes →" link with a clickable row + hover highlight, replacing the heavy full-width button per card. Hotfix rows show an amber "Hotfix" tag. Removed the old per-card markup/classes (`__btn`, `__eyebrow`, `__head`, `-group`, `__vehicles`).
+
 ## [2.18.0] - 2026-06-11
 
 ### Changed
