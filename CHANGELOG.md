@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.16.0] - 2026-06-11
+
+### Added
+- The "Latest Software Update" widget can now be scoped to a specific vehicle. A new **Vehicle** selector in the widget settings lets you add the widget once per vehicle — e.g. one set to **R1 (R1T & R1S)** and one set to **R2** — so each shows the newest update post tagged for that vehicle. This is needed now that R2 ships on a different OTA version than R1 (e.g. R1 on `2026.15`, R2 on `2026.20`). The eyebrow names the vehicle ("Latest R1 Software Update" / "Latest R2 Software Update") so stacked cards are unambiguous, including when both vehicles share the same version. Leaving the selector on **Automatic** preserves the prior behavior (latest update overall), so existing placements are unchanged. Each vehicle variant caches independently and is flushed on any post save.
+
 ## [2.15.6] - 2026-06-09
 
 ### Added
