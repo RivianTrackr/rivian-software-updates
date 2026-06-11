@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.18.0] - 2026-06-11
+
+### Changed
+- The "Latest Software Update" widget is now a single self-contained widget that shows the latest update for **every** vehicle, instead of one instance per vehicle. It resolves each vehicle's newest tagged update and renders one card per version: when R1 and R2 are on **different** versions it shows two cards (each labeled with its vehicle pill); when they're on the **same** version it collapses to a **single** card listing both vehicles. The per-instance vehicle selector is removed — just drop the widget once. (Any previously placed per-vehicle instances keep working; they now each render the full combined view, so remove the duplicate.) Cards are ordered R1-then-R2 per the platform registry, and legacy data with no vehicle tags falls back to the latest overall update.
+
 ## [2.17.1] - 2026-06-11
 
 ### Changed
