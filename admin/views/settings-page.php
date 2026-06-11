@@ -406,6 +406,52 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 						style="width: 200px;" />
 				</div>
 			</div>
+
+			<!-- Descriptive SEO Titles -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Descriptive SEO Titles</label>
+					<p>Give update posts a keyword-rich page title and heading (e.g. &ldquo;Rivian Software Update 2026.20&rdquo;) for search, while the stored title stays a clean version number for the widget and timeline. Works with AIOSEO, Yoast, Rank Math, or the theme default.</p>
+				</div>
+				<div class="rsu-field-control">
+					<label class="rsu-toggle">
+						<input type="checkbox"
+							name="rsu_settings[seo_titles_enabled]"
+							value="1"
+							<?php checked( ! empty( $settings['seo_titles_enabled'] ) ); ?> />
+						<span class="rsu-toggle__track"></span>
+					</label>
+				</div>
+			</div>
+
+			<!-- SEO Title Format -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>SEO Title Format</label>
+					<p>The indexable &lt;title&gt; tag for update posts. Placeholders: <code>%version%</code>, <code>%sitename%</code>.</p>
+				</div>
+				<div class="rsu-field-control">
+					<input type="text"
+						name="rsu_settings[seo_title_format]"
+						class="rsu-input"
+						value="<?php echo esc_attr( $settings['seo_title_format'] ); ?>" />
+				</div>
+			</div>
+
+			<!-- Post Heading (H1) Format -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Post Heading Format</label>
+					<p>The on-page H1 for update posts. Placeholder: <code>%version%</code>. Leave blank to keep the plain version as the heading.</p>
+				</div>
+				<div class="rsu-field-control">
+					<input type="text"
+						name="rsu_settings[seo_h1_format]"
+						class="rsu-input"
+						value="<?php echo esc_attr( $settings['seo_h1_format'] ); ?>" />
+				</div>
+			</div>
+
 		</div>
 
 		<!-- ==================== Save Bar ==================== -->

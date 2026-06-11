@@ -25,6 +25,9 @@ class RSU_Settings {
 		'organization_name'  => 'RivianTrackr',
 		'archive_slug'       => '/software-updates/',
 		'accent_color'       => '#fba919',
+		'seo_titles_enabled' => false,
+		'seo_title_format'   => 'Rivian Software Update %version%',
+		'seo_h1_format'      => 'Rivian Software Update %version%',
 	);
 
 	public function __construct() {
@@ -262,6 +265,17 @@ class RSU_Settings {
 		$clean['accent_color'] = isset( $input['accent_color'] ) && preg_match( '/^#[a-fA-F0-9]{6}$/', $input['accent_color'] )
 			? $input['accent_color']
 			: self::$defaults['accent_color'];
+
+		// SEO titles: master toggle + format templates.
+		$clean['seo_titles_enabled'] = ! empty( $input['seo_titles_enabled'] );
+
+		$clean['seo_title_format'] = isset( $input['seo_title_format'] )
+			? sanitize_text_field( $input['seo_title_format'] )
+			: self::$defaults['seo_title_format'];
+
+		$clean['seo_h1_format'] = isset( $input['seo_h1_format'] )
+			? sanitize_text_field( $input['seo_h1_format'] )
+			: self::$defaults['seo_h1_format'];
 
 		return $clean;
 	}

@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.20.0] - 2026-06-11
+
+### Added
+- **Descriptive SEO titles for update posts.** A new "SEO & Schema" settings group lets you give software-update posts a keyword-rich, indexable `<title>` and on-page H1 (e.g. "Rivian Software Update 2026.20") while the stored post title stays a clean version number for the widget, timeline, and structured data. Three settings: a master toggle, an **SEO Title Format** (`%version%`, `%sitename%` placeholders), and a **Post Heading Format** (`%version%`). The `<title>` is set across AIOSEO, Yoast, and Rank Math (with a core `document_title_parts` fallback); the H1 is rewritten via a tightly-scoped `the_title` filter that only touches the queried single update post — never menus, widgets, the document title, or structured data (softwareVersion stays the bare version). New `RSU_SEO` class; the frontend now reads the raw post title internally so the H1 filter can't leak into markup/data attributes. Off by default.
+
 ## [2.19.3] - 2026-06-11
 
 ### Changed
