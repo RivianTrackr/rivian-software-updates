@@ -14,16 +14,11 @@ class RSU_Widget extends WP_Widget {
 	const CACHE_KEY = 'rsu_latest_update_widget';
 
 	/**
-	 * Version-scoped transient key, further scoped by the selected vehicle so
-	 * each instance (R1, R2, or Automatic) caches independently and can never
-	 * serve another vehicle's HTML. Bumping RSU_VERSION changes the key so a
+	 * Version-scoped transient key. Bumping RSU_VERSION changes the key so a
 	 * deploy with new markup can never serve HTML cached by an older version.
-	 *
-	 * @param string $vehicle Vehicle slug, or '' for Automatic (latest overall).
 	 */
-	private function cache_key( $vehicle = '' ) {
-		$suffix = '' !== $vehicle ? $vehicle : 'all';
-		return self::CACHE_KEY . '_' . RSU_VERSION . '_' . $suffix;
+	private function cache_key() {
+		return self::CACHE_KEY . '_' . RSU_VERSION;
 	}
 
 	public function __construct() {
@@ -31,7 +26,7 @@ class RSU_Widget extends WP_Widget {
 			'rsu_latest_update',
 			'Latest Software Update',
 			array(
-				'description' => 'Displays the latest Rivian OTA software update with dates. Add one per vehicle (R1, R2) and pick the vehicle in the widget settings.',
+				'description' => 'Displays the latest Rivian OTA update for each vehicle. Vehicles on the same version are combined into one card.',
 			)
 		);
 
@@ -43,12 +38,11 @@ class RSU_Widget extends WP_Widget {
 	 * Front-end display.
 	 */
 	public function widget( $args, $instance ) {
-		$vehicle   = $this->get_instance_vehicle( $instance );
-		$cache_key = $this->cache_key( $vehicle );
+		$cache_key = $this->cache_key();
 		$html      = get_transient( $cache_key );
 
 		if ( false === $html ) {
-			$html = $this->build_html( $vehicle );
+			$html = $this->build_html();
 			set_transient( $cache_key, $html, DAY_IN_SECONDS );
 		}
 
@@ -64,41 +58,71 @@ class RSU_Widget extends WP_Widget {
 	}
 
 	/**
-	 * Build the widget markup from the latest update post.
-	 *
-	 * @param string $vehicle Vehicle slug to scope to, or '' for latest overall.
+	 * Build the widget markup: one card per vehicle's latest update, with
+	 * vehicles that share a version collapsed into a single card.
 	 */
-	private function build_html( $vehicle = '' ) {
-		$query = $this->query_latest_update( $vehicle );
+	private function build_html() {
+		$all_vehicles = RSU_Platforms::get_all();
 
-		// Scoped query found nothing (e.g. a vehicle with no tagged posts yet);
-		// fall back to the latest overall update so the widget never renders blank.
-		if ( '' !== $vehicle && ( ! $query || ! $query->have_posts() ) ) {
-			$query   = $this->query_latest_update( '' );
-			$vehicle = '';
+		// Resolve each vehicle to its latest update post, then group vehicles by
+		// the post they land on — vehicles on the same version share one card.
+		// Iterating in registry order keeps the cards (and grouped labels) in a
+		// stable R1-then-R2 order.
+		$groups = array();
+		$index  = array();
+		foreach ( array_keys( $all_vehicles ) as $slug ) {
+			$post_id = $this->latest_post_id( $slug );
+			if ( ! $post_id ) {
+				continue;
+			}
+			if ( ! isset( $index[ $post_id ] ) ) {
+				$index[ $post_id ] = count( $groups );
+				$groups[]          = array( 'post_id' => $post_id, 'slugs' => array() );
+			}
+			$groups[ $index[ $post_id ] ]['slugs'][] = $slug;
 		}
 
-		if ( ! $query || ! $query->have_posts() ) {
+		// Fallback for legacy data with no vehicle tags: show the latest overall
+		// update with no vehicle pills, so the widget never renders blank.
+		if ( empty( $groups ) ) {
+			$post_id = $this->latest_post_id( '' );
+			if ( ! $post_id ) {
+				return '';
+			}
+			$groups[] = array( 'post_id' => $post_id, 'slugs' => array() );
+		}
+
+		$cards = '';
+		foreach ( $groups as $group ) {
+			$cards .= $this->render_card( $group['post_id'], $group['slugs'], $all_vehicles );
+		}
+
+		if ( '' === $cards ) {
 			return '';
 		}
 
-		$query->the_post();
-		$post_id       = get_the_ID();
-		$version       = get_the_title();
-		$permalink     = get_permalink();
+		return '<div class="rsu-widget-latest-group">' . $cards . '</div>';
+	}
+
+	/**
+	 * Render a single update card.
+	 *
+	 * @param int   $post_id      Update post ID.
+	 * @param array $slugs        Vehicle slugs sharing this version (may be empty).
+	 * @param array $all_vehicles Platform registry from RSU_Platforms::get_all().
+	 * @return string
+	 */
+	private function render_card( $post_id, $slugs, $all_vehicles ) {
+		$version       = get_the_title( $post_id );
+		$permalink     = get_permalink( $post_id );
 		$date_noticed  = get_post_meta( $post_id, '_rsu_date_noticed', true );
 		$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
 		$is_hotfix     = get_post_meta( $post_id, '_rsu_is_hotfix', true );
-		wp_reset_postdata();
 
-		// Vehicle name on its own tag above the eyebrow so stacked R1/R2 cards
-		// are never ambiguous — including when both resolve to the same shared
-		// version. Shown only for vehicle-scoped instances (not Automatic).
-		$vehicle_label = '';
-		if ( '' !== $vehicle ) {
-			$all = RSU_Platforms::get_all();
-			if ( isset( $all[ $vehicle ]['label'] ) ) {
-				$vehicle_label = $all[ $vehicle ]['label'];
+		$labels = array();
+		foreach ( $slugs as $slug ) {
+			if ( isset( $all_vehicles[ $slug ]['label'] ) ) {
+				$labels[] = $all_vehicles[ $slug ]['label'];
 			}
 		}
 
@@ -112,8 +136,12 @@ class RSU_Widget extends WP_Widget {
 		<a href="<?php echo esc_url( $permalink ); ?>" class="rsu-widget-latest">
 			<span class="rsu-widget-latest__overlay" aria-hidden="true"></span>
 
-			<?php if ( '' !== $vehicle_label ) : ?>
-				<span class="rsu-widget-latest__vehicle"><?php echo esc_html( $vehicle_label ); ?></span>
+			<?php if ( ! empty( $labels ) ) : ?>
+				<span class="rsu-widget-latest__vehicles">
+					<?php foreach ( $labels as $label ) : ?>
+						<span class="rsu-widget-latest__vehicle"><?php echo esc_html( $label ); ?></span>
+					<?php endforeach; ?>
+				</span>
 			<?php endif; ?>
 
 			<span class="rsu-widget-latest__head">
@@ -138,6 +166,22 @@ class RSU_Widget extends WP_Widget {
 		</a>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Resolve the latest update post ID for a vehicle (or overall when '').
+	 *
+	 * @param string $vehicle Vehicle slug, or '' for latest overall.
+	 * @return int Post ID, or 0 if none.
+	 */
+	private function latest_post_id( $vehicle = '' ) {
+		$query = $this->query_latest_update( $vehicle );
+
+		if ( $query && ! empty( $query->posts ) ) {
+			return (int) $query->posts[0]->ID;
+		}
+
+		return 0;
 	}
 
 	/**
@@ -177,50 +221,11 @@ class RSU_Widget extends WP_Widget {
 	}
 
 	/**
-	 * Resolve and validate the vehicle slug saved on a widget instance.
-	 *
-	 * @param array $instance Widget instance settings.
-	 * @return string Valid vehicle slug, or '' for Automatic (latest overall).
-	 */
-	private function get_instance_vehicle( $instance ) {
-		$vehicle = isset( $instance['vehicle'] ) ? (string) $instance['vehicle'] : '';
-
-		if ( '' !== $vehicle && ! isset( RSU_Platforms::get_all()[ $vehicle ] ) ) {
-			return '';
-		}
-
-		return $vehicle;
-	}
-
-	/**
 	 * Admin form.
 	 */
 	public function form( $instance ) {
-		$selected = $this->get_instance_vehicle( $instance );
-		$field_id = $this->get_field_id( 'vehicle' );
 		?>
-		<p>
-			<label for="<?php echo esc_attr( $field_id ); ?>">Vehicle:</label>
-			<select
-				id="<?php echo esc_attr( $field_id ); ?>"
-				name="<?php echo esc_attr( $this->get_field_name( 'vehicle' ) ); ?>"
-				class="widefat"
-			>
-				<option value="" <?php selected( $selected, '' ); ?>>Automatic — latest overall</option>
-				<?php foreach ( RSU_Platforms::get_all() as $slug => $vehicle ) : ?>
-					<?php
-					$option_label = $vehicle['label'];
-					if ( ! empty( $vehicle['description'] ) && $vehicle['description'] !== $vehicle['label'] ) {
-						$option_label .= ' (' . $vehicle['description'] . ')';
-					}
-					?>
-					<option value="<?php echo esc_attr( $slug ); ?>" <?php selected( $selected, $slug ); ?>>
-						<?php echo esc_html( $option_label ); ?>
-					</option>
-				<?php endforeach; ?>
-			</select>
-		</p>
-		<p class="description">Shows the latest software update post tagged for the selected vehicle. Add the widget once per vehicle.</p>
+		<p class="description">Shows the latest update for each vehicle automatically. Vehicles on the same version are combined into a single card.</p>
 		<?php
 	}
 
@@ -229,25 +234,14 @@ class RSU_Widget extends WP_Widget {
 	 */
 	public function update( $new_instance, $old_instance ) {
 		$this->flush_cache();
-
-		$vehicle = isset( $new_instance['vehicle'] ) ? sanitize_text_field( $new_instance['vehicle'] ) : '';
-
-		if ( '' !== $vehicle && ! isset( RSU_Platforms::get_all()[ $vehicle ] ) ) {
-			$vehicle = '';
-		}
-
-		return array( 'vehicle' => $vehicle );
+		return array();
 	}
 
 	/**
-	 * Delete the cached widget HTML for every vehicle variant plus Automatic.
+	 * Delete the cached widget HTML.
 	 */
 	public function flush_cache() {
 		delete_transient( $this->cache_key() );
-
-		foreach ( array_keys( RSU_Platforms::get_all() ) as $slug ) {
-			delete_transient( $this->cache_key( $slug ) );
-		}
 	}
 
 	/**

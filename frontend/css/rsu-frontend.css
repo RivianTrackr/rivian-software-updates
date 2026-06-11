@@ -800,9 +800,23 @@
 	outline-offset: 3px;
 }
 
-.rsu-widget-latest__vehicle {
-	align-self: flex-start;
+/* Stack multiple vehicle cards (e.g. R1 and R2 on different versions). */
+.rsu-widget-latest-group {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* Row of vehicle pills above the eyebrow — one pill per vehicle, so a card
+   shared by R1 and R2 (same version) shows both. */
+.rsu-widget-latest__vehicles {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
 	margin-bottom: -4px;
+}
+
+.rsu-widget-latest__vehicle {
 	padding: 3px 10px;
 	font-size: 11px;
 	font-weight: 700;
