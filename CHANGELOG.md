@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.16.1] - 2026-06-11
+
+### Added
+- Single-vehicle update posts now show an "Available For" vehicle pill in the meta row (next to the release dates) so the reader can tell which vehicle the update is for. Previously the vehicle was only indicated by the tabs, which don't render when a post targets just one vehicle (e.g. an R2-only release like `2026.20`), leaving no on-page indication of the vehicle. Multi-vehicle posts are unchanged — their tabs already identify each vehicle. The pill shows the vehicle label plus its description when they differ (e.g. "R1 · R1T & R1S").
+
 ## [2.16.0] - 2026-06-11
 
 ### Added

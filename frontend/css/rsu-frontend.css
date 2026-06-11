@@ -85,6 +85,18 @@
 	color: var(--rsu-text);
 }
 
+/* "Available For" vehicle pill — shown only when a single vehicle is active
+   (multi-vehicle posts identify the vehicle via the tabs instead). */
+.rsu-date--vehicle {
+	background: var(--rsu-accent-tint-8);
+	border: 1px solid var(--rsu-accent-tint-15);
+}
+
+.rsu-date__vehicle {
+	font-weight: 600;
+	color: var(--rsu-accent);
+}
+
 
 /* === Hotfix Banner === */
 
