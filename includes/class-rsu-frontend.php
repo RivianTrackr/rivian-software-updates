@@ -79,7 +79,9 @@ class RSU_Frontend {
 
 		$all_vehicles   = RSU_Platforms::get_all();
 		$default        = RSU_Platforms::get_default();
-		$version        = get_the_title( $post_id );
+		// Raw title (not get_the_title) so the optional SEO H1 filter never
+		// rewrites the version used in markup/data attributes here.
+		$version        = get_post_field( 'post_title', $post_id );
 		$date_noticed   = get_post_meta( $post_id, '_rsu_date_noticed', true );
 		$date_released  = get_post_meta( $post_id, '_rsu_date_released', true );
 
