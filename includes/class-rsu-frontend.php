@@ -119,8 +119,30 @@ class RSU_Frontend {
 				</div>
 			<?php endif; ?>
 
-			<?php if ( $date_noticed || $date_released ) : ?>
+			<?php
+			// With only one active vehicle there are no tabs, so nothing else
+			// tells the reader which vehicle this update is for. Surface it as
+			// an "Available For" pill alongside the dates.
+			$single_vehicle = ( count( $active_vehicles ) === 1 );
+			$solo_label     = '';
+			if ( $single_vehicle ) {
+				$solo_vehicle = $all_vehicles[ $active_vehicles[0] ];
+				$solo_label   = $solo_vehicle['label'];
+				if ( ! empty( $solo_vehicle['description'] ) && $solo_vehicle['description'] !== $solo_vehicle['label'] ) {
+					$solo_label .= ' · ' . $solo_vehicle['description'];
+				}
+			}
+			?>
+
+			<?php if ( $single_vehicle || $date_noticed || $date_released ) : ?>
 				<div class="rsu-dates">
+					<?php if ( $single_vehicle ) : ?>
+						<span class="rsu-date rsu-date--vehicle">
+							<span class="rsu-date__label">Available For</span>
+							<span class="rsu-date__vehicle"><?php echo esc_html( $solo_label ); ?></span>
+						</span>
+					<?php endif; ?>
+
 					<?php if ( $date_noticed ) : ?>
 						<span class="rsu-date rsu-date--noticed">
 							<span class="rsu-date__label">First Noticed</span>
@@ -161,7 +183,6 @@ class RSU_Frontend {
 			<?php endif; ?>
 
 			<?php
-			$single_vehicle = count( $active_vehicles ) === 1;
 			foreach ( $active_vehicles as $slug ) :
 				$vehicle    = $all_vehicles[ $slug ];
 				$is_default = ( $slug === $default );
