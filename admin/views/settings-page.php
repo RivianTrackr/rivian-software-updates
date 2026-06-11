@@ -407,6 +407,38 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 				</div>
 			</div>
 
+			<!-- Redirect Category Archive -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Redirect Category Archive</label>
+					<p>301-redirect the software-update category archive (and its pagination) to your Updates Archive Slug above, so a single page ranks for software updates. Individual posts are unaffected.</p>
+				</div>
+				<div class="rsu-field-control">
+					<label class="rsu-toggle">
+						<input type="checkbox"
+							name="rsu_settings[redirect_category_enabled]"
+							value="1"
+							<?php checked( ! empty( $settings['redirect_category_enabled'] ) ); ?> />
+						<span class="rsu-toggle__track"></span>
+					</label>
+				</div>
+			</div>
+
+			<!-- Category Slug to Redirect -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Category Slug to Redirect</label>
+					<p>The category slug whose archive should redirect (matched regardless of any parent category).</p>
+				</div>
+				<div class="rsu-field-control">
+					<input type="text"
+						name="rsu_settings[redirect_category_slug]"
+						class="rsu-input"
+						value="<?php echo esc_attr( $settings['redirect_category_slug'] ); ?>"
+						style="width: 200px;" />
+				</div>
+			</div>
+
 			<!-- Descriptive SEO Titles -->
 			<div class="rsu-field-row">
 				<div class="rsu-field-label">

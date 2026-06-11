@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.21.0] - 2026-06-11
+
+### Added
+- **Category archive redirect.** A new setting can 301-redirect a category archive (e.g. `/category/rivian/software-update/`) and its pagination to your canonical updates page, consolidating duplicate "list of updates" URLs onto one. The destination is your existing **Updates Archive Slug**, and the matched category slug is configurable (default `software-update`); matching is by slug so nested parent categories don't matter. Individual posts are never redirected — only the category listing. Includes a same-URL guard to avoid redirect loops. Implemented in `RSU_SEO` via `template_redirect`; off by default.
+
 ## [2.20.0] - 2026-06-11
 
 ### Added

@@ -28,6 +28,8 @@ class RSU_Settings {
 		'seo_titles_enabled' => false,
 		'seo_title_format'   => 'Rivian Software Update %version%',
 		'seo_h1_format'      => 'Rivian Software Update %version%',
+		'redirect_category_enabled' => false,
+		'redirect_category_slug'    => 'software-update',
 	);
 
 	public function __construct() {
@@ -276,6 +278,13 @@ class RSU_Settings {
 		$clean['seo_h1_format'] = isset( $input['seo_h1_format'] )
 			? sanitize_text_field( $input['seo_h1_format'] )
 			: self::$defaults['seo_h1_format'];
+
+		// Category archive redirect: toggle + the category slug to redirect.
+		$clean['redirect_category_enabled'] = ! empty( $input['redirect_category_enabled'] );
+
+		$clean['redirect_category_slug'] = isset( $input['redirect_category_slug'] )
+			? sanitize_title( $input['redirect_category_slug'] )
+			: self::$defaults['redirect_category_slug'];
 
 		return $clean;
 	}

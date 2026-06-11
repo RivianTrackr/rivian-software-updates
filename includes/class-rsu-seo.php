@@ -15,18 +15,52 @@ defined( 'ABSPATH' ) || exit;
 class RSU_SEO {
 
 	public function __construct() {
-		if ( ! RSU_Settings::get( 'seo_titles_enabled', false ) ) {
+		// 301 the software-update category archive to the canonical updates page.
+		if ( RSU_Settings::get( 'redirect_category_enabled', false ) ) {
+			add_action( 'template_redirect', array( $this, 'redirect_category_archive' ) );
+		}
+
+		if ( RSU_Settings::get( 'seo_titles_enabled', false ) ) {
+			// On-page H1 (the theme renders it via the_title()).
+			add_filter( 'the_title', array( $this, 'filter_h1' ), 10, 2 );
+
+			// Indexable <title> across the common SEO plugins, with a core fallback.
+			add_filter( 'aioseo_title', array( $this, 'filter_seo_title' ) );
+			add_filter( 'wpseo_title', array( $this, 'filter_seo_title' ) );
+			add_filter( 'rank_math/frontend/title', array( $this, 'filter_seo_title' ) );
+			add_filter( 'document_title_parts', array( $this, 'filter_document_title_parts' ) );
+		}
+	}
+
+	/**
+	 * Permanently redirect the software-update category archive (and its
+	 * pagination) to the canonical updates page, set by the Updates Archive
+	 * Slug. Individual posts are untouched — only the category listing.
+	 */
+	public function redirect_category_archive() {
+		if ( is_admin() ) {
 			return;
 		}
 
-		// On-page H1 (the theme renders it via the_title()).
-		add_filter( 'the_title', array( $this, 'filter_h1' ), 10, 2 );
+		$slug = trim( (string) RSU_Settings::get( 'redirect_category_slug', 'software-update' ) );
+		if ( '' === $slug || ! is_category( $slug ) ) {
+			return;
+		}
 
-		// Indexable <title> across the common SEO plugins, with a core fallback.
-		add_filter( 'aioseo_title', array( $this, 'filter_seo_title' ) );
-		add_filter( 'wpseo_title', array( $this, 'filter_seo_title' ) );
-		add_filter( 'rank_math/frontend/title', array( $this, 'filter_seo_title' ) );
-		add_filter( 'document_title_parts', array( $this, 'filter_document_title_parts' ) );
+		$dest = trim( (string) RSU_Settings::get( 'archive_slug', '/software-updates/' ) );
+		if ( '' === $dest ) {
+			return;
+		}
+
+		$target = home_url( '/' === $dest[0] ? $dest : '/' . $dest );
+
+		// Guard against redirecting onto the same URL (avoids a loop).
+		if ( untrailingslashit( $target ) === untrailingslashit( home_url( add_query_arg( array() ) ) ) ) {
+			return;
+		}
+
+		wp_safe_redirect( $target, 301 );
+		exit;
 	}
 
 	/**
