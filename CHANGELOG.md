@@ -2,6 +2,13 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.23.0] - 2026-06-12
+
+### Changed
+- **Restyled the entire frontend to the new "ink & brass" theme**, matching the sitewide refresh rolling out on riviantrackr.com. The navy/slate dark palette is replaced with near-neutral charcoal surfaces (`#121418` bg, `#16191e` cards, `#3a3e45` borders) and warm-neutral text (`#ece9e4` body, `#a6a39c` secondary) — cool surfaces, warm text, with gold (`#fba919`) as the only saturated accent. Success green, the widget's blue icon, print styles, and the light admin theme are unchanged.
+- **Aligned frontend typography with the site's type system.** Release-note headings move up one step onto the site scale (h2 28px/700/−0.5px, h3 24px/600, h4 20px/600/−0.2px with explicit line-heights); body/list line-height tightened from 1.75 to 1.6; mobile body text no longer drops below 16px. Added antialiased font smoothing to all component roots and a `scale(0.97)` press state on tabs and history filter buttons (disabled under `prefers-reduced-motion`).
+- Updated `CLAUDE.md` dark-theme color primitives to document the new palette and heading-weight conventions.
+
 ## [2.22.0] - 2026-06-11
 
 ### Changed
