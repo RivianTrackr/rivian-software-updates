@@ -1,20 +1,20 @@
 /* Rivian Software Updates - Frontend Styles */
 
 .rsu-update {
-	--rsu-bg: #0f1a26;
-	--rsu-bg-card: #121e2b;
-	--rsu-bg-hover: #1a2a3a;
+	--rsu-bg: #121418;
+	--rsu-bg-card: #16191e;
+	--rsu-bg-hover: #1f2228;
 	--rsu-accent: #fba919;
 	--rsu-accent-hover: #ffbe4a;
-	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #0f1a26);
-	--rsu-accent-tint-15: color-mix(in srgb, #fba919 15%, #0f1a26);
-	--rsu-text: #e5e7eb;
-	--rsu-text-secondary: #9ca3af;
-	--rsu-text-heading: #f3f4f6;
-	--rsu-text-muted: #6b7280;
-	--rsu-text-on-accent: #0f172a;
-	--rsu-border: #374151;
-	--rsu-divider: #1e2d3d;
+	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #121418);
+	--rsu-accent-tint-15: color-mix(in srgb, #fba919 15%, #121418);
+	--rsu-text: #ece9e4;
+	--rsu-text-secondary: #a6a39c;
+	--rsu-text-heading: #f6f4f0;
+	--rsu-text-muted: #79766f;
+	--rsu-text-on-accent: #15130e;
+	--rsu-border: #3a3e45;
+	--rsu-divider: #24272d;
 	--rsu-success: #34c759;
 	--rsu-radius: 12px;
 	--rsu-transition: 0.2s ease;
@@ -22,6 +22,8 @@
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 	color: var(--rsu-text);
 	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .rsu-update *,
@@ -235,6 +237,11 @@
 	box-shadow: 0 0 0 2px var(--rsu-accent);
 }
 
+.rsu-tab:active,
+.rsu-history__filter-btn:active {
+	transform: scale(0.97);
+}
+
 
 /* === Tab Panels === */
 
@@ -262,8 +269,10 @@
 /* === Content Typography === */
 
 .rsu-panel__content h2 {
-	font-size: 24px;
-	font-weight: 600;
+	font-size: 28px;
+	font-weight: 700;
+	letter-spacing: -0.5px;
+	line-height: 1.2;
 	color: var(--rsu-text-heading);
 	margin: 32px 0 14px;
 	padding-bottom: 10px;
@@ -275,8 +284,9 @@
 }
 
 .rsu-panel__content h3 {
-	font-size: 20px;
+	font-size: 24px;
 	font-weight: 600;
+	line-height: 1.25;
 	color: var(--rsu-text-heading);
 	margin: 28px 0 12px;
 }
@@ -286,15 +296,17 @@
 }
 
 .rsu-panel__content h4 {
-	font-size: 16px;
+	font-size: 20px;
 	font-weight: 600;
+	letter-spacing: -0.2px;
+	line-height: 1.3;
 	color: var(--rsu-text-heading);
 	margin: 22px 0 10px;
 }
 
 .rsu-panel__content p {
 	font-size: 16px;
-	line-height: 1.75;
+	line-height: 1.6;
 	color: var(--rsu-text);
 	margin: 0 0 16px;
 }
@@ -318,7 +330,7 @@
 
 .rsu-panel__content li {
 	font-size: 16px;
-	line-height: 1.75;
+	line-height: 1.6;
 	color: var(--rsu-text);
 	margin-bottom: 8px;
 }
@@ -467,25 +479,27 @@
 /* === History Table ([rsu_history] shortcode) === */
 
 .rsu-history {
-	--rsu-bg: #0f1a26;
-	--rsu-bg-card: #121e2b;
-	--rsu-bg-hover: #1a2a3a;
+	--rsu-bg: #121418;
+	--rsu-bg-card: #16191e;
+	--rsu-bg-hover: #1f2228;
 	--rsu-accent: #fba919;
 	--rsu-accent-hover: #ffbe4a;
-	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #0f1a26);
-	--rsu-accent-tint-15: color-mix(in srgb, #fba919 15%, #0f1a26);
-	--rsu-text: #e5e7eb;
-	--rsu-text-secondary: #9ca3af;
-	--rsu-text-heading: #f3f4f6;
-	--rsu-text-muted: #6b7280;
-	--rsu-border: #374151;
-	--rsu-divider: #1e2d3d;
+	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #121418);
+	--rsu-accent-tint-15: color-mix(in srgb, #fba919 15%, #121418);
+	--rsu-text: #ece9e4;
+	--rsu-text-secondary: #a6a39c;
+	--rsu-text-heading: #f6f4f0;
+	--rsu-text-muted: #79766f;
+	--rsu-border: #3a3e45;
+	--rsu-divider: #24272d;
 	--rsu-radius: 12px;
 	--rsu-transition: 0.2s ease;
 
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 	color: var(--rsu-text);
 	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .rsu-history *,
@@ -528,7 +542,7 @@
 .rsu-history__filter-btn--active,
 .rsu-history__filter-btn--active:hover {
 	background: var(--rsu-accent);
-	color: #0f172a;
+	color: #15130e;
 }
 
 .rsu-history__filter-btn:focus-visible {
@@ -723,6 +737,7 @@
 .rsu-history__year-label {
 	font-size: 20px;
 	font-weight: 600;
+	letter-spacing: -0.2px;
 	color: var(--rsu-text-heading);
 }
 
@@ -764,18 +779,20 @@
 
 	display: block;
 	width: 100%;
-	color: #e5e7eb;
-	background: #121e2b;
-	border: 1px solid #374151;
+	color: #ece9e4;
+	background: #16191e;
+	border: 1px solid #3a3e45;
 	border-radius: 12px;
 	overflow: hidden;
 	box-sizing: border-box;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 	transition: border-color 0.2s ease, transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* On-brand hover: border warms toward the gold accent, with a subtle lift. */
 .rsu-widget-latest:hover {
-	border-color: color-mix(in srgb, #fba919 35%, #374151);
+	border-color: color-mix(in srgb, #fba919 35%, #3a3e45);
 	transform: translateY(-2px);
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
@@ -786,7 +803,7 @@
 	align-items: center;
 	gap: 8px;
 	padding: 13px 16px;
-	border-bottom: 1px solid #1e2d3d;
+	border-bottom: 1px solid #24272d;
 }
 
 .rsu-widget-latest__icon {
@@ -801,7 +818,7 @@
 	font-weight: 600;
 	letter-spacing: 0.6px;
 	text-transform: uppercase;
-	color: #9ca3af;
+	color: #a6a39c;
 }
 
 .rsu-widget-latest__entries {
@@ -820,11 +837,11 @@
 }
 
 .rsu-widget-entry + .rsu-widget-entry {
-	border-top: 1px solid #1e2d3d;
+	border-top: 1px solid #24272d;
 }
 
 .rsu-widget-entry:hover {
-	background-color: #1a2a3a;
+	background-color: #1f2228;
 	text-decoration: none;
 }
 
@@ -848,7 +865,7 @@
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
 	color: #fba919;
-	background: color-mix(in srgb, #fba919 12%, #0f1a26);
+	background: color-mix(in srgb, #fba919 12%, #121418);
 	border: 1px solid color-mix(in srgb, #fba919 28%, transparent);
 	border-radius: 4px;
 	line-height: 1.4;
@@ -860,7 +877,7 @@
 	font-weight: 700;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
-	color: #0f172a;
+	color: #15130e;
 	background: #fba919;
 	border-radius: 4px;
 	line-height: 1.4;
@@ -873,7 +890,7 @@
 	font-weight: 600;
 	letter-spacing: -0.5px;
 	line-height: 1.1;
-	color: #f3f4f6;
+	color: #f6f4f0;
 }
 
 .rsu-widget-latest__dates {
@@ -894,14 +911,14 @@
 	font-weight: 600;
 	letter-spacing: 0.5px;
 	text-transform: uppercase;
-	color: #6b7280;
+	color: #79766f;
 }
 
 .rsu-widget-latest__meta-value {
 	font-family: var(--rsu-widget-mono);
 	font-size: 13px;
 	font-weight: 500;
-	color: #e5e7eb;
+	color: #ece9e4;
 }
 
 .rsu-widget-entry__cta {
@@ -936,6 +953,11 @@
 
 	.rsu-history__year-chevron {
 		transition: none;
+	}
+
+	.rsu-tab:active,
+	.rsu-history__filter-btn:active {
+		transform: none;
 	}
 
 	.rsu-widget-latest,
@@ -1036,16 +1058,15 @@
 	}
 
 	.rsu-panel__content h2 {
-		font-size: 20px;
+		font-size: 24px;
 	}
 
 	.rsu-panel__content h3 {
-		font-size: 18px;
+		font-size: 20px;
 	}
 
-	.rsu-panel__content p,
-	.rsu-panel__content li {
-		font-size: 15px;
+	.rsu-panel__content h4 {
+		font-size: 18px;
 	}
 
 	/* Latest update widget */

@@ -271,7 +271,7 @@ class RSU_Frontend {
 		$accent = RSU_Settings::get( 'accent_color', '#fba919' );
 		if ( '#fba919' !== $accent ) {
 			wp_add_inline_style( 'rsu-frontend', sprintf(
-				'.rsu-update { --rsu-accent: %1$s; --rsu-accent-hover: color-mix(in srgb, %1$s 80%%, white); --rsu-accent-tint-8: color-mix(in srgb, %1$s 8%%, #0f1a26); --rsu-accent-tint-15: color-mix(in srgb, %1$s 15%%, #0f1a26); }',
+				'.rsu-update { --rsu-accent: %1$s; --rsu-accent-hover: color-mix(in srgb, %1$s 80%%, white); --rsu-accent-tint-8: color-mix(in srgb, %1$s 8%%, #121418); --rsu-accent-tint-15: color-mix(in srgb, %1$s 15%%, #121418); }',
 				esc_attr( $accent )
 			) );
 		}
