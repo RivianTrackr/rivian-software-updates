@@ -987,6 +987,13 @@
 		display: none;
 	}
 
+	/* The block reset above overrides the user-agent [hidden] rule, so the
+	   vehicle filter's `row.hidden = true` has no effect on mobile. Re-hide
+	   filtered-out rows explicitly with a more specific selector. */
+	.rsu-history__table tbody tr[hidden] {
+		display: none;
+	}
+
 	.rsu-history__table tbody tr {
 		padding: 16px;
 		border-bottom: 1px solid var(--rsu-border);
