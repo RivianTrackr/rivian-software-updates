@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.23.1] - 2026-06-18
+
+### Fixed
+- **The `[rsu_history]` vehicle filter did nothing on mobile.** Tapping a vehicle in the segmented control toggled the active button and updated the per-year counts, but no rows were actually hidden — the timeline kept showing every update. The cause was CSS specificity, not the filter JS: the filter hides non-matching rows with `row.hidden = true`, which depends on the browser's user-agent `[hidden] { display: none }` rule (the lowest-priority rule). On mobile the responsive card layout applies `.rsu-history__table tr { display: block }`, an author-level rule that overrides the UA `[hidden]` rule, so hidden rows stayed visible. Desktop has no `display` override on `tr`, so the filter worked there — hence the mobile-only symptom. Fixed by adding a higher-specificity guard (`.rsu-history__table tbody tr[hidden] { display: none }`) inside the `max-width: 600px` media query and rebuilding the minified CSS. The filter now correctly hides non-matching rows and collapses empty years on phones.
+
 ## [2.23.0] - 2026-06-12
 
 ### Changed
