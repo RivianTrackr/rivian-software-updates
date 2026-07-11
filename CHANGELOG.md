@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.23.5] - 2026-07-11
+
+### Changed
+- **The three date pills on an update page — "Available For", "First Noticed", and "Public Release" — now use the solid gold fill** (dark text on `#fba919`, no border), matching the widget's "Hotfix" and vehicle tags. Within each pill the label sits in a muted dark tone and the value in solid dark bold for hierarchy. Replaces the previous outlined tinted style. Hover brightens to the accent-hover gold.
+
 ## [2.23.4] - 2026-07-11
 
 ### Changed
