@@ -2,6 +2,15 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.23.3] - 2026-07-11
+
+### Changed
+- **The "Public Release" date pill is now gold instead of green**, matching the "First Noticed" and "Available For" pills so all three date pills share the site's single gold accent (`#fba919`) rather than mixing in success-green. Same tint-8 background, tint-15 border, and hover glow as the other pills.
+
+### Added
+- **Hover glow on the "Available For" pill.** It now warms its background and border toward the accent on hover, matching the interactive feel of the "First Noticed" pill instead of sitting static.
+- **"Public Release" always shows a date, falling back to a muted "TBD"** when no release date is set, instead of the pill disappearing entirely. This keeps the dates row consistent and signals "not yet public" rather than leaving readers unsure whether the field is missing or broken.
+
 ## [2.23.1] - 2026-06-18
 
 ### Fixed
