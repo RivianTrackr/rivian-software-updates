@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.23.6] - 2026-07-11
+
+### Fixed
+- **The "Latest Software Updates" widget showed the full "Rivian Software Update 2026.24" heading** for posts whose stored title carries the descriptive prefix (e.g. R2 launch posts), instead of the compact build number like the other rows. The widget now strips a leading "Rivian Software Update" prefix from the headline so every row shows a bare version (e.g. "2026.24"); titles already stored as a clean version are unaffected.
+
 ## [2.23.5] - 2026-07-11
 
 ### Changed
