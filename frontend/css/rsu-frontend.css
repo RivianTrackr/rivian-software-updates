@@ -64,14 +64,14 @@
 }
 
 .rsu-date--released {
-	background: color-mix(in srgb, var(--rsu-success) 8%, var(--rsu-bg));
-	border: 1px solid color-mix(in srgb, var(--rsu-success) 15%, var(--rsu-bg));
+	background: var(--rsu-accent-tint-8);
+	border: 1px solid var(--rsu-accent-tint-15);
 	transition: background var(--rsu-transition), border-color var(--rsu-transition);
 }
 
 .rsu-date--released:hover {
-	background: color-mix(in srgb, var(--rsu-success) 15%, var(--rsu-bg));
-	border-color: color-mix(in srgb, var(--rsu-success) 30%, var(--rsu-bg));
+	background: var(--rsu-accent-tint-15);
+	border-color: color-mix(in srgb, var(--rsu-accent) 30%, var(--rsu-bg));
 }
 
 .rsu-date__label {
