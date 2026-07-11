@@ -126,7 +126,7 @@ class RSU_Widget extends WP_Widget {
 	 * @return string
 	 */
 	private function render_entry( $post_id, $slugs, $all_vehicles ) {
-		$version       = get_the_title( $post_id );
+		$version       = $this->version_label( $post_id );
 		$permalink     = get_permalink( $post_id );
 		$date_noticed  = get_post_meta( $post_id, '_rsu_date_noticed', true );
 		$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
@@ -179,6 +179,25 @@ class RSU_Widget extends WP_Widget {
 		</a>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * Bare build number for the widget headline.
+	 *
+	 * The widget wants a compact version like "2026.24". Most posts store a
+	 * clean version as their title, but some carry the full "Rivian Software
+	 * Update <version>" heading (e.g. R2 launch posts). Strip that descriptive
+	 * prefix so the widget stays compact either way; titles without it are
+	 * returned unchanged.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return string
+	 */
+	private function version_label( $post_id ) {
+		$title    = get_the_title( $post_id );
+		$stripped = preg_replace( '/^\s*rivian\s+software\s+update\s+/i', '', $title );
+
+		return ( null !== $stripped && '' !== $stripped ) ? $stripped : $title;
 	}
 
 	/**
