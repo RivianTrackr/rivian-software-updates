@@ -42,14 +42,16 @@
 	margin-bottom: 24px;
 }
 
+/* Compact rounded-rectangle tags matching the widget's gold pills
+   (4px radius, tight padding, 0.4px tracking) rather than a full capsule. */
 .rsu-date {
 	display: inline-flex;
 	align-items: center;
-	gap: 8px;
-	padding: 10px 18px;
-	border-radius: 9999px;
+	gap: 7px;
+	padding: 6px 11px;
+	border-radius: 4px;
 	font-size: 13px;
-	line-height: 1;
+	line-height: 1.4;
 }
 
 /* All three date pills share the solid gold fill of the Hotfix tag —
@@ -68,10 +70,10 @@
 }
 
 .rsu-date__label {
-	font-weight: 600;
+	font-weight: 700;
 	font-size: 11px;
 	text-transform: uppercase;
-	letter-spacing: 0.05em;
+	letter-spacing: 0.4px;
 	color: color-mix(in srgb, var(--rsu-text-on-accent) 65%, transparent);
 }
 

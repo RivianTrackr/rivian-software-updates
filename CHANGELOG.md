@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.23.7] - 2026-07-11
+
+### Changed
+- **The update-page date pills now match the widget's gold tags shape-wise** — compact rounded rectangles (`4px` radius, tighter padding, `0.4px` letter-spacing) instead of large full-capsule pills. The solid gold fill and dark text were already shared; this aligns the geometry so the article header and the sidebar widget read as one system.
+
 ## [2.23.6] - 2026-07-11
 
 ### Fixed
