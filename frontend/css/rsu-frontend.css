@@ -872,12 +872,11 @@
 .rsu-widget-latest__vehicle {
 	padding: 3px 9px;
 	font-size: 11px;
-	font-weight: 600;
+	font-weight: 700;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
-	color: #fba919;
-	background: color-mix(in srgb, #fba919 12%, #121418);
-	border: 1px solid color-mix(in srgb, #fba919 28%, transparent);
+	color: #15130e;
+	background: #fba919;
 	border-radius: 4px;
 	line-height: 1.4;
 }

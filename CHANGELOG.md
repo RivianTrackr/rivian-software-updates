@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.23.4] - 2026-07-11
+
+### Changed
+- **The vehicle tag pill in the "Latest Software Updates" widget now uses the solid gold fill** (dark text on `#fba919`, weight 700, no border), matching the "Hotfix" pill instead of the previous outlined style (gold text on a tinted background with a gold border). The two pills now read as one consistent system.
+
 ## [2.23.3] - 2026-07-11
 
 ### Changed
