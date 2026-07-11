@@ -52,26 +52,19 @@
 	line-height: 1;
 }
 
-.rsu-date--noticed {
-	background: var(--rsu-accent-tint-8);
-	border: 1px solid var(--rsu-accent-tint-15);
-	transition: background var(--rsu-transition), border-color var(--rsu-transition);
+/* All three date pills share the solid gold fill of the Hotfix tag —
+   dark text on accent, no border. */
+.rsu-date--noticed,
+.rsu-date--released,
+.rsu-date--vehicle {
+	background: var(--rsu-accent);
+	transition: background var(--rsu-transition);
 }
 
-.rsu-date--noticed:hover {
-	background: var(--rsu-accent-tint-15);
-	border-color: color-mix(in srgb, var(--rsu-accent) 30%, var(--rsu-bg));
-}
-
-.rsu-date--released {
-	background: var(--rsu-accent-tint-8);
-	border: 1px solid var(--rsu-accent-tint-15);
-	transition: background var(--rsu-transition), border-color var(--rsu-transition);
-}
-
-.rsu-date--released:hover {
-	background: var(--rsu-accent-tint-15);
-	border-color: color-mix(in srgb, var(--rsu-accent) 30%, var(--rsu-bg));
+.rsu-date--noticed:hover,
+.rsu-date--released:hover,
+.rsu-date--vehicle:hover {
+	background: var(--rsu-accent-hover);
 }
 
 .rsu-date__label {
@@ -79,35 +72,24 @@
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
-	color: var(--rsu-text-secondary);
+	color: color-mix(in srgb, var(--rsu-text-on-accent) 65%, transparent);
 }
 
 .rsu-date time {
-	font-weight: 500;
-	color: var(--rsu-text);
+	font-weight: 700;
+	color: var(--rsu-text-on-accent);
 }
 
 .rsu-date__tbd {
-	font-weight: 500;
-	color: var(--rsu-text-muted);
+	font-weight: 700;
+	color: color-mix(in srgb, var(--rsu-text-on-accent) 65%, transparent);
 }
 
 /* "Available For" vehicle pill — shown only when a single vehicle is active
    (multi-vehicle posts identify the vehicle via the tabs instead). */
-.rsu-date--vehicle {
-	background: var(--rsu-accent-tint-8);
-	border: 1px solid var(--rsu-accent-tint-15);
-	transition: background var(--rsu-transition), border-color var(--rsu-transition);
-}
-
-.rsu-date--vehicle:hover {
-	background: var(--rsu-accent-tint-15);
-	border-color: color-mix(in srgb, var(--rsu-accent) 30%, var(--rsu-bg));
-}
-
 .rsu-date__vehicle {
-	font-weight: 600;
-	color: var(--rsu-accent);
+	font-weight: 700;
+	color: var(--rsu-text-on-accent);
 }
 
 
