@@ -87,11 +87,22 @@
 	color: var(--rsu-text);
 }
 
+.rsu-date__tbd {
+	font-weight: 500;
+	color: var(--rsu-text-muted);
+}
+
 /* "Available For" vehicle pill — shown only when a single vehicle is active
    (multi-vehicle posts identify the vehicle via the tabs instead). */
 .rsu-date--vehicle {
 	background: var(--rsu-accent-tint-8);
 	border: 1px solid var(--rsu-accent-tint-15);
+	transition: background var(--rsu-transition), border-color var(--rsu-transition);
+}
+
+.rsu-date--vehicle:hover {
+	background: var(--rsu-accent-tint-15);
+	border-color: color-mix(in srgb, var(--rsu-accent) 30%, var(--rsu-bg));
 }
 
 .rsu-date__vehicle {
