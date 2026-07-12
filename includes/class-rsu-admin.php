@@ -1080,16 +1080,31 @@ class RSU_Admin {
 
 		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
 
-		$css_file = RSU_PLUGIN_DIR . 'admin/css/rsu-admin' . $suffix . '.css';
+		$css_suffix = $suffix;
+		$css_file   = RSU_PLUGIN_DIR . 'admin/css/rsu-admin' . $css_suffix . '.css';
 		if ( ! file_exists( $css_file ) ) {
-			$suffix = '';
+			$css_suffix = '';
 		}
 
 		wp_enqueue_style(
 			'rsu-admin',
-			RSU_PLUGIN_URL . 'admin/css/rsu-admin' . $suffix . '.css',
+			RSU_PLUGIN_URL . 'admin/css/rsu-admin' . $css_suffix . '.css',
 			array(),
 			RSU_VERSION
+		);
+
+		$js_suffix = $suffix;
+		$js_file   = RSU_PLUGIN_DIR . 'admin/js/rsu-admin' . $js_suffix . '.js';
+		if ( ! file_exists( $js_file ) ) {
+			$js_suffix = '';
+		}
+
+		wp_enqueue_script(
+			'rsu-admin',
+			RSU_PLUGIN_URL . 'admin/js/rsu-admin' . $js_suffix . '.js',
+			array(),
+			RSU_VERSION,
+			true
 		);
 	}
 }

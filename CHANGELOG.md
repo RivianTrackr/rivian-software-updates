@@ -2,6 +2,19 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.24.0] - 2026-07-12
+
+### Added
+- **Live preview in the "Paste Release Notes" import dialog.** Parsed sections now render below the textarea as you paste — headings, bullets, sub-bullets, and paragraphs — so mis-detected headings are visible before anything lands in the builder. The Import button is disabled until at least one section is detected and shows the section count (e.g. "Import 3 sections").
+- **Sub-bullets survive the paste import.** The plain-text parser now keeps second-level items: lines indented by 2+ spaces (or a tab), or using hollow/square markers (`○`, `◦`, `▪`), import as indented sub-bullets instead of flattening to top level.
+- **Keyboard-driven bullet entry.** Pressing Enter in a bullet inserts a new bullet directly below (inheriting the current indent) and focuses it; Backspace on an empty bullet removes the row and moves focus to the previous one. Combined with the existing Tab / Shift+Tab indent toggle, lists can now be entered without touching the mouse.
+
+### Fixed
+- **Edits made just before saving could miss the save.** Builder state syncs to the hidden JSON input on a 300ms debounce, and nothing flushed it when the post was saved — the last keystrokes could be lost. Pending edits now flush immediately on field blur, on Cmd/Ctrl+S, and on classic-editor form submit (the blur flush covers the Block Editor, which serializes meta box forms without a submit event). The debounce is also keyed per vehicle, so switching tabs mid-edit no longer cancels the other tab's pending sync.
+
+### Changed
+- **The section-builder JavaScript moved out of the meta box into a built asset.** The ~1,200-line inline `<script>` in `admin/views/meta-box-content.php` now lives in `admin/js/rsu-admin.js`, built by esbuild to `rsu-admin.min.js` (minified, console-stripped, sourcemapped) and enqueued in the footer on post editor screens. The "Paste Release Notes" button's inline `onclick` was replaced with the delegated `data-action` pattern used by every other builder control. No behavior change beyond the fixes above.
+
 ## [2.23.8] - 2026-07-12
 
 ### Changed
