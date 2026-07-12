@@ -31,6 +31,17 @@ const builds = [
     sourcemap: 'linked',
     drop: ['console', 'debugger'],
   },
+  // Admin section-builder JS (release notes meta box)
+  {
+    ...jsDefaults,
+    bundle: true,
+    entryPoints: ['admin/js/rsu-admin.js'],
+    outfile: 'admin/js/rsu-admin.min.js',
+    format: 'iife',
+    minify: true,
+    sourcemap: 'linked',
+    drop: ['console', 'debugger'],
+  },
   // Frontend CSS
   {
     entryPoints: ['frontend/css/rsu-frontend.css'],
