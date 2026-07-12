@@ -1106,5 +1106,15 @@ class RSU_Admin {
 			RSU_VERSION,
 			true
 		);
+
+		// URLs for the lazy-loaded PDF importer (pdf.js bundle + worker).
+		wp_localize_script(
+			'rsu-admin',
+			'RSU_ADMIN',
+			array(
+				'pdfImportUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf-import.min.js?ver=' . RSU_VERSION,
+				'pdfWorkerUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf.worker.min.js?ver=' . RSU_VERSION,
+			)
+		);
 	}
 }

@@ -152,6 +152,12 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-import-dialog__header h3 { font-size: 16px; font-weight: 600; color: var(--rsu-text); margin: 0 0 4px; }
 .rsu-import-dialog__header p { font-size: 12px; color: var(--rsu-text-muted); margin: 0; }
 .rsu-import-dialog__body { padding: 12px 24px; }
+.rsu-import-dialog__source { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.rsu-import-dialog__pdf-btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 12px; font-weight: 600; border: 1px solid var(--rsu-border); border-radius: 8px; background: var(--rsu-white); color: var(--rsu-text-secondary); cursor: pointer; transition: all 0.15s ease; }
+.rsu-import-dialog__pdf-btn:hover { border-color: var(--rsu-action); color: var(--rsu-action); background: var(--rsu-bg-info); }
+.rsu-import-dialog__pdf-btn:disabled { opacity: 0.5; cursor: wait; }
+.rsu-import-dialog__pdf-status { font-size: 12px; color: var(--rsu-text-muted); }
+.rsu-import-dialog__pdf-status--error { color: var(--rsu-error); }
 .rsu-import-dialog__textarea { width: 100%; min-height: 160px; border: 1px solid var(--rsu-border); border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.6; font-family: inherit; color: var(--rsu-text); resize: vertical; box-sizing: border-box; }
 .rsu-import-dialog__textarea:focus { border-color: var(--rsu-action); box-shadow: 0 0 0 3px rgba(0,113,227,0.1); outline: none; }
 .rsu-import-dialog__textarea::placeholder { color: var(--rsu-placeholder); }
@@ -165,6 +171,8 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-import-preview__list li { font-size: 12px; color: var(--rsu-text-secondary); margin: 2px 0; }
 .rsu-import-preview__list li.rsu-import-preview__sub { list-style: circle; margin-inline-start: 18px; }
 .rsu-import-preview__para { font-size: 12px; color: var(--rsu-text-secondary); margin: 0 0 6px; }
+.rsu-import-preview__note { border-left: 3px solid var(--rsu-accent); background: var(--rsu-note-bg); border-radius: 0 6px 6px 0; padding: 6px 10px; margin: 0 0 6px; }
+.rsu-import-preview__note-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--rsu-accent); margin-bottom: 2px; }
 .rsu-import-preview__empty { font-size: 12px; color: var(--rsu-text-muted); font-style: italic; margin: 0; }
 .rsu-import-dialog__actions { display: flex; justify-content: flex-end; gap: 8px; padding: 8px 24px 20px; }
 .rsu-import-dialog__cancel { padding: 8px 16px; font-size: 13px; font-weight: 500; border: 1px solid var(--rsu-border); border-radius: 8px; background: var(--rsu-bg-light); color: var(--rsu-text); cursor: pointer; }

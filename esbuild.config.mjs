@@ -42,6 +42,28 @@ const builds = [
     sourcemap: 'linked',
     drop: ['console', 'debugger'],
   },
+  // PDF importer (pdf.js + structure extraction) — lazy-loaded by rsu-admin.js
+  {
+    ...jsDefaults,
+    bundle: true,
+    entryPoints: ['admin/js/rsu-pdf-import.mjs'],
+    outfile: 'admin/js/rsu-pdf-import.min.js',
+    format: 'iife',
+    target: ['es2022'],
+    minify: true,
+    drop: ['console', 'debugger'],
+  },
+  // pdf.js worker — pointed at via GlobalWorkerOptions.workerSrc
+  {
+    ...jsDefaults,
+    bundle: true,
+    entryPoints: ['admin/js/rsu-pdf-worker.mjs'],
+    outfile: 'admin/js/rsu-pdf.worker.min.js',
+    format: 'iife',
+    target: ['es2022'],
+    minify: true,
+    drop: ['debugger'],
+  },
   // Frontend CSS
   {
     entryPoints: ['frontend/css/rsu-frontend.css'],
