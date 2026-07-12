@@ -15,7 +15,6 @@
 	--rsu-text-on-accent: #15130e;
 	--rsu-border: #3a3e45;
 	--rsu-divider: #24272d;
-	--rsu-success: #34c759;
 	--rsu-radius: 12px;
 	--rsu-transition: 0.2s ease;
 
@@ -485,6 +484,7 @@
 	--rsu-text-secondary: #a6a39c;
 	--rsu-text-heading: #f6f4f0;
 	--rsu-text-muted: #79766f;
+	--rsu-text-on-accent: #15130e;
 	--rsu-border: #3a3e45;
 	--rsu-divider: #24272d;
 	--rsu-radius: 12px;
@@ -524,7 +524,7 @@
 	font-size: 13px;
 	font-weight: 600;
 	padding: 8px 16px;
-	border-radius: 7px;
+	border-radius: 8px;
 	cursor: pointer;
 	transition: background var(--rsu-transition), color var(--rsu-transition);
 }
@@ -537,7 +537,7 @@
 .rsu-history__filter-btn--active,
 .rsu-history__filter-btn--active:hover {
 	background: var(--rsu-accent);
-	color: #15130e;
+	color: var(--rsu-text-on-accent);
 }
 
 .rsu-history__filter-btn:focus-visible {
@@ -880,7 +880,7 @@
 /* Monospace version — reads like a software build number, not a generic heading. */
 .rsu-widget-latest__version {
 	font-family: var(--rsu-widget-mono);
-	font-size: 25px;
+	font-size: 24px;
 	font-weight: 600;
 	letter-spacing: -0.5px;
 	line-height: 1.1;
