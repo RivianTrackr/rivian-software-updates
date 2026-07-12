@@ -976,6 +976,36 @@ var RSUSectionBuilder = (function () {
 			previewEl.appendChild(empty);
 			return;
 		}
+		function appendBlock(container, block) {
+			if (block.type === 'list') {
+				var ul = document.createElement('ul');
+				ul.className = 'rsu-import-preview__list';
+				block.items.forEach(function (item) {
+					var li = document.createElement('li');
+					li.textContent = item.text;
+					if (item.level === 1) li.className = 'rsu-import-preview__sub';
+					ul.appendChild(li);
+				});
+				container.appendChild(ul);
+			} else if (block.type === 'note') {
+				var noteEl = document.createElement('div');
+				noteEl.className = 'rsu-import-preview__note';
+				var label = document.createElement('div');
+				label.className = 'rsu-import-preview__note-label';
+				label.textContent = 'NOTE';
+				noteEl.appendChild(label);
+				(block.blocks || []).forEach(function (inner) {
+					appendBlock(noteEl, inner);
+				});
+				container.appendChild(noteEl);
+			} else {
+				var p = document.createElement('p');
+				p.className = 'rsu-import-preview__para';
+				p.textContent = block.content;
+				container.appendChild(p);
+			}
+		}
+
 		sections.forEach(function (section) {
 			var sEl = document.createElement('div');
 			sEl.className = 'rsu-import-preview__section';
@@ -984,25 +1014,33 @@ var RSUSectionBuilder = (function () {
 			h.textContent = section.heading || '(no heading)';
 			sEl.appendChild(h);
 			(section.blocks || []).forEach(function (block) {
-				if (block.type === 'list') {
-					var ul = document.createElement('ul');
-					ul.className = 'rsu-import-preview__list';
-					block.items.forEach(function (item) {
-						var li = document.createElement('li');
-						li.textContent = item.text;
-						if (item.level === 1) li.className = 'rsu-import-preview__sub';
-						ul.appendChild(li);
-					});
-					sEl.appendChild(ul);
-				} else {
-					var p = document.createElement('p');
-					p.className = 'rsu-import-preview__para';
-					p.textContent = block.content;
-					sEl.appendChild(p);
-				}
+				appendBlock(sEl, block);
 			});
 			previewEl.appendChild(sEl);
 		});
+	}
+
+	// Lazy-load the bundled pdf.js importer the first time a PDF is picked.
+	var _pdfImporterPromise = null;
+	function loadPdfImporter() {
+		if (window.RSUPdfImport) return Promise.resolve(window.RSUPdfImport);
+		if (_pdfImporterPromise) return _pdfImporterPromise;
+		var cfg = window.RSU_ADMIN || {};
+		if (!cfg.pdfImportUrl) return Promise.reject(new Error('PDF importer is not configured.'));
+		_pdfImporterPromise = new Promise(function (resolve, reject) {
+			var script = document.createElement('script');
+			script.src = cfg.pdfImportUrl;
+			script.onload = function () {
+				if (window.RSUPdfImport) resolve(window.RSUPdfImport);
+				else reject(new Error('PDF importer failed to initialize.'));
+			};
+			script.onerror = function () {
+				_pdfImporterPromise = null;
+				reject(new Error('Failed to load the PDF importer.'));
+			};
+			document.head.appendChild(script);
+		});
+		return _pdfImporterPromise;
 	}
 
 	function showImport(btn) {
@@ -1010,10 +1048,15 @@ var RSUSectionBuilder = (function () {
 		var dialog = createElement(
 			'<dialog class="rsu-import-dialog">' +
 				'<div class="rsu-import-dialog__header">' +
-					'<h3>Paste Release Notes</h3>' +
-					'<p>Paste plain-text release notes below. Check the preview to confirm headings, bullets, and sub-bullets were detected correctly before importing.</p>' +
+					'<h3>Import Release Notes</h3>' +
+					'<p>Paste plain-text release notes, or upload the official Update Details PDF. Check the preview to confirm headings, bullets, and notes were detected correctly before importing.</p>' +
 				'</div>' +
 				'<div class="rsu-import-dialog__body">' +
+					'<div class="rsu-import-dialog__source">' +
+						'<button type="button" class="rsu-import-dialog__pdf-btn"><span class="dashicons dashicons-pdf" style="font-size:14px;width:14px;height:14px;"></span> Upload PDF</button>' +
+						'<input type="file" class="rsu-import-dialog__pdf-input" accept=".pdf,application/pdf" style="display:none;" />' +
+						'<span class="rsu-import-dialog__pdf-status"></span>' +
+					'</div>' +
 					'<textarea class="rsu-import-dialog__textarea" placeholder="Paste release notes here...\n\nCold Weather Improvements\n• Battery preconditioning now more efficient\n• Cabin heating reduced warm-up time\n\nNavigation\nUpdated route planning algorithm."></textarea>' +
 					'<div class="rsu-import-dialog__preview-label">Preview</div>' +
 					'<div class="rsu-import-dialog__preview"></div>' +
@@ -1030,7 +1073,39 @@ var RSUSectionBuilder = (function () {
 		var textarea = qs('.rsu-import-dialog__textarea', dialog);
 		var previewEl = qs('.rsu-import-dialog__preview', dialog);
 		var submitBtn = qs('.rsu-import-dialog__submit', dialog);
+		var pdfBtn = qs('.rsu-import-dialog__pdf-btn', dialog);
+		var pdfInput = qs('.rsu-import-dialog__pdf-input', dialog);
+		var pdfStatus = qs('.rsu-import-dialog__pdf-status', dialog);
 		textarea.focus();
+
+		pdfBtn.addEventListener('click', function () { pdfInput.click(); });
+		pdfInput.addEventListener('change', function () {
+			var file = pdfInput.files && pdfInput.files[0];
+			if (!file) return;
+			pdfBtn.disabled = true;
+			pdfStatus.textContent = 'Parsing ' + file.name + '…';
+			pdfStatus.classList.remove('rsu-import-dialog__pdf-status--error');
+
+			Promise.all([loadPdfImporter(), file.arrayBuffer()])
+				.then(function (loaded) {
+					var cfg = window.RSU_ADMIN || {};
+					return loaded[0].extractText(loaded[1], { workerSrc: cfg.pdfWorkerUrl || '' });
+				})
+				.then(function (text) {
+					if (!text.trim()) throw new Error('No text found in this PDF.');
+					textarea.value = text;
+					refreshPreview();
+					pdfStatus.textContent = file.name;
+				})
+				.catch(function (err) {
+					pdfStatus.textContent = (err && err.message) ? err.message : 'Could not parse this PDF.';
+					pdfStatus.classList.add('rsu-import-dialog__pdf-status--error');
+				})
+				.then(function () {
+					pdfBtn.disabled = false;
+					pdfInput.value = '';
+				});
+		});
 
 		function refreshPreview() {
 			var parsed = textarea.value.trim() ? parseTextToSections(textarea.value) : [];
@@ -1079,6 +1154,8 @@ var RSUSectionBuilder = (function () {
 		var sections = [];
 		var current = null;
 		var currentBlock = null;
+		var currentNote = null; // { type:'note', blocks:[] } while inside a NOTES block
+		var noteBlock = null;   // current inner block (paragraph or list) of the note
 
 		function flushBlock() {
 			if (!currentBlock) return;
@@ -1090,7 +1167,28 @@ var RSUSectionBuilder = (function () {
 			currentBlock = null;
 		}
 
+		function flushNoteBlock() {
+			if (!noteBlock || !currentNote) { noteBlock = null; return; }
+			if (noteBlock.type === 'list' && noteBlock.items.length) {
+				currentNote.blocks.push(noteBlock);
+			} else if (noteBlock.type === 'paragraph' && noteBlock.content.trim()) {
+				currentNote.blocks.push(noteBlock);
+			}
+			noteBlock = null;
+		}
+
+		function flushNote() {
+			if (!currentNote) return;
+			flushNoteBlock();
+			if (currentNote.blocks.length) {
+				if (!current) current = { heading: '', blocks: [] };
+				current.blocks.push(currentNote);
+			}
+			currentNote = null;
+		}
+
 		function flushSection() {
+			flushNote();
 			flushBlock();
 			if (current && (current.heading || current.blocks.length)) {
 				sections.push(current);
@@ -1102,8 +1200,9 @@ var RSUSectionBuilder = (function () {
 			var line = lines[i];
 			var trimmed = line.trim();
 
-			// Skip empty lines.
+			// Skip empty lines. A blank line ends an open NOTES block.
 			if (!trimmed) {
+				if (currentNote) flushNote();
 				// Flush paragraph block on blank line.
 				if (currentBlock && currentBlock.type === 'paragraph') {
 					flushBlock();
@@ -1114,6 +1213,24 @@ var RSUSectionBuilder = (function () {
 			// Detect bullet points: •, -, *, or numbered (1., 2.).
 			var bulletMatch = trimmed.match(/^([•●○◦▪▸►\-\*]|\d+[\.\)])\s*(.+)/);
 			if (bulletMatch) {
+				// Sub-bullet: indented line, or a hollow/square marker (○ ◦ ▪)
+				// which Rivian's notes use for second-level items.
+				var indentWidth = line.match(/^[\t ]*/)[0].replace(/\t/g, '    ').length;
+				var marker = bulletMatch[1];
+				var isSub = indentWidth >= 2 || marker === '○' || marker === '◦' || marker === '▪';
+				var bulletItem = { text: bulletMatch[2].trim() };
+				if (isSub) bulletItem.level = 1;
+
+				// Inside a NOTES block, bullets build the note's inner list.
+				if (currentNote) {
+					if (!noteBlock || noteBlock.type !== 'list') {
+						flushNoteBlock();
+						noteBlock = { type: 'list', items: [] };
+					}
+					noteBlock.items.push(bulletItem);
+					continue;
+				}
+
 				// If we're in a paragraph block, flush it first.
 				if (currentBlock && currentBlock.type === 'paragraph') {
 					flushBlock();
@@ -1125,14 +1242,25 @@ var RSUSectionBuilder = (function () {
 					flushBlock();
 					currentBlock = { type: 'list', items: [] };
 				}
-				// Sub-bullet: indented line, or a hollow/square marker (○ ◦ ▪)
-				// which Rivian's notes use for second-level items.
-				var indentWidth = line.match(/^[\t ]*/)[0].replace(/\t/g, '    ').length;
-				var marker = bulletMatch[1];
-				var isSub = indentWidth >= 2 || marker === '○' || marker === '◦' || marker === '▪';
-				var bulletItem = { text: bulletMatch[2].trim() };
-				if (isSub) bulletItem.level = 1;
 				currentBlock.items.push(bulletItem);
+				continue;
+			}
+
+			// Detect NOTES blocks: a bare "NOTES" / "NOTE" line, or "Note: ..."
+			// with inline text. Content that follows (until a blank line or a
+			// heading) becomes a note block in the current section.
+			var noteMatch = trimmed.match(/^NOTES?:\s*(.*)$/i) || trimmed.match(/^(NOTES?)$/i);
+			if (noteMatch) {
+				flushNote();
+				flushBlock();
+				if (!current) {
+					current = { heading: '', blocks: [] };
+				}
+				currentNote = { type: 'note', blocks: [] };
+				var inlineNote = trimmed.match(/^NOTES?:\s*(.+)$/i);
+				if (inlineNote) {
+					noteBlock = { type: 'paragraph', content: inlineNote[1].trim() };
+				}
 				continue;
 			}
 
@@ -1161,6 +1289,16 @@ var RSUSectionBuilder = (function () {
 				flushSection();
 				current = { heading: trimmed.replace(/:$/, ''), blocks: [] };
 				currentBlock = null;
+				continue;
+			}
+
+			// Regular text inside a NOTES block: build the note's paragraph.
+			if (currentNote) {
+				if (!noteBlock || noteBlock.type !== 'paragraph') {
+					flushNoteBlock();
+					noteBlock = { type: 'paragraph', content: '' };
+				}
+				noteBlock.content += (noteBlock.content ? '\n' : '') + trimmed;
 				continue;
 			}
 

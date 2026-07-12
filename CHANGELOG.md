@@ -2,6 +2,12 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.25.0] - 2026-07-12
+
+### Added
+- **PDF import for release notes.** The import dialog now has an "Upload PDF" button that accepts Rivian's official "Update Details" PDF and reconstructs the full document structure client-side: section headings (detected by font size), paragraphs (re-joined across line wraps, pages, and hyphenated breaks), two-level bullets (including PDFs whose bullet glyphs are symbol-font characters, with indent depth measured from glyph position), and NOTES callout boxes. The result lands in the dialog's textarea and flows through the existing live preview, so everything can be verified and hand-edited before importing. Parsing uses a bundled pdf.js (esbuild, ~400KB + ~1.2MB worker) that is lazy-loaded only the first time a PDF is chosen — the post editor pays no cost otherwise. Boilerplate (page headers/footers, the document title block, page numbers) is stripped automatically.
+- **NOTES blocks in the text parser.** Pasted or PDF-extracted text containing a bare `NOTES`/`NOTE` line, or an inline `Note: …` sentence, now becomes a proper note block (with nested bullets or paragraph) in the section builder instead of degrading to plain text. The import preview renders note blocks with the amber note styling.
+
 ## [2.24.0] - 2026-07-12
 
 ### Added
