@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.25.1] - 2026-07-12
+
+### Fixed
+- **The Import button in the "Import Release Notes" dialog was invisible.** The dialog is appended to `document.body`, outside `.rsu-admin-wrap` where the `--rsu-*` design tokens are declared, so `var(--rsu-action)` resolved to nothing and the button rendered white-on-white (borders on Cancel and Upload PDF were silently lost the same way, as was the confirm dialog's Cancel styling). The token declarations now also target `.rsu-import-dialog` and `.rsu-confirm-dialog` directly.
+
 ## [2.25.0] - 2026-07-12
 
 ### Added
