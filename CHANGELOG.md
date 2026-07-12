@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.23.8] - 2026-07-12
+
+### Changed
+- **Frontend style-guide cleanup — small token alignments, no redesign.** Nudged the release-note and history styles fully onto the ink & brass scale: the `[rsu_history]` vehicle filter buttons move from an off-scale `7px` radius to `8px`; the "Latest Software Updates" widget version number drops from `25px` to the on-scale `24px`; the history filter's active state now pulls its dark-on-gold text from a new `--rsu-text-on-accent` token on the `.rsu-history` root instead of a hardcoded `#15130e`; and the unused `--rsu-success` variable was removed from the `.rsu-update` root. The deliberate blue widget icon is unchanged. Rebuilt the minified CSS.
+
 ## [2.23.7] - 2026-07-11
 
 ### Changed
