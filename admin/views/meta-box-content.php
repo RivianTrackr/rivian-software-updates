@@ -22,7 +22,10 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 
 <style>
 /* RSU Admin — inlined for Block Editor compatibility. Uses RivianTrackr design tokens. */
-.rsu-admin-wrap { --rsu-action: #0071e3; --rsu-action-hover: #0077ed; --rsu-text: #1d1d1f; --rsu-text-secondary: #6e6e73; --rsu-text-muted: #86868b; --rsu-accent: #fba919; --rsu-error: #ff3b30; --rsu-error-light: #ffe5e5; --rsu-border: #d2d2d7; --rsu-border-light: #e8e8ed; --rsu-bg-light: #f5f5f7; --rsu-bg-hover: #e8e8ed; --rsu-bg-info: #dbeafe; --rsu-white: #ffffff; --rsu-placeholder: #86868b; --rsu-note-bg: #fef9ee; --rsu-note-bg-focus: #fdf0d5; margin: -6px -12px -12px; padding: 0; }
+/* Tokens are declared on the dialogs too — they're appended to document.body,
+   outside .rsu-admin-wrap, so they don't inherit from it. */
+.rsu-admin-wrap, .rsu-confirm-dialog, .rsu-import-dialog { --rsu-action: #0071e3; --rsu-action-hover: #0077ed; --rsu-text: #1d1d1f; --rsu-text-secondary: #6e6e73; --rsu-text-muted: #86868b; --rsu-accent: #fba919; --rsu-error: #ff3b30; --rsu-error-light: #ffe5e5; --rsu-border: #d2d2d7; --rsu-border-light: #e8e8ed; --rsu-bg-light: #f5f5f7; --rsu-bg-hover: #e8e8ed; --rsu-bg-info: #dbeafe; --rsu-white: #ffffff; --rsu-placeholder: #86868b; --rsu-note-bg: #fef9ee; --rsu-note-bg-focus: #fdf0d5; }
+.rsu-admin-wrap { margin: -6px -12px -12px; padding: 0; }
 
 .rsu-vehicle-checks { padding: 14px 20px; display: flex; flex-wrap: wrap; align-items: center; gap: 20px; border-bottom: 1px solid var(--rsu-border); background: var(--rsu-white); }
 .rsu-vehicle-checks__label { font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--rsu-text-secondary); }
