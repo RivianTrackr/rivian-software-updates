@@ -30,6 +30,10 @@ class RSU_Settings {
 		'seo_h1_format'      => 'Rivian Software Update %version%',
 		'redirect_category_enabled' => false,
 		'redirect_category_slug'    => 'software-update',
+		'cache_purge_enabled'       => true,
+		'cf_zone_id'                => '',
+		'cf_api_token'              => '',
+		'cf_purge_scope'            => 'everything',
 	);
 
 	public function __construct() {
@@ -285,6 +289,33 @@ class RSU_Settings {
 		$clean['redirect_category_slug'] = isset( $input['redirect_category_slug'] )
 			? sanitize_title( $input['redirect_category_slug'] )
 			: self::$defaults['redirect_category_slug'];
+
+		// Cache purging: master toggle, Cloudflare credentials, purge scope.
+		$clean['cache_purge_enabled'] = ! empty( $input['cache_purge_enabled'] );
+
+		// Zone IDs are 32 hex characters; strip anything else rather than
+		// storing a value that can only fail at the API.
+		$clean['cf_zone_id'] = isset( $input['cf_zone_id'] )
+			? strtolower( preg_replace( '/[^a-fA-F0-9]/', '', $input['cf_zone_id'] ) )
+			: '';
+
+		// The token field renders empty (it is never echoed back), so a blank
+		// submission means "leave the stored token alone" rather than "clear
+		// it". Clearing is done with the explicit checkbox below.
+		$existing = get_option( self::OPTION_KEY, array() );
+		$stored_token = isset( $existing['cf_api_token'] ) ? $existing['cf_api_token'] : '';
+
+		if ( ! empty( $input['cf_api_token_clear'] ) ) {
+			$clean['cf_api_token'] = '';
+		} elseif ( isset( $input['cf_api_token'] ) && '' !== trim( $input['cf_api_token'] ) ) {
+			$clean['cf_api_token'] = sanitize_text_field( trim( $input['cf_api_token'] ) );
+		} else {
+			$clean['cf_api_token'] = $stored_token;
+		}
+
+		$clean['cf_purge_scope'] = isset( $input['cf_purge_scope'] ) && 'urls' === $input['cf_purge_scope']
+			? 'urls'
+			: 'everything';
 
 		return $clean;
 	}

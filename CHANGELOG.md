@@ -2,6 +2,18 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.26.0] - 2026-08-18
+
+### Added
+- **Automatic cache purging when an update is published.** Nothing told the CDN that a new release had landed, so a freshly published update stayed invisible behind Cloudflare until the cache was purged by hand in the dashboard. A new `RSU_Cache` module now hooks the whole lifecycle — publish, edit, scheduled publish (the wp-cron `future` → `publish` path, which never sees a meta box save), unpublish, trash, permanent delete, and plugin settings/vehicle-registry changes — and purges on each. Everything queued during a request coalesces into a single purge that runs on `shutdown`, after the editor's redirect has been sent, so saving a post is not slowed by the API call.
+- **Cloudflare purge via the API.** Settings → RSU Settings gained a Cache card holding the zone ID, an API token (needs `Zone → Cache Purge`), and a purge scope. Credentials can instead be defined as `RSU_CLOUDFLARE_ZONE_ID` / `RSU_CLOUDFLARE_API_TOKEN` constants in `wp-config.php`, which take precedence and keep the token out of the database; the settings field then shows that it is constant-defined. The stored token is never echoed back into the HTML — leaving the field blank keeps it, and an explicit "Remove the saved token" checkbox clears it.
+- **Purge scope: Everything or Specific URLs.** Default is Everything, because the "Latest Software Update" widget renders in the sidebar of every page, so a targeted purge would leave stale version numbers site-wide. Specific URLs purges the update post, home page, home feed, the archive slug plus its first pagination pages, the post's category archives, and any published post or page embedding `[rsu_history]` — batched 30 at a time to respect Cloudflare's per-request cap, and filterable via `rsu_cache_purge_urls`.
+- **Page-cache plugin flushing.** Alongside the edge purge, the plugin's own "Latest Software Update" widget transient is cleared, plus WP Rocket, W3 Total Cache, WP Super Cache, LiteSpeed Cache, Cache Enabler, SG Optimizer, Nginx Helper, Breeze, and WP Engine's Varnish when any of them is active.
+- **"Purge Cache Now" button and last-purge status** on the settings screen, showing when the last purge ran, whether it was automatic or manual, the Cloudflare result (including the API's own error message when a token is wrong or lacks the purge permission), and which local caches were cleared.
+
+### Changed
+- `RSU_Widget::flush_cache()` now delegates to a new static `RSU_Widget::purge_cache()` so the widget transient can be cleared without a widget instance.
+
 ## [2.25.1] - 2026-07-12
 
 ### Fixed

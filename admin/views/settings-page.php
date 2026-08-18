@@ -12,6 +12,12 @@ $vehicles = RSU_Platforms::get_all();
 
 $selected_vehicles = isset( $settings['default_vehicles'] ) ? (array) $settings['default_vehicles'] : array();
 $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
+
+$cache_last     = RSU_Cache::get_last_purge();
+$cache_zone_const  = RSU_Cache::is_constant_defined( 'zone' );
+$cache_token_const = RSU_Cache::is_constant_defined( 'token' );
+$cache_has_token   = '' !== RSU_Cache::api_token();
+$cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_cache' ), 'rsu_purge_cache' );
 ?>
 
 <div class="rsu-settings-wrap">
@@ -21,6 +27,27 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 			<p class="rsu-settings-subtitle">Configure vehicle platforms, display settings, and SEO options.</p>
 		</div>
 	</div>
+
+	<?php
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- read-only status flag set by the nonce-checked purge redirect.
+	$purge_flag = isset( $_GET['rsu_purged'] ) ? sanitize_text_field( wp_unslash( $_GET['rsu_purged'] ) ) : '';
+	?>
+	<?php if ( '' !== $purge_flag ) : ?>
+		<?php $purge_ok = '1' === $purge_flag; ?>
+		<div class="rsu-notice <?php echo $purge_ok ? 'rsu-notice--success' : 'rsu-notice--error'; ?>">
+			<?php
+			if ( $purge_ok ) {
+				echo 'Cache purged.';
+			} else {
+				echo 'Cache purge failed.';
+			}
+
+			if ( ! empty( $cache_last['message'] ) ) {
+				echo ' ' . esc_html( $cache_last['message'] );
+			}
+			?>
+		</div>
+	<?php endif; ?>
 
 	<form method="post" action="options.php">
 		<?php settings_fields( 'rsu_settings_group' ); ?>
@@ -481,6 +508,135 @@ $heading_levels    = array( 'h2' => 'H2', 'h3' => 'H3', 'h4' => 'H4' );
 						name="rsu_settings[seo_h1_format]"
 						class="rsu-input"
 						value="<?php echo esc_attr( $settings['seo_h1_format'] ); ?>" />
+				</div>
+			</div>
+
+		</div>
+
+		<!-- ==================== Cache Card ==================== -->
+		<div class="rsu-card">
+			<div class="rsu-card__header">
+				<div>
+					<h2 class="rsu-card__title">Cache</h2>
+					<p class="rsu-card__desc">Publishing an update changes the post itself, the archive, and the sidebar widget on every page &mdash; none of which a CDN knows about. Purge those surfaces automatically instead of by hand in the Cloudflare dashboard.</p>
+				</div>
+			</div>
+
+			<!-- Auto-purge Toggle -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Purge on Publish</label>
+					<p>Clear caches automatically when an update is published, edited, scheduled-published, unpublished, or deleted &mdash; and when these settings change. Also clears WP Rocket, LiteSpeed, W3 Total Cache, WP Super Cache, Cache Enabler, SG Optimizer, Nginx Helper, Breeze, and WP Engine if any is active.</p>
+				</div>
+				<div class="rsu-field-control">
+					<label class="rsu-toggle">
+						<input type="checkbox"
+							name="rsu_settings[cache_purge_enabled]"
+							value="1"
+							<?php checked( ! empty( $settings['cache_purge_enabled'] ) ); ?> />
+						<span class="rsu-toggle__track"></span>
+					</label>
+				</div>
+			</div>
+
+			<!-- Cloudflare Zone ID -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Cloudflare Zone ID</label>
+					<p>Found on the Overview page of your domain in the Cloudflare dashboard (32 hex characters).</p>
+				</div>
+				<div class="rsu-field-control">
+					<?php if ( $cache_zone_const ) : ?>
+						<p class="description">Defined by <code>RSU_CLOUDFLARE_ZONE_ID</code> in <code>wp-config.php</code>.</p>
+					<?php else : ?>
+						<input type="text"
+							name="rsu_settings[cf_zone_id]"
+							class="rsu-input"
+							autocomplete="off"
+							spellcheck="false"
+							value="<?php echo esc_attr( $settings['cf_zone_id'] ); ?>"
+							style="width: 320px; font-family: 'SF Mono', Monaco, Consolas, monospace;" />
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<!-- Cloudflare API Token -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Cloudflare API Token</label>
+					<p>A token with the <strong>Zone &rarr; Cache Purge</strong> permission for this zone. Create one under My Profile &rarr; API Tokens. Storing it as <code>RSU_CLOUDFLARE_API_TOKEN</code> in <code>wp-config.php</code> keeps it out of the database entirely.</p>
+				</div>
+				<div class="rsu-field-control">
+					<?php if ( $cache_token_const ) : ?>
+						<p class="description">Defined by <code>RSU_CLOUDFLARE_API_TOKEN</code> in <code>wp-config.php</code>.</p>
+					<?php else : ?>
+						<input type="password"
+							name="rsu_settings[cf_api_token]"
+							class="rsu-input"
+							autocomplete="new-password"
+							spellcheck="false"
+							placeholder="<?php echo $cache_has_token ? 'Saved &mdash; leave blank to keep' : 'Paste token'; ?>"
+							value=""
+							style="width: 320px; font-family: 'SF Mono', Monaco, Consolas, monospace;" />
+						<?php if ( $cache_has_token ) : ?>
+							<label style="display:block;margin-top:8px;font-size:13px;">
+								<input type="checkbox" name="rsu_settings[cf_api_token_clear]" value="1" />
+								Remove the saved token
+							</label>
+						<?php endif; ?>
+					<?php endif; ?>
+				</div>
+			</div>
+
+			<!-- Purge Scope -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Purge Scope</label>
+					<p><strong>Everything</strong> empties the whole zone &mdash; the safe default, because the &ldquo;Latest Software Update&rdquo; widget renders in the sidebar of every page. <strong>Specific URLs</strong> purges only the update post, the home page, the archive and its first pages, the post&rsquo;s category archives, and any page embedding <code>[rsu_history]</code>; use it only if the widget is off.</p>
+				</div>
+				<div class="rsu-field-control">
+					<select name="rsu_settings[cf_purge_scope]" class="rsu-input" style="width: 200px;">
+						<option value="everything" <?php selected( 'urls' !== $settings['cf_purge_scope'] ); ?>>Everything</option>
+						<option value="urls" <?php selected( 'urls' === $settings['cf_purge_scope'] ); ?>>Specific URLs</option>
+					</select>
+				</div>
+			</div>
+
+			<!-- Manual Purge + Status -->
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Purge Now</label>
+					<p>
+						<?php if ( empty( $cache_last ) ) : ?>
+							No purge has run yet.
+						<?php else : ?>
+							Last purge:
+							<?php
+							echo esc_html( sprintf(
+								'%s (%s)',
+								wp_date( 'M j, Y g:i a', (int) $cache_last['time'] ),
+								'manual' === $cache_last['context'] ? 'manual' : 'automatic'
+							) );
+							?>
+							&mdash;
+							<?php if ( 'ok' === $cache_last['cloudflare'] ) : ?>
+								<span style="color: var(--rsu-success-text);">Cloudflare purged</span>.
+							<?php elseif ( 'error' === $cache_last['cloudflare'] ) : ?>
+								<span style="color: var(--rsu-error-text);">Cloudflare failed</span>.
+							<?php else : ?>
+								Cloudflare skipped.
+							<?php endif; ?>
+							<?php if ( ! empty( $cache_last['message'] ) ) : ?>
+								<?php echo esc_html( $cache_last['message'] ); ?>
+							<?php endif; ?>
+							<?php if ( ! empty( $cache_last['local'] ) ) : ?>
+								<br />Local caches cleared: <?php echo esc_html( implode( ', ', (array) $cache_last['local'] ) ); ?>.
+							<?php endif; ?>
+						<?php endif; ?>
+					</p>
+				</div>
+				<div class="rsu-field-control">
+					<a href="<?php echo esc_url( $cache_purge_url ); ?>" class="rsu-btn rsu-btn-secondary">Purge Cache Now</a>
 				</div>
 			</div>
 

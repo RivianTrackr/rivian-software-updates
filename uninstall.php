@@ -45,3 +45,11 @@ if ( ! empty( $meta_keys ) ) {
 // Remove plugin options.
 delete_option( 'rsu_settings' );
 delete_option( 'rsu_platforms' );
+delete_option( 'rsu_cache_last_purge' );
+
+// Remove the version-scoped widget HTML transients.
+$wpdb->query(
+	"DELETE FROM {$wpdb->options}
+	 WHERE option_name LIKE '_transient_rsu_latest_update_widget%'
+	    OR option_name LIKE '_transient_timeout_rsu_latest_update_widget%'"
+);

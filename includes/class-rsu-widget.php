@@ -21,6 +21,14 @@ class RSU_Widget extends WP_Widget {
 		return self::CACHE_KEY . '_' . RSU_VERSION;
 	}
 
+	/**
+	 * Delete the cached widget HTML without needing a widget instance, so
+	 * RSU_Cache can flush it as part of a site-wide purge.
+	 */
+	public static function purge_cache() {
+		delete_transient( self::CACHE_KEY . '_' . RSU_VERSION );
+	}
+
 	public function __construct() {
 		parent::__construct(
 			'rsu_latest_update',
@@ -273,7 +281,7 @@ class RSU_Widget extends WP_Widget {
 	 * Delete the cached widget HTML.
 	 */
 	public function flush_cache() {
-		delete_transient( $this->cache_key() );
+		self::purge_cache();
 	}
 
 	/**
