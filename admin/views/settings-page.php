@@ -642,6 +642,31 @@ $cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_c
 
 		</div>
 
+		<!-- ==================== Rivian Account ==================== -->
+		<div class="rsu-card">
+			<div class="rsu-card__header">
+				<h2 class="rsu-card__title">Rivian Account</h2>
+				<p class="rsu-card__desc">Connect your Rivian account under <a href="<?php echo esc_url( admin_url( 'options-general.php?page=rsu-rivian' ) ); ?>">Settings &rsaquo; Rivian Account</a> to watch for new software updates and draft posts automatically.</p>
+			</div>
+
+			<div class="rsu-field-row">
+				<div class="rsu-field-label">
+					<label>Notification email</label>
+					<p>Where to send the alert when a new update is detected. Leave blank to use the site admin address (<code><?php echo esc_html( get_option( 'admin_email' ) ); ?></code>).</p>
+				</div>
+				<div class="rsu-field-control">
+					<input type="email"
+						name="rsu_settings[rivian_notify_email]"
+						class="rsu-input"
+						autocomplete="off"
+						spellcheck="false"
+						placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>"
+						value="<?php echo esc_attr( $settings['rivian_notify_email'] ); ?>"
+						style="width: 320px;" />
+				</div>
+			</div>
+		</div>
+
 		<!-- ==================== Save Bar ==================== -->
 		<div class="rsu-save-bar">
 			<button type="submit" class="rsu-btn rsu-btn-primary">Save Changes</button>

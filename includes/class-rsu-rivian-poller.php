@@ -1,0 +1,440 @@
+<?php
+/**
+ * Watches the connected Rivian account for new OTA release notes.
+ *
+ * Every run asks the API for each mapped vehicle's OTA detail. When a version
+ * appears that we have not recorded, the poller creates (or joins) a draft
+ * update post, stores the release-notes URL on it for the browser-side PDF
+ * importer to pick up, and emails the site admin.
+ *
+ * Rivian returns a link to the notes document rather than the notes text, so
+ * nothing is parsed here — the draft carries the URL and the editor screen
+ * turns it into sections using the same pdf.js pipeline as a manual import.
+ *
+ * @package Rivian_Software_Updates
+ */
+
+defined( 'ABSPATH' ) || exit;
+
+class RSU_Rivian_Poller {
+
+	/** Cron hook name. */
+	const CRON_HOOK = 'rsu_rivian_poll';
+
+	/** Custom cron interval slug. */
+	const SCHEDULE = 'rsu_five_minutes';
+
+	/** Option mapping Rivian vehicle id => plugin vehicle slug. */
+	const MAP_KEY = 'rsu_rivian_vehicle_map';
+
+	/** Option holding per-vehicle last-seen versions and the last run report. */
+	const STATE_KEY = 'rsu_rivian_state';
+
+	/** Post meta prefix holding a pending release-notes URL, per vehicle slug. */
+	const NOTES_META_PREFIX = '_rsu_notes_url_';
+
+	public function __construct() {
+		add_filter( 'cron_schedules', array( $this, 'register_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected -- documented five-minute poll.
+		add_action( self::CRON_HOOK, array( __CLASS__, 'run' ) );
+
+		// Admin-only: the session option is deliberately not autoloaded, so
+		// checking it on every front-end request would cost a query per page.
+		// Once scheduled the event lives in the cron option and fires on its
+		// own; an admin visit is enough to establish or retire it.
+		add_action( 'admin_init', array( __CLASS__, 'ensure_scheduled' ) );
+	}
+
+	/**
+	 * Add the five-minute interval used by the poll event.
+	 *
+	 * @param array $schedules Existing schedules.
+	 * @return array
+	 */
+	public function register_schedule( $schedules ) {
+		$schedules[ self::SCHEDULE ] = array(
+			'interval' => 5 * MINUTE_IN_SECONDS,
+			'display'  => __( 'Every 5 minutes (Rivian OTA poll)', 'rivian-software-updates' ),
+		);
+
+		return $schedules;
+	}
+
+	/**
+	 * Schedule the poll event when connected; clear it when not.
+	 *
+	 * @return void
+	 */
+	public static function ensure_scheduled() {
+		$scheduled = wp_next_scheduled( self::CRON_HOOK );
+
+		if ( RSU_Rivian_API::is_connected() ) {
+			if ( ! $scheduled ) {
+				wp_schedule_event( time() + MINUTE_IN_SECONDS, self::SCHEDULE, self::CRON_HOOK );
+			}
+		} elseif ( $scheduled ) {
+			wp_unschedule_event( $scheduled, self::CRON_HOOK );
+		}
+	}
+
+	/**
+	 * Remove the scheduled event (deactivation / disconnect).
+	 *
+	 * @return void
+	 */
+	public static function unschedule() {
+		$timestamp = wp_next_scheduled( self::CRON_HOOK );
+
+		if ( $timestamp ) {
+			wp_unschedule_event( $timestamp, self::CRON_HOOK );
+		}
+	}
+
+	// ─────────────────────────── Vehicle mapping ───────────────────────────
+
+	/**
+	 * Get the Rivian vehicle id => plugin slug map.
+	 *
+	 * @return array
+	 */
+	public static function get_map() {
+		$map = get_option( self::MAP_KEY, array() );
+
+		return is_array( $map ) ? $map : array();
+	}
+
+	/**
+	 * Save the vehicle map, keeping only known plugin slugs.
+	 *
+	 * @param array $map Raw map.
+	 * @return array The saved map.
+	 */
+	public static function save_map( $map ) {
+		$valid = array_keys( RSU_Platforms::get_all() );
+		$clean = array();
+
+		foreach ( (array) $map as $vehicle_id => $slug ) {
+			$vehicle_id = sanitize_text_field( $vehicle_id );
+			$slug       = sanitize_key( $slug );
+
+			if ( '' !== $vehicle_id && in_array( $slug, $valid, true ) ) {
+				$clean[ $vehicle_id ] = $slug;
+			}
+		}
+
+		update_option( self::MAP_KEY, $clean, false );
+
+		return $clean;
+	}
+
+	// ────────────────────────────── State ──────────────────────────────
+
+	/**
+	 * Read the poll state (last-seen versions, last run report).
+	 *
+	 * @return array
+	 */
+	public static function get_state() {
+		$state = get_option( self::STATE_KEY, array() );
+
+		return is_array( $state ) ? $state : array();
+	}
+
+	/**
+	 * Merge values into the poll state.
+	 *
+	 * @param array $data Keys to write.
+	 * @return void
+	 */
+	private static function update_state( array $data ) {
+		update_option( self::STATE_KEY, array_merge( self::get_state(), $data ), false );
+	}
+
+	// ─────────────────────────────── Poll ───────────────────────────────
+
+	/**
+	 * Poll every mapped vehicle and act on anything new.
+	 *
+	 * @return array Report: array{ checked, detections, errors }.
+	 */
+	public static function run() {
+		$map = self::get_map();
+
+		$report = array(
+			'ran_at'     => time(),
+			'checked'    => 0,
+			'detections' => array(),
+			'errors'     => array(),
+		);
+
+		if ( empty( $map ) || ! RSU_Rivian_API::is_connected() ) {
+			$report['errors'][] = __( 'Not connected, or no vehicles mapped.', 'rivian-software-updates' );
+			self::update_state( array( 'last_run' => $report ) );
+
+			return $report;
+		}
+
+		$state = self::get_state();
+		$seen  = isset( $state['seen'] ) && is_array( $state['seen'] ) ? $state['seen'] : array();
+
+		foreach ( $map as $vehicle_id => $slug ) {
+			$details = RSU_Rivian_API::get_ota_update_details( $vehicle_id );
+
+			if ( is_wp_error( $details ) ) {
+				$report['errors'][] = sprintf(
+					/* translators: 1: vehicle slug, 2: error message. */
+					__( '%1$s: %2$s', 'rivian-software-updates' ),
+					$slug,
+					$details->get_error_message()
+				);
+				continue;
+			}
+
+			++$report['checked'];
+
+			// A version can surface as "available", or — if the car installed it
+			// between polls — jump straight to "current". Treat either as news.
+			$candidates = array();
+			foreach ( array( 'available', 'current' ) as $which ) {
+				if ( ! empty( $details[ $which ]['version'] ) ) {
+					$candidates[ $details[ $which ]['version'] ] = $details[ $which ];
+				}
+			}
+
+			$known = isset( $seen[ $vehicle_id ] ) && is_array( $seen[ $vehicle_id ] ) ? $seen[ $vehicle_id ] : array();
+
+			foreach ( $candidates as $version => $detail ) {
+				if ( in_array( $version, $known, true ) ) {
+					continue;
+				}
+
+				$known[] = $version;
+
+				$result = self::handle_new_version( $slug, $detail );
+
+				if ( is_wp_error( $result ) ) {
+					$report['errors'][] = $result->get_error_message();
+					continue;
+				}
+
+				$report['detections'][] = $result;
+			}
+
+			// Keep the tail only — enough to avoid re-detecting a rollback.
+			$seen[ $vehicle_id ] = array_slice( $known, -10 );
+		}
+
+		self::update_state(
+			array(
+				'seen'     => $seen,
+				'last_run' => $report,
+			)
+		);
+
+		return $report;
+	}
+
+	/**
+	 * Create or join the draft for a newly seen version, then notify.
+	 *
+	 * @param string $slug   Plugin vehicle slug.
+	 * @param array  $detail array{ url, version, locale }.
+	 * @return array|WP_Error Detection record.
+	 */
+	private static function handle_new_version( $slug, $detail ) {
+		$version = $detail['version'];
+		$post_id = self::find_update_post( $version );
+		$created = false;
+
+		if ( ! $post_id ) {
+			$post_id = wp_insert_post(
+				array(
+					'post_title'   => $version,
+					'post_status'  => 'draft',
+					'post_type'    => 'post',
+					'post_content' => '',
+				),
+				true
+			);
+
+			if ( is_wp_error( $post_id ) ) {
+				return $post_id;
+			}
+
+			$created = true;
+
+			update_post_meta( $post_id, '_rsu_is_update', '1' );
+			update_post_meta( $post_id, '_rsu_date_noticed', current_time( 'Y-m-d' ) );
+		}
+
+		// Add this vehicle to the post without disturbing vehicles already on it.
+		$vehicles = get_post_meta( $post_id, '_rsu_vehicles', true );
+		$vehicles = is_array( $vehicles ) ? $vehicles : array();
+
+		if ( ! in_array( $slug, $vehicles, true ) ) {
+			$vehicles[] = $slug;
+			update_post_meta( $post_id, '_rsu_vehicles', array_values( $vehicles ) );
+		}
+
+		// Park the notes URL for the editor-side importer.
+		if ( ! empty( $detail['url'] ) ) {
+			update_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, esc_url_raw( $detail['url'] ) );
+		}
+
+		$record = array(
+			'slug'    => $slug,
+			'version' => $version,
+			'url'     => isset( $detail['url'] ) ? $detail['url'] : '',
+			'post_id' => (int) $post_id,
+			'created' => $created,
+			'at'      => time(),
+		);
+
+		self::notify( $record );
+
+		/**
+		 * Fires when the poller records a newly available OTA version.
+		 *
+		 * @param array $record Detection record.
+		 */
+		do_action( 'rsu_rivian_update_detected', $record );
+
+		return $record;
+	}
+
+	/**
+	 * Find an existing update post for a version string.
+	 *
+	 * Titles are normally the bare version ("2026.24"), but some posts carry
+	 * the descriptive "Rivian Software Update 2026.24" heading, so both forms
+	 * are compared after stripping the prefix.
+	 *
+	 * @param string $version Version string.
+	 * @return int Post ID, or 0.
+	 */
+	private static function find_update_post( $version ) {
+		$posts = get_posts(
+			array(
+				'post_type'        => 'post',
+				'post_status'      => array( 'draft', 'pending', 'future', 'publish', 'private' ),
+				'numberposts'      => 50,
+				'orderby'          => 'date',
+				'order'            => 'DESC',
+				'suppress_filters' => false,
+				'meta_query'       => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- bounded, runs on cron only.
+					array(
+						'key'     => '_rsu_is_update',
+						'compare' => 'EXISTS',
+					),
+				),
+			)
+		);
+
+		$target = self::normalize_version( $version );
+
+		foreach ( $posts as $post ) {
+			if ( self::normalize_version( $post->post_title ) === $target ) {
+				return (int) $post->ID;
+			}
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Reduce a title to a comparable bare version string.
+	 *
+	 * @param string $title Post title or version.
+	 * @return string
+	 */
+	private static function normalize_version( $title ) {
+		$title = preg_replace( '/^\s*Rivian\s+Software\s+Update\s*/i', '', (string) $title );
+
+		return strtolower( trim( $title ) );
+	}
+
+	// ────────────────────────────── Notify ──────────────────────────────
+
+	/**
+	 * Email the admin about a detection.
+	 *
+	 * @param array $record Detection record.
+	 * @return void
+	 */
+	private static function notify( $record ) {
+		$to = RSU_Settings::get( 'rivian_notify_email', '' );
+
+		if ( ! $to || ! is_email( $to ) ) {
+			$to = get_option( 'admin_email' );
+		}
+
+		if ( ! $to ) {
+			return;
+		}
+
+		$vehicles = RSU_Platforms::get_all();
+		$label    = isset( $vehicles[ $record['slug'] ]['label'] )
+			? $vehicles[ $record['slug'] ]['label']
+			: strtoupper( $record['slug'] );
+
+		$edit_link = get_edit_post_link( $record['post_id'], 'raw' );
+
+		$subject = sprintf(
+			/* translators: 1: vehicle label, 2: version string. */
+			__( '[%1$s] Rivian software update %2$s is available', 'rivian-software-updates' ),
+			$label,
+			$record['version']
+		);
+
+		$lines = array(
+			sprintf(
+				/* translators: 1: vehicle label, 2: version string. */
+				__( 'A new Rivian software update was detected for %1$s: version %2$s.', 'rivian-software-updates' ),
+				$label,
+				$record['version']
+			),
+			'',
+			$record['created']
+				? __( 'A draft post has been created for it.', 'rivian-software-updates' )
+				: __( 'This vehicle was added to the existing draft for that version.', 'rivian-software-updates' ),
+		);
+
+		if ( $edit_link ) {
+			$lines[] = '';
+			$lines[] = __( 'Edit the draft:', 'rivian-software-updates' );
+			$lines[] = $edit_link;
+			$lines[] = '';
+			$lines[] = __( 'Opening the draft pulls in the official release notes automatically — review the sections, then publish.', 'rivian-software-updates' );
+		}
+
+		if ( ! empty( $record['url'] ) ) {
+			$lines[] = '';
+			$lines[] = __( 'Official release notes document:', 'rivian-software-updates' );
+			$lines[] = $record['url'];
+		} else {
+			$lines[] = '';
+			$lines[] = __( 'Rivian did not return a release-notes document for this version, so the draft is empty.', 'rivian-software-updates' );
+		}
+
+		wp_mail( $to, $subject, implode( "\n", $lines ) );
+	}
+
+	/**
+	 * Pending release-notes URLs on a post, keyed by vehicle slug.
+	 *
+	 * @param int $post_id Post ID.
+	 * @return array
+	 */
+	public static function get_pending_notes( $post_id ) {
+		$pending = array();
+
+		foreach ( array_keys( RSU_Platforms::get_all() ) as $slug ) {
+			$url = get_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, true );
+
+			if ( $url && RSU_Rivian_API::is_allowed_notes_url( $url ) ) {
+				$pending[ $slug ] = $url;
+			}
+		}
+
+		return $pending;
+	}
+}

@@ -2,6 +2,22 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.27.0] - 2026-08-27
+
+### Added
+- **Rivian account connection.** A new Settings → Rivian Account screen signs in to the Rivian mobile-app GraphQL gateway (`rivian.com/api/gql/gateway/graphql`) with your account email and password, including the one-time verification code when MFA is enabled. The password is used for that single request and never stored — only the returned access, refresh, and user-session tokens are kept, AES-256-CBC encrypted with the site's `AUTH_KEY` in a non-autoloaded option. Expired sessions refresh themselves; if the refresh is rejected the screen says to reconnect.
+- **Automatic OTA polling with drafted posts.** `RSU_Rivian_Poller` runs every five minutes on wp-cron, asking `getOTAUpdateDetails` for each mapped vehicle. When a version appears that has not been recorded, it creates a draft post titled with the version, flags it as an update, stamps the noticed date, and adds the vehicle. Versions can surface as `availableOTAUpdateDetails` or — when the car installed between polls — jump straight to `currentOTAUpdateDetails`; both are treated as news. R1 and R2 landing on the same version join one draft rather than creating two, matched on the normalized title so `2026.24` and `Rivian Software Update 2026.24` are recognized as the same release.
+- **Vehicle mapping.** The settings screen lists the vehicles on the account (name, model year, last six of the VIN) and maps each to the vehicle tab its notes should land under. Unmapped vehicles are ignored. A "Check now" button runs the poll on demand and reports what it found.
+- **Email alerts on detection.** Each new version emails the site admin (or a custom address set in RSU Settings → Rivian Account) with the vehicle, version, a link to the official notes document, and a direct edit link to the draft.
+- **Release notes fill themselves in.** Rivian's API returns a link to the release-notes document rather than the notes text, so the poller records the URL on the draft and the editor finishes the job: opening the draft fetches the document through a server-side proxy — the browser cannot request it cross-origin — and runs it through the same pdf.js extraction the manual PDF import uses, dropping the parsed sections into the matching vehicle tab. A banner reports progress and falls back to the existing Import button if parsing fails. Existing notes are never overwritten, and the queued URL is cleared once the post is saved.
+
+### Security
+- Release-notes URLs arrive from an external API and are later fetched server-side, so they are constrained to HTTPS on Rivian-controlled domains before ever being followed; the proxy will only fetch a URL this plugin itself recorded for that post and vehicle, and requires `edit_post` on it.
+
+### Notes
+- This uses Rivian's private, undocumented mobile-app API. It is unsupported and can change without notice — responses are treated as untrusted shape and failures surface on the settings screen rather than failing silently.
+- wp-cron only fires on site traffic, so on a quiet site detection can lag. For prompt polling, disable it and drive it from the server instead: set `define( 'DISABLE_WP_CRON', true );` in `wp-config.php` and add `*/5 * * * * curl -s https://your-site/wp-cron.php?doing_wp_cron > /dev/null` to the crontab.
+
 ## [2.26.0] - 2026-08-18
 
 ### Added

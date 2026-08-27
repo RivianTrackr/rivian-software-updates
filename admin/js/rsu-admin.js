@@ -1427,6 +1427,158 @@ var RSUSectionBuilder = (function () {
 		}
 	});
 
+	// ── Auto-import release notes queued by the Rivian poller ──
+	// The poller records a release-notes document URL on the draft but cannot
+	// parse it (pdf.js is browser-only), so the editor finishes the job: fetch
+	// the document through the server-side proxy, run the same extraction the
+	// manual PDF import uses, and drop the sections into the vehicle's builder.
+
+	function rivianPost(action, fields) {
+		var cfg = window.RSU_ADMIN || {};
+		var body = new FormData();
+		body.append('action', 'rsu_rivian_' + action);
+		body.append('nonce', cfg.nonce || '');
+		Object.keys(fields || {}).forEach(function (key) { body.append(key, fields[key]); });
+
+		return fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
+			.then(function (res) { return res.json(); })
+			.then(function (json) {
+				if (!json || !json.success) {
+					throw new Error((json && json.data && json.data.message) || 'Request failed.');
+				}
+				return json.data || {};
+			});
+	}
+
+	function base64ToBytes(b64) {
+		var binary = window.atob(b64);
+		var bytes = new Uint8Array(binary.length);
+		for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+		return bytes;
+	}
+
+	function autoImportBanner() {
+		var host = qs('.rsu-admin-wrap');
+		if (!host) return null;
+
+		var existing = qs('.rsu-auto-import', host);
+		if (existing) return existing;
+
+		var el = document.createElement('div');
+		el.className = 'rsu-auto-import';
+		el.innerHTML =
+			'<span class="rsu-auto-import__spinner" aria-hidden="true"></span>' +
+			'<span class="rsu-auto-import__text"></span>' +
+			'<button type="button" class="rsu-auto-import__dismiss">Dismiss</button>';
+		host.insertBefore(el, host.firstChild);
+		return el;
+	}
+
+	function setBannerState(banner, text, state) {
+		if (!banner) return;
+		qs('.rsu-auto-import__text', banner).textContent = text;
+		banner.className = 'rsu-auto-import' + (state ? ' rsu-auto-import--' + state : '');
+	}
+
+	// Import one vehicle's queued document. Resolves to the number of sections
+	// added (0 when skipped), rejects with a message the banner can show.
+	function importPendingFor(slug, banner) {
+		var cfg = window.RSU_ADMIN || {};
+		var builder = qs('.rsu-section-builder[data-vehicle="' + slug + '"]');
+
+		if (!builder) return Promise.resolve(0);
+
+		getBuilder(builder);
+		readFromDOM(builder);
+
+		// Never overwrite notes that already exist — a half-edited draft wins.
+		if (builder._sections && builder._sections.length) return Promise.resolve(0);
+
+		setBannerState(banner, 'Fetching the official ' + slug.toUpperCase() + ' release notes…', 'busy');
+
+		return Promise.all([
+			loadPdfImporter(),
+			rivianPost('fetch_notes', { post_id: cfg.postId, vehicle: slug })
+		])
+			.then(function (loaded) {
+				return loaded[0].extractText(base64ToBytes(loaded[1].data), {
+					workerSrc: cfg.pdfWorkerUrl || ''
+				});
+			})
+			.then(function (text) {
+				if (!text || !text.trim()) throw new Error('The release-notes document had no readable text.');
+
+				var parsed = parseTextToSections(text);
+				if (!parsed.length) throw new Error('No sections could be detected in the release notes.');
+
+				pushUndo(builder);
+				builder._sections = builder._sections.concat(parsed);
+				renderSections(builder);
+				_dirty = true;
+
+				return parsed.length;
+			});
+	}
+
+	var _autoImportRan = false;
+
+	function autoImportPendingNotes() {
+		if (_autoImportRan) return;
+		_autoImportRan = true;
+
+		var cfg = window.RSU_ADMIN || {};
+		var pending = cfg.pendingNotes || {};
+		var slugs = Object.keys(pending);
+
+		if (!slugs.length || !cfg.postId || !cfg.ajaxUrl) return;
+
+		var banner = autoImportBanner();
+		if (!banner) return;
+
+		qs('.rsu-auto-import__dismiss', banner).addEventListener('click', function () {
+			slugs.forEach(function (slug) {
+				rivianPost('clear_notes', { post_id: cfg.postId, vehicle: slug })['catch'](function () {});
+			});
+			banner.remove();
+		});
+
+		var imported = 0;
+		var failures = [];
+
+		// Sequential: pdf.js parsing is heavy, and two at once stalls the editor.
+		slugs.reduce(function (chain, slug) {
+			return chain.then(function () {
+				return importPendingFor(slug, banner).then(
+					function (count) { imported += count; },
+					function (err) { failures.push(slug.toUpperCase() + ': ' + err.message); }
+				);
+			});
+		}, Promise.resolve()).then(function () {
+			if (failures.length) {
+				setBannerState(
+					banner,
+					'Could not import automatically — ' + failures.join(' / ') +
+						' You can still use Import to paste or upload the notes.',
+					'error'
+				);
+				return;
+			}
+
+			if (!imported) {
+				setBannerState(banner, 'Release notes were already filled in for this update.', 'done');
+				return;
+			}
+
+			setBannerState(
+				banner,
+				'Imported ' + imported + ' section' + (imported > 1 ? 's' : '') +
+					' from Rivian’s release notes. Review them, then save.',
+				'done'
+			);
+			showToast('Release notes imported from Rivian');
+		});
+	}
+
 	// Run init immediately, plus retry for Block Editor.
 	init();
 	if (document.readyState === 'loading') {
@@ -1439,6 +1591,8 @@ var RSUSectionBuilder = (function () {
 		var uninitialized = builders.filter(function (b) { return !b._initialized; });
 		if (uninitialized.length) init();
 		if (retryCount >= 10 || !uninitialized.length) clearInterval(retryTimer);
+		// Only once every builder is live, so sections land in the right tab.
+		if (builders.length && !uninitialized.length) autoImportPendingNotes();
 	}, 500);
 
 	return {

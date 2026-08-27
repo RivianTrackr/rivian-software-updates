@@ -41,6 +41,18 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-editor-panel { padding: 20px; background: var(--rsu-white); }
 .rsu-editor-panel--hidden { position: absolute; left: -9999px; visibility: hidden; }
 
+/* Auto-import banner — shown while the editor pulls release notes queued by the Rivian poller. */
+.rsu-auto-import { display: flex; align-items: center; gap: 10px; margin: 12px 20px 0; padding: 12px 16px; border-radius: 10px; background: var(--rsu-bg-info); color: #1e40af; font-size: 13px; font-weight: 500; line-height: 1.5; }
+.rsu-auto-import--done { background: #d1f4e0; color: #0a5e2a; }
+.rsu-auto-import--error { background: var(--rsu-error-light); color: #c41e3a; }
+.rsu-auto-import__text { flex: 1; }
+.rsu-auto-import__spinner { flex: none; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: 0.7; animation: rsu-auto-import-spin 0.8s linear infinite; }
+.rsu-auto-import--done .rsu-auto-import__spinner, .rsu-auto-import--error .rsu-auto-import__spinner { display: none; }
+.rsu-auto-import__dismiss { flex: none; border: none; background: transparent; color: inherit; font-size: 12px; font-weight: 600; cursor: pointer; opacity: 0.75; padding: 4px 6px; border-radius: 6px; }
+.rsu-auto-import__dismiss:hover { opacity: 1; background: rgba(0, 0, 0, 0.06); }
+@keyframes rsu-auto-import-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .rsu-auto-import__spinner { animation: none; } }
+
 .rsu-editor-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 12px; }
 .rsu-copy-from { font-size: 13px; font-weight: 500; color: var(--rsu-text-muted); display: inline-flex; align-items: center; gap: 8px; }
 .rsu-copy-from-select { font-size: 13px; padding: 6px 28px 6px 10px; border-radius: 8px; border: 1px solid var(--rsu-border); background: var(--rsu-white); color: var(--rsu-text); appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2386868b' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s; }
