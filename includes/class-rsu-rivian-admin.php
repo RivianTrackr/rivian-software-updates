@@ -27,6 +27,7 @@ class RSU_Rivian_Admin {
 
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
+		add_action( 'admin_post_rsu_rivian_notes_pdf', array( $this, 'serve_notes_download' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 
 		$ajax = array(
@@ -37,6 +38,7 @@ class RSU_Rivian_Admin {
 			'poll_now'    => 'ajax_poll_now',
 			'fetch_notes' => 'ajax_fetch_notes',
 			'clear_notes' => 'ajax_clear_notes',
+			'clear_revised' => 'ajax_clear_revised',
 		);
 
 		foreach ( $ajax as $action => $method ) {
@@ -49,6 +51,41 @@ class RSU_Rivian_Admin {
 	 *
 	 * @return void
 	 */
+	/**
+	 * Serve one archived release-notes PDF to an editor.
+	 *
+	 * The cache directory is not web-readable, so history downloads are streamed
+	 * through here behind the same capability check as editing the post.
+	 *
+	 * @return void
+	 */
+	public function serve_notes_download() {
+		$post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0;
+		$slug    = isset( $_GET['vehicle'] ) ? sanitize_key( wp_unslash( $_GET['vehicle'] ) ) : '';
+		$index   = isset( $_GET['revision'] ) ? absint( $_GET['revision'] ) : 0;
+
+		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_die( esc_html__( 'You are not allowed to view this document.', 'rivian-software-updates' ), '', array( 'response' => 403 ) );
+		}
+
+		check_admin_referer( 'rsu_rivian_download_' . $post_id . '_' . $slug . '_' . $index );
+
+		$path = RSU_Rivian_Poller::revision_path( $post_id, $slug, $index );
+
+		if ( ! $path ) {
+			wp_die( esc_html__( 'That release-notes document is no longer stored.', 'rivian-software-updates' ), '', array( 'response' => 404 ) );
+		}
+
+		nocache_headers();
+		header( 'Content-Type: application/pdf' );
+		header( 'Content-Length: ' . filesize( $path ) );
+		header( 'Content-Disposition: inline; filename="' . sprintf( '%s-%s-r%d.pdf', get_post_field( 'post_title', $post_id ), $slug, $index ) . '"' );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile -- streaming our own cached file.
+		readfile( $path );
+		exit;
+	}
+
 	public function add_menu_page() {
 		add_options_page(
 			__( 'Rivian Account', 'rivian-software-updates' ),
@@ -707,7 +744,30 @@ class RSU_Rivian_Admin {
 			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this post.', 'rivian-software-updates' ) ), 403 );
 		}
 
-		RSU_Rivian_Poller::forget_notes( $post_id, $slug );
+		// Keep the archived PDFs — dismissing only stops the import prompt.
+		RSU_Rivian_Poller::forget_notes( $post_id, $slug, true );
+
+		wp_send_json_success();
+	}
+
+	/**
+	 * Dismiss the "notes were revised" prompt without touching the history.
+	 *
+	 * @return void
+	 */
+	public function ajax_clear_revised() {
+		if ( ! check_ajax_referer( self::NONCE, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session expired. Reload the page.', 'rivian-software-updates' ) ), 403 );
+		}
+
+		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$slug    = isset( $_POST['vehicle'] ) ? sanitize_key( wp_unslash( $_POST['vehicle'] ) ) : '';
+
+		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this post.', 'rivian-software-updates' ) ), 403 );
+		}
+
+		RSU_Rivian_Poller::clear_revised_flag( $post_id, $slug );
 
 		wp_send_json_success();
 	}

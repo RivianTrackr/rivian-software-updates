@@ -31,7 +31,9 @@ $dynamic = $wpdb->get_col(
 	 WHERE meta_key LIKE '_rsu_content_%'
 	    OR meta_key LIKE '_rsu_sections_%'
 	    OR meta_key LIKE '_rsu_notes_url_%'
-	    OR meta_key LIKE '_rsu_notes_file_%'"
+	    OR meta_key LIKE '_rsu_notes_file_%'
+	    OR meta_key LIKE '_rsu_notes_revisions_%'
+	    OR meta_key LIKE '_rsu_notes_revised_%'"
 );
 
 $meta_keys = array_merge( $static_keys, $dynamic );
@@ -59,9 +61,12 @@ $uploads = wp_upload_dir();
 if ( empty( $uploads['error'] ) ) {
 	$notes_dir = trailingslashit( $uploads['basedir'] ) . 'rsu-release-notes';
 	if ( is_dir( $notes_dir ) ) {
-		foreach ( (array) glob( $notes_dir . '/*.pdf' ) as $pdf ) {
-			wp_delete_file( $pdf );
+		foreach ( (array) glob( $notes_dir . '/*' ) as $file ) {
+			if ( is_file( $file ) ) {
+				wp_delete_file( $file );
+			}
 		}
+		wp_delete_file( $notes_dir . '/.htaccess' );
 		@rmdir( $notes_dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- best effort; a non-empty dir is left alone.
 	}
 }

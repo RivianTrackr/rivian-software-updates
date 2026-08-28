@@ -2,6 +2,21 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.29.0] - 2026-08-28
+
+### Added
+- **Release notes are now watched for revisions, not captured once.** Rivian can reissue the Update Details document for a version it has already shipped — beta builds especially, where the PDF is stamped `THIS IS DRAFT CONTENT` and gets revised before the wide release. The poller keeps checking a tracked version's document hourly for 30 days and compares a SHA-256 of the bytes; a changed document is stored as a new revision and emailed as "release notes have been revised", so the post can be brought up to date. Identical bytes cost one download and nothing else.
+- **Every distinct PDF is kept.** Each revision is archived rather than overwritten, and the post editor's Update Details box lists them newest first with the capture time, a `DRAFT` badge where Rivian marked the document as draft content, and a link to open each one. Saving a post, dismissing an import prompt, or deselecting a vehicle all keep the archive — only uninstalling removes it.
+- **Draft-content detection.** Documents carrying Rivian's `THIS IS DRAFT CONTENT` marker are flagged on the revision, called out in the notification email, and surfaced in the editor banner, so it is clear when notes are provisional. The marker is found in raw PDF text and inside deflate-compressed content streams.
+- **Revised notes are offered, never applied.** When a post already has notes written and Rivian reissues the document, the editor shows a banner instead of importing: "Load revised notes" opens the normal import dialog pre-filled with the new text and its preview, so the revision can be compared against what is already written. Fresh notes on an empty draft still import automatically.
+
+### Changed
+- The poller's `awaiting` and `notes_done` state collapsed into a single `tracked` map holding the post, the content hash, and the last check time per version — one structure that covers first capture, late-arriving notes, and revisions.
+- Detection emails distinguish three events: a new version, notes arriving for a version already drafted, and notes being revised.
+
+### Security
+- The release-notes cache directory is no longer meant to be web-readable: it gets an Apache deny rule and an index guard, archived filenames carry a random suffix (nginx ignores `.htaccess`), and history downloads are streamed through an authenticated `admin-post.php` endpoint behind an `edit_post` check and a per-file nonce. Pre-release documents should not sit at a guessable public URL.
+
 ## [2.28.1] - 2026-08-28
 
 ### Fixed
