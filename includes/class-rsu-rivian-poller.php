@@ -48,6 +48,45 @@ class RSU_Rivian_Poller {
 	/** Upper bound on a cached release-notes document (bytes). */
 	const MAX_NOTES_BYTES = 20971520; // 20 MB.
 
+	/**
+	 * Build a notes meta key for a vehicle, optionally scoped to a generation.
+	 *
+	 * The same software version ships a separate document per hardware platform
+	 * and body style, so notes are tracked per generation rather than per
+	 * vehicle. An empty generation yields the original unscoped key, which keeps
+	 * documents captured before generation resolution readable.
+	 *
+	 * @param string $prefix     One of the NOTES_* prefixes.
+	 * @param string $slug       Vehicle slug.
+	 * @param string $generation Generation slug, or '' for unscoped.
+	 * @return string
+	 */
+	public static function notes_meta_key( $slug, $generation = '' ) {
+		return self::notes_key( self::NOTES_META_PREFIX, $slug, $generation );
+	}
+
+	/**
+	 * Build a notes meta key for a vehicle, optionally scoped to a generation.
+	 *
+	 * @param string $prefix     One of the NOTES_* prefixes.
+	 * @param string $slug       Vehicle slug.
+	 * @param string $generation Generation slug, or '' for unscoped.
+	 * @return string
+	 */
+	private static function notes_key( $prefix, $slug, $generation = '' ) {
+		return $prefix . $slug . ( $generation ? '__' . $generation : '' );
+	}
+
+	/**
+	 * Every generation a vehicle's notes might be filed under, '' included.
+	 *
+	 * @param string $slug Vehicle slug.
+	 * @return array
+	 */
+	private static function notes_scopes( $slug ) {
+		return array_merge( array( '' ), array_keys( RSU_Platforms::get_generations( $slug ) ) );
+	}
+
 	/** How often to re-download a tracked document looking for a revision. */
 	const REVISION_INTERVAL = HOUR_IN_SECONDS;
 
@@ -407,8 +446,19 @@ class RSU_Rivian_Poller {
 		}
 
 		// Record the link even if the download fails, so the email can carry it.
+		// Filed under the generation the path names, matching where a successful
+		// capture would put it.
 		if ( ! empty( $detail['url'] ) ) {
-			update_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, esc_url_raw( $detail['url'] ) );
+			$parsed     = RSU_Rivian_API::parse_notes_url( $detail['url'] );
+			$generation = is_wp_error( $parsed )
+				? ''
+				: RSU_Platforms::resolve_generation( $slug, $parsed['platform'], $parsed['model'] );
+
+			update_post_meta(
+				$post_id,
+				self::notes_key( self::NOTES_META_PREFIX, $slug, $generation ),
+				esc_url_raw( $detail['url'] )
+			);
 		}
 
 		return array(
@@ -541,12 +591,23 @@ class RSU_Rivian_Poller {
 			return $dir;
 		}
 
-		$revisions = self::get_revisions( $post_id, $slug );
+		$parsed     = RSU_Rivian_API::parse_notes_url( $url );
+		$platform   = is_wp_error( $parsed ) ? '' : $parsed['platform'];
+		$model      = is_wp_error( $parsed ) ? '' : $parsed['model'];
+		$generation = is_wp_error( $parsed ) ? '' : RSU_Platforms::resolve_generation( $slug, $platform, $model );
+
+		$revisions = self::get_revisions( $post_id, $slug, $generation );
 		$index     = count( $revisions ) + 1;
 
 		// The random suffix keeps the file from being guessable if the uploads
 		// directory is served directly despite the deny rules written below.
-		$filename = sprintf( '%d-%s-r%d-%s.pdf', (int) $post_id, sanitize_key( $slug ), $index, wp_generate_password( 12, false, false ) );
+		$filename = sprintf(
+			'%d-%s-r%d-%s.pdf',
+			(int) $post_id,
+			sanitize_key( $slug . ( $generation ? '-' . $generation : '' ) ),
+			$index,
+			wp_generate_password( 12, false, false )
+		);
 
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- binary write to our own upload subdirectory.
 		if ( false === file_put_contents( trailingslashit( $dir ) . $filename, $body ) ) {
@@ -557,27 +618,111 @@ class RSU_Rivian_Poller {
 		}
 
 		$revision = array(
-			'file'  => $filename,
-			'hash'  => $hash,
-			'at'    => time(),
-			'size'  => strlen( $body ),
-			'draft' => self::looks_like_draft_content( $body ),
-			'index' => $index,
+			'file'       => $filename,
+			'hash'       => $hash,
+			'at'         => time(),
+			'size'       => strlen( $body ),
+			'draft'      => self::looks_like_draft_content( $body ),
+			'index'      => $index,
+			'platform'   => $platform,
+			'model'      => $model,
+			'generation' => $generation,
 		);
 
 		$revisions[] = $revision;
 
-		update_post_meta( $post_id, self::NOTES_REVISIONS_PREFIX . $slug, wp_json_encode( $revisions ) );
-		update_post_meta( $post_id, self::NOTES_FILE_PREFIX . $slug, $filename );
-		update_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, esc_url_raw( $url ) );
+		update_post_meta( $post_id, self::notes_key( self::NOTES_REVISIONS_PREFIX, $slug, $generation ), wp_json_encode( $revisions ) );
+		update_post_meta( $post_id, self::notes_key( self::NOTES_FILE_PREFIX, $slug, $generation ), $filename );
+		update_post_meta( $post_id, self::notes_key( self::NOTES_META_PREFIX, $slug, $generation ), esc_url_raw( $url ) );
 
 		// Only a change to notes we had already captured needs the editor's
 		// attention — the first capture is just the notes arriving.
 		if ( $index > 1 ) {
-			update_post_meta( $post_id, self::NOTES_REVISED_PREFIX . $slug, time() );
+			update_post_meta( $post_id, self::notes_key( self::NOTES_REVISED_PREFIX, $slug, $generation ), time() );
 		}
 
 		return $revision;
+	}
+
+	/**
+	 * Ingest a release-notes document from a link supplied by hand.
+	 *
+	 * Rivian only hands out signed links for vehicles on the connected account,
+	 * so notes for a generation or body style nobody here owns can only arrive
+	 * this way. The document is filed exactly like a polled one — same
+	 * validation, same archive, same revision history.
+	 *
+	 * @param int    $post_id  Post to attach the notes to.
+	 * @param string $url      Signed document URL.
+	 * @param string $override Vehicle slug to force when the path is unclaimed.
+	 * @return array|WP_Error array{ vehicle, generation, version, revision, label }.
+	 */
+	public static function ingest_url( $post_id, $url, $override = '' ) {
+		if ( ! RSU_Rivian_API::is_allowed_notes_url( $url ) ) {
+			return new WP_Error(
+				'rsu_rivian_bad_host',
+				__( 'That link is not on a recognized Rivian host.', 'rivian-software-updates' )
+			);
+		}
+
+		$parsed = RSU_Rivian_API::parse_notes_url( $url );
+
+		if ( is_wp_error( $parsed ) ) {
+			return $parsed;
+		}
+
+		$match = RSU_Platforms::resolve_vehicle_generation( $parsed['platform'], $parsed['model'] );
+
+		if ( ! $match && ! $override ) {
+			return new WP_Error(
+				'rsu_rivian_unclaimed_platform',
+				sprintf(
+					/* translators: 1: platform code, 2: model code. */
+					__( 'No vehicle claims platform "%1$s" model "%2$s". Set that platform code on a generation under RSU Settings, or pick a vehicle to import into.', 'rivian-software-updates' ),
+					$parsed['platform'],
+					$parsed['model']
+				),
+				array( 'parsed' => $parsed )
+			);
+		}
+
+		$slug       = $match ? $match['vehicle'] : $override;
+		$generation = $match ? $match['generation'] : '';
+
+		$existing = self::get_revisions( $post_id, $slug, $generation );
+		$last     = $existing ? end( $existing ) : array();
+		$known    = isset( $last['hash'] ) ? $last['hash'] : '';
+
+		$revision = self::capture_revision( $post_id, $slug, $url, $known );
+
+		if ( is_wp_error( $revision ) ) {
+			return $revision;
+		}
+
+		if ( null === $revision ) {
+			// Byte-identical to what is already filed for this pair.
+			$revision = $last;
+		}
+
+		// Attach the vehicle to the post so its tab renders.
+		$vehicles = get_post_meta( $post_id, '_rsu_vehicles', true );
+		$vehicles = is_array( $vehicles ) ? $vehicles : array();
+
+		if ( ! in_array( $slug, $vehicles, true ) ) {
+			$vehicles[] = $slug;
+			update_post_meta( $post_id, '_rsu_vehicles', array_values( $vehicles ) );
+		}
+
+		return array(
+			'vehicle'    => $slug,
+			'generation' => $generation,
+			'version'    => $parsed['version'],
+			'platform'   => $parsed['platform'],
+			'model'      => $parsed['model'],
+			'revision'   => isset( $revision['index'] ) ? (int) $revision['index'] : 0,
+			'draft'      => ! empty( $revision['draft'] ),
+			'label'      => self::scope_label( $slug, $generation, $revision ),
+		);
 	}
 
 	/**
@@ -587,8 +732,8 @@ class RSU_Rivian_Poller {
 	 * @param string $slug    Vehicle slug.
 	 * @return array List of revision records, oldest first.
 	 */
-	public static function get_revisions( $post_id, $slug ) {
-		$raw = get_post_meta( $post_id, self::NOTES_REVISIONS_PREFIX . $slug, true );
+	public static function get_revisions( $post_id, $slug, $generation = '' ) {
+		$raw = get_post_meta( $post_id, self::notes_key( self::NOTES_REVISIONS_PREFIX, $slug, $generation ), true );
 
 		if ( ! $raw ) {
 			return array();
@@ -706,8 +851,8 @@ class RSU_Rivian_Poller {
 	 * @param string $slug    Vehicle slug.
 	 * @return string Path, or '' when there is no cached copy.
 	 */
-	public static function cached_notes_path( $post_id, $slug ) {
-		$filename = get_post_meta( $post_id, self::NOTES_FILE_PREFIX . $slug, true );
+	public static function cached_notes_path( $post_id, $slug, $generation = '' ) {
+		$filename = get_post_meta( $post_id, self::notes_key( self::NOTES_FILE_PREFIX, $slug, $generation ), true );
 
 		if ( ! $filename ) {
 			return '';
@@ -733,30 +878,34 @@ class RSU_Rivian_Poller {
 	 * @param string $slug    Vehicle slug.
 	 * @return void
 	 */
-	public static function forget_notes( $post_id, $slug, $keep_history = false ) {
-		if ( ! $keep_history ) {
-			$dir = self::notes_dir();
+	public static function forget_notes( $post_id, $slug, $keep_history = false, $generation = null ) {
+		// null means every generation filed under this vehicle.
+		$scopes = ( null === $generation ) ? self::notes_scopes( $slug ) : array( $generation );
+		$dir    = self::notes_dir();
 
-			if ( ! is_wp_error( $dir ) ) {
-				foreach ( self::get_revisions( $post_id, $slug ) as $revision ) {
-					if ( empty( $revision['file'] ) ) {
-						continue;
-					}
+		foreach ( $scopes as $scope ) {
+			if ( ! $keep_history ) {
+				if ( ! is_wp_error( $dir ) ) {
+					foreach ( self::get_revisions( $post_id, $slug, $scope ) as $revision ) {
+						if ( empty( $revision['file'] ) ) {
+							continue;
+						}
 
-					$path = trailingslashit( $dir ) . basename( $revision['file'] );
+						$path = trailingslashit( $dir ) . basename( $revision['file'] );
 
-					if ( file_exists( $path ) ) {
-						wp_delete_file( $path );
+						if ( file_exists( $path ) ) {
+							wp_delete_file( $path );
+						}
 					}
 				}
+
+				delete_post_meta( $post_id, self::notes_key( self::NOTES_REVISIONS_PREFIX, $slug, $scope ) );
 			}
 
-			delete_post_meta( $post_id, self::NOTES_REVISIONS_PREFIX . $slug );
+			delete_post_meta( $post_id, self::notes_key( self::NOTES_FILE_PREFIX, $slug, $scope ) );
+			delete_post_meta( $post_id, self::notes_key( self::NOTES_META_PREFIX, $slug, $scope ) );
+			delete_post_meta( $post_id, self::notes_key( self::NOTES_REVISED_PREFIX, $slug, $scope ) );
 		}
-
-		delete_post_meta( $post_id, self::NOTES_FILE_PREFIX . $slug );
-		delete_post_meta( $post_id, self::NOTES_META_PREFIX . $slug );
-		delete_post_meta( $post_id, self::NOTES_REVISED_PREFIX . $slug );
 	}
 
 	/**
@@ -767,14 +916,14 @@ class RSU_Rivian_Poller {
 	 * @param int    $index   1-based revision index.
 	 * @return string Path, or '' when absent.
 	 */
-	public static function revision_path( $post_id, $slug, $index ) {
+	public static function revision_path( $post_id, $slug, $index, $generation = '' ) {
 		$dir = self::notes_dir();
 
 		if ( is_wp_error( $dir ) ) {
 			return '';
 		}
 
-		foreach ( self::get_revisions( $post_id, $slug ) as $revision ) {
+		foreach ( self::get_revisions( $post_id, $slug, $generation ) as $revision ) {
 			if ( (int) $revision['index'] !== (int) $index || empty( $revision['file'] ) ) {
 				continue;
 			}
@@ -996,29 +1145,62 @@ class RSU_Rivian_Poller {
 		$pending = array();
 
 		foreach ( array_keys( RSU_Platforms::get_all() ) as $slug ) {
-			$cached  = self::cached_notes_path( $post_id, $slug );
-			$url     = get_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, true );
-			$revised = (int) get_post_meta( $post_id, self::NOTES_REVISED_PREFIX . $slug, true );
+			foreach ( self::notes_scopes( $slug ) as $generation ) {
+				$cached  = self::cached_notes_path( $post_id, $slug, $generation );
+				$url     = get_post_meta( $post_id, self::notes_key( self::NOTES_META_PREFIX, $slug, $generation ), true );
+				$revised = (int) get_post_meta( $post_id, self::notes_key( self::NOTES_REVISED_PREFIX, $slug, $generation ), true );
 
-			if ( ! $cached && ( ! $url || ! RSU_Rivian_API::is_allowed_notes_url( $url ) ) ) {
-				continue;
+				if ( ! $cached && ( ! $url || ! RSU_Rivian_API::is_allowed_notes_url( $url ) ) ) {
+					continue;
+				}
+
+				$history = self::get_revisions( $post_id, $slug, $generation );
+				$latest  = $history ? end( $history ) : array();
+
+				$pending[] = array(
+					'vehicle'    => $slug,
+					'generation' => $generation,
+					// "revised" means Rivian reissued notes we had already
+					// captured, so the editor must offer rather than overwrite.
+					'state'      => $revised ? 'revised' : 'new',
+					'revision'   => isset( $latest['index'] ) ? (int) $latest['index'] : 0,
+					'revisedAt'  => $revised ? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $revised ) : '',
+					'draft'      => ! empty( $latest['draft'] ),
+					'cached'     => (bool) $cached,
+					'model'      => isset( $latest['model'] ) ? $latest['model'] : '',
+					'label'      => self::scope_label( $slug, $generation, $latest ),
+				);
 			}
-
-			$history  = self::get_revisions( $post_id, $slug );
-			$latest   = $history ? end( $history ) : array();
-
-			$pending[ $slug ] = array(
-				// "revised" means Rivian reissued notes we had already captured,
-				// so the editor must offer rather than overwrite.
-				'state'    => $revised ? 'revised' : 'new',
-				'revision' => isset( $latest['index'] ) ? (int) $latest['index'] : 0,
-				'revisedAt' => $revised ? date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), $revised ) : '',
-				'draft'    => ! empty( $latest['draft'] ),
-				'cached'   => (bool) $cached,
-			);
 		}
 
 		return $pending;
+	}
+
+	/**
+	 * Human label for a vehicle/generation pair, e.g. "R1 Gen 1 (R1T)".
+	 *
+	 * @param string $slug       Vehicle slug.
+	 * @param string $generation Generation slug.
+	 * @param array  $revision   Latest revision, for the body style.
+	 * @return string
+	 */
+	private static function scope_label( $slug, $generation, $revision ) {
+		$all   = RSU_Platforms::get_all();
+		$parts = array( isset( $all[ $slug ]['label'] ) ? $all[ $slug ]['label'] : strtoupper( $slug ) );
+
+		$generations = RSU_Platforms::get_generations( $slug );
+
+		if ( $generation && isset( $generations[ $generation ] ) ) {
+			$parts[] = $generations[ $generation ];
+		}
+
+		$label = implode( ' ', $parts );
+
+		if ( ! empty( $revision['model'] ) ) {
+			$label .= ' (' . $revision['model'] . ')';
+		}
+
+		return $label;
 	}
 
 	/**
@@ -1028,7 +1210,7 @@ class RSU_Rivian_Poller {
 	 * @param string $slug    Vehicle slug.
 	 * @return void
 	 */
-	public static function clear_revised_flag( $post_id, $slug ) {
-		delete_post_meta( $post_id, self::NOTES_REVISED_PREFIX . $slug );
+	public static function clear_revised_flag( $post_id, $slug, $generation = '' ) {
+		delete_post_meta( $post_id, self::notes_key( self::NOTES_REVISED_PREFIX, $slug, $generation ) );
 	}
 }

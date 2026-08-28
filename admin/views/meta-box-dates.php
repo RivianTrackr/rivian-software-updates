@@ -249,16 +249,38 @@ $all_vehicles = RSU_Platforms::get_all();
 
 <?php
 // ── Archived release-notes documents ──
-// Rivian can reissue the notes for a version it has already shipped, so every
-// distinct PDF is kept and listed here rather than being overwritten.
+// Rivian ships a separate document per generation and body style, and can
+// reissue any of them, so every distinct PDF is kept and listed per scope.
 $rsu_history = array();
+$rsu_hashes  = array();
+
 foreach ( RSU_Platforms::get_all() as $rsu_slug => $rsu_vehicle ) {
-	$rsu_revisions = RSU_Rivian_Poller::get_revisions( $post->ID, $rsu_slug );
-	if ( ! empty( $rsu_revisions ) ) {
-		$rsu_history[ $rsu_slug ] = array(
-			'label'     => $rsu_vehicle['label'],
-			'revisions' => $rsu_revisions,
+	$rsu_scopes = array_merge( array( '' ), array_keys( RSU_Platforms::get_generations( $rsu_slug ) ) );
+
+	foreach ( $rsu_scopes as $rsu_gen ) {
+		$rsu_revisions = RSU_Rivian_Poller::get_revisions( $post->ID, $rsu_slug, $rsu_gen );
+
+		if ( empty( $rsu_revisions ) ) {
+			continue;
+		}
+
+		$rsu_gens  = RSU_Platforms::get_generations( $rsu_slug );
+		$rsu_label = $rsu_vehicle['label'] . ( $rsu_gen && isset( $rsu_gens[ $rsu_gen ] ) ? ' ' . $rsu_gens[ $rsu_gen ] : '' );
+
+		$rsu_history[] = array(
+			'label'      => $rsu_label,
+			'vehicle'    => $rsu_slug,
+			'generation' => $rsu_gen,
+			'revisions'  => $rsu_revisions,
 		);
+
+		// Track hashes so identical documents across scopes can be called out —
+		// that is how you find out whether two variants really differ.
+		foreach ( $rsu_revisions as $rsu_rev ) {
+			if ( ! empty( $rsu_rev['hash'] ) ) {
+				$rsu_hashes[ $rsu_rev['hash'] ][] = $rsu_label . ' r' . (int) $rsu_rev['index'];
+			}
+		}
 	}
 }
 
@@ -266,20 +288,40 @@ if ( ! empty( $rsu_history ) ) :
 	?>
 	<div class="rsu-notes-history">
 		<p class="rsu-notes-history__title">Release notes history</p>
-		<?php foreach ( $rsu_history as $rsu_slug => $rsu_group ) : ?>
+		<?php foreach ( $rsu_history as $rsu_group ) : ?>
 			<p class="rsu-notes-history__vehicle"><?php echo esc_html( $rsu_group['label'] ); ?></p>
 			<ul class="rsu-notes-history__list">
 				<?php foreach ( array_reverse( $rsu_group['revisions'] ) as $rsu_rev ) :
 					$rsu_index = isset( $rsu_rev['index'] ) ? (int) $rsu_rev['index'] : 0;
+					$rsu_gen   = $rsu_group['generation'];
 					$rsu_link  = wp_nonce_url(
-						admin_url( 'admin-post.php?action=rsu_rivian_notes_pdf&post_id=' . (int) $post->ID . '&vehicle=' . rawurlencode( $rsu_slug ) . '&revision=' . $rsu_index ),
-						'rsu_rivian_download_' . (int) $post->ID . '_' . $rsu_slug . '_' . $rsu_index
+						admin_url(
+							'admin-post.php?action=rsu_rivian_notes_pdf&post_id=' . (int) $post->ID
+							. '&vehicle=' . rawurlencode( $rsu_group['vehicle'] )
+							. '&generation=' . rawurlencode( $rsu_gen )
+							. '&revision=' . $rsu_index
+						),
+						'rsu_rivian_download_' . (int) $post->ID . '_' . $rsu_group['vehicle'] . '_' . $rsu_gen . '_' . $rsu_index
 					);
+
+					// Name any other scope holding a byte-identical document.
+					$rsu_twins = array();
+					if ( ! empty( $rsu_rev['hash'] ) && ! empty( $rsu_hashes[ $rsu_rev['hash'] ] ) ) {
+						$rsu_twins = array_diff( $rsu_hashes[ $rsu_rev['hash'] ], array( $rsu_group['label'] . ' r' . $rsu_index ) );
+					}
 					?>
 					<li>
-						<a href="<?php echo esc_url( $rsu_link ); ?>" target="_blank" rel="noopener noreferrer">
-							Revision <?php echo (int) $rsu_index; ?>
-						</a>
+						<span>
+							<a href="<?php echo esc_url( $rsu_link ); ?>" target="_blank" rel="noopener noreferrer">
+								Revision <?php echo (int) $rsu_index; ?>
+							</a>
+							<?php if ( ! empty( $rsu_rev['model'] ) ) : ?>
+								<span class="rsu-notes-history__model"><?php echo esc_html( $rsu_rev['model'] ); ?></span>
+							<?php endif; ?>
+							<?php if ( ! empty( $rsu_twins ) ) : ?>
+								<small class="rsu-notes-history__same">identical to <?php echo esc_html( implode( ', ', $rsu_twins ) ); ?></small>
+							<?php endif; ?>
+						</span>
 						<span class="rsu-notes-history__meta">
 							<?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $rsu_rev['at'] ) ); ?>
 							<?php if ( ! empty( $rsu_rev['draft'] ) ) : ?>
@@ -297,7 +339,9 @@ if ( ! empty( $rsu_history ) ) :
 	.rsu-notes-history__vehicle { margin: 10px 0 4px; font-size: 12px; font-weight: 600; color: #1d1d1f; }
 	.rsu-notes-history__list { margin: 0; padding: 0; list-style: none; }
 	.rsu-notes-history__list li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 4px 0; font-size: 12px; }
-	.rsu-notes-history__meta { color: #86868b; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; }
+	.rsu-notes-history__meta { color: #86868b; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+	.rsu-notes-history__model { background: #f5f5f7; color: #6e6e73; border-radius: 4px; padding: 1px 5px; font-size: 10px; font-weight: 600; }
+	.rsu-notes-history__same { display: block; color: #86868b; font-size: 10px; font-style: italic; }
 	.rsu-notes-history__draft { background: #fff3cd; color: #856404; border-radius: 4px; padding: 1px 5px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
 	</style>
 <?php endif; ?>

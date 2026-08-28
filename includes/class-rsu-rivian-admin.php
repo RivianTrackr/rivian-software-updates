@@ -39,6 +39,7 @@ class RSU_Rivian_Admin {
 			'fetch_notes' => 'ajax_fetch_notes',
 			'clear_notes' => 'ajax_clear_notes',
 			'clear_revised' => 'ajax_clear_revised',
+			'import_url'    => 'ajax_import_url',
 		);
 
 		foreach ( $ajax as $action => $method ) {
@@ -63,14 +64,15 @@ class RSU_Rivian_Admin {
 		$post_id = isset( $_GET['post_id'] ) ? absint( $_GET['post_id'] ) : 0;
 		$slug    = isset( $_GET['vehicle'] ) ? sanitize_key( wp_unslash( $_GET['vehicle'] ) ) : '';
 		$index   = isset( $_GET['revision'] ) ? absint( $_GET['revision'] ) : 0;
+		$gen     = isset( $_GET['generation'] ) ? sanitize_key( wp_unslash( $_GET['generation'] ) ) : '';
 
 		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_die( esc_html__( 'You are not allowed to view this document.', 'rivian-software-updates' ), '', array( 'response' => 403 ) );
 		}
 
-		check_admin_referer( 'rsu_rivian_download_' . $post_id . '_' . $slug . '_' . $index );
+		check_admin_referer( 'rsu_rivian_download_' . $post_id . '_' . $slug . '_' . $gen . '_' . $index );
 
-		$path = RSU_Rivian_Poller::revision_path( $post_id, $slug, $index );
+		$path = RSU_Rivian_Poller::revision_path( $post_id, $slug, $index, $gen );
 
 		if ( ! $path ) {
 			wp_die( esc_html__( 'That release-notes document is no longer stored.', 'rivian-software-updates' ), '', array( 'response' => 404 ) );
@@ -632,8 +634,9 @@ class RSU_Rivian_Admin {
 			wp_send_json_error( array( 'message' => __( 'Your session expired. Reload the page.', 'rivian-software-updates' ) ), 403 );
 		}
 
-		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-		$slug    = isset( $_POST['vehicle'] ) ? sanitize_key( wp_unslash( $_POST['vehicle'] ) ) : '';
+		$post_id    = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$slug       = isset( $_POST['vehicle'] ) ? sanitize_key( wp_unslash( $_POST['vehicle'] ) ) : '';
+		$generation = isset( $_POST['generation'] ) ? sanitize_key( wp_unslash( $_POST['generation'] ) ) : '';
 
 		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this post.', 'rivian-software-updates' ) ), 403 );
@@ -642,7 +645,7 @@ class RSU_Rivian_Admin {
 		// The poller downloads the document while its signed link is fresh, so
 		// the cached copy is the normal path; the URL is only a fallback for
 		// documents recorded before caching existed.
-		$cached = RSU_Rivian_Poller::cached_notes_path( $post_id, $slug );
+		$cached = RSU_Rivian_Poller::cached_notes_path( $post_id, $slug, $generation );
 
 		if ( $cached ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents -- binary read from our own upload subdirectory.
@@ -659,7 +662,7 @@ class RSU_Rivian_Admin {
 		}
 
 		// Only ever fetch a URL this plugin recorded for this post and vehicle.
-		$url = get_post_meta( $post_id, RSU_Rivian_Poller::NOTES_META_PREFIX . $slug, true );
+		$url = get_post_meta( $post_id, RSU_Rivian_Poller::notes_meta_key( $slug, $generation ), true );
 
 		if ( ! $url || ! RSU_Rivian_API::is_allowed_notes_url( $url ) ) {
 			wp_send_json_error( array( 'message' => __( 'No release-notes document is pending for this vehicle.', 'rivian-software-updates' ) ) );
@@ -737,17 +740,89 @@ class RSU_Rivian_Admin {
 			wp_send_json_error( array( 'message' => __( 'Your session expired. Reload the page.', 'rivian-software-updates' ) ), 403 );
 		}
 
-		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-		$slug    = isset( $_POST['vehicle'] ) ? sanitize_key( wp_unslash( $_POST['vehicle'] ) ) : '';
+		$post_id    = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$slug       = isset( $_POST['vehicle'] ) ? sanitize_key( wp_unslash( $_POST['vehicle'] ) ) : '';
+		$generation = isset( $_POST['generation'] ) ? sanitize_key( wp_unslash( $_POST['generation'] ) ) : '';
 
 		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this post.', 'rivian-software-updates' ) ), 403 );
 		}
 
 		// Keep the archived PDFs — dismissing only stops the import prompt.
-		RSU_Rivian_Poller::forget_notes( $post_id, $slug, true );
+		RSU_Rivian_Poller::forget_notes( $post_id, $slug, true, $generation );
 
 		wp_send_json_success();
+	}
+
+	/**
+	 * Import a release-notes document from a link pasted by an editor.
+	 *
+	 * Rivian only signs links for vehicles on the connected account, so notes
+	 * for a generation nobody here owns arrive this way. The link is fetched
+	 * server-side (the browser cannot, and the signature expires within the
+	 * hour), archived like a polled document, and handed back for parsing.
+	 *
+	 * @return void
+	 */
+	public function ajax_import_url() {
+		if ( ! check_ajax_referer( self::NONCE, 'nonce', false ) ) {
+			wp_send_json_error( array( 'message' => __( 'Your session expired. Reload the page.', 'rivian-software-updates' ) ), 403 );
+		}
+
+		$post_id  = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$url      = isset( $_POST['url'] ) ? esc_url_raw( trim( wp_unslash( $_POST['url'] ) ) ) : '';
+		$override = isset( $_POST['vehicle'] ) ? sanitize_key( wp_unslash( $_POST['vehicle'] ) ) : '';
+
+		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
+			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this post.', 'rivian-software-updates' ) ), 403 );
+		}
+
+		if ( ! $url ) {
+			wp_send_json_error( array( 'message' => __( 'Paste a Rivian release-notes link.', 'rivian-software-updates' ) ) );
+		}
+
+		$result = RSU_Rivian_Poller::ingest_url( $post_id, $url, $override );
+
+		if ( is_wp_error( $result ) ) {
+			wp_send_json_error( array( 'message' => $result->get_error_message() ) );
+		}
+
+		$path = RSU_Rivian_Poller::cached_notes_path( $post_id, $result['vehicle'], $result['generation'] );
+
+		if ( ! $path ) {
+			wp_send_json_error( array( 'message' => __( 'The document was fetched but could not be stored.', 'rivian-software-updates' ) ) );
+		}
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents -- binary read from our own upload subdirectory.
+		$body = file_get_contents( $path );
+
+		// A link for a different release is almost always a paste mistake, so
+		// say so rather than silently filing it under the wrong post.
+		$title    = (string) get_post_field( 'post_title', $post_id );
+		$mismatch = '';
+
+		if ( $result['version'] && false === strpos( $title, $result['version'] ) ) {
+			$mismatch = sprintf(
+				/* translators: 1: version from the link, 2: post title. */
+				__( 'Heads up: that link is for version %1$s, but this post is "%2$s".', 'rivian-software-updates' ),
+				$result['version'],
+				$title
+			);
+		}
+
+		wp_send_json_success(
+			array(
+				'vehicle'    => $result['vehicle'],
+				'generation' => $result['generation'],
+				'label'      => $result['label'],
+				'version'    => $result['version'],
+				'model'      => $result['model'],
+				'draft'      => $result['draft'],
+				'revision'   => $result['revision'],
+				'mismatch'   => $mismatch,
+				'data'       => base64_encode( $body ),
+			)
+		);
 	}
 
 	/**
@@ -760,14 +835,15 @@ class RSU_Rivian_Admin {
 			wp_send_json_error( array( 'message' => __( 'Your session expired. Reload the page.', 'rivian-software-updates' ) ), 403 );
 		}
 
-		$post_id = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
-		$slug    = isset( $_POST['vehicle'] ) ? sanitize_key( wp_unslash( $_POST['vehicle'] ) ) : '';
+		$post_id    = isset( $_POST['post_id'] ) ? absint( $_POST['post_id'] ) : 0;
+		$slug       = isset( $_POST['vehicle'] ) ? sanitize_key( wp_unslash( $_POST['vehicle'] ) ) : '';
+		$generation = isset( $_POST['generation'] ) ? sanitize_key( wp_unslash( $_POST['generation'] ) ) : '';
 
 		if ( ! $post_id || ! current_user_can( 'edit_post', $post_id ) ) {
 			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this post.', 'rivian-software-updates' ) ), 403 );
 		}
 
-		RSU_Rivian_Poller::clear_revised_flag( $post_id, $slug );
+		RSU_Rivian_Poller::clear_revised_flag( $post_id, $slug, $generation );
 
 		wp_send_json_success();
 	}

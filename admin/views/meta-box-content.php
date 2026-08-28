@@ -46,6 +46,11 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-auto-import--done { background: #d1f4e0; color: #0a5e2a; }
 .rsu-auto-import--error { background: var(--rsu-error-light); color: #c41e3a; }
 .rsu-auto-import--revised { background: #fff3cd; color: #856404; }
+.rsu-import-dialog__url-input { flex: 1; min-width: 0; padding: 6px 10px; border: 1px solid var(--rsu-border); border-radius: 6px; font-size: 12px; color: var(--rsu-text); background: var(--rsu-white); }
+.rsu-import-dialog__url-input:focus { outline: none; border-color: var(--rsu-action); box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.1); }
+.rsu-import-dialog__url-btn { flex: none; padding: 6px 14px; border: 1px solid var(--rsu-border); border-radius: 6px; background: var(--rsu-white); color: var(--rsu-text); font-size: 12px; font-weight: 600; cursor: pointer; }
+.rsu-import-dialog__url-btn:hover { background: var(--rsu-bg-hover); }
+.rsu-import-dialog__url-btn:disabled { opacity: 0.6; cursor: default; }
 .rsu-auto-import__load { flex: none; border: 1px solid currentColor; background: transparent; color: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 5px 10px; border-radius: 6px; }
 .rsu-auto-import__load:hover { background: rgba(0, 0, 0, 0.06); }
 .rsu-auto-import__load:disabled { opacity: 0.6; cursor: default; }

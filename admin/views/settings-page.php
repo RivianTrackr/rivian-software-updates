@@ -118,6 +118,8 @@ $cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_c
 											<th style="width: 110px;">Slug</th>
 											<th>Label</th>
 											<th>Description</th>
+											<th style="width: 110px;" title="Platform segment in Rivian's release-notes paths — r1x for R1 Gen 1, r1x_1_6 for Gen 2. Used to file downloaded notes under the right generation.">Platform code</th>
+											<th style="width: 90px;" title="Optional body style (R1T, R1S). Set it only to track body styles as separate generations.">Model</th>
 											<th style="width: 70px;">Order</th>
 											<th style="width: 36px;"></th>
 										</tr>
@@ -152,6 +154,20 @@ $cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_c
 														class="rsu-input"
 														value="<?php echo esc_attr( $gen['description'] ); ?>"
 														placeholder="e.g. 2028+" />
+												</td>
+												<td>
+													<input type="text" name="<?php echo esc_attr( $gen_prefix ); ?>[platform_code]"
+														class="rsu-input"
+														value="<?php echo esc_attr( isset( $gen['platform_code'] ) ? $gen['platform_code'] : '' ); ?>"
+														placeholder="r1x"
+														style="font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px;" />
+												</td>
+												<td>
+													<input type="text" name="<?php echo esc_attr( $gen_prefix ); ?>[model_code]"
+														class="rsu-input"
+														value="<?php echo esc_attr( isset( $gen['model_code'] ) ? $gen['model_code'] : '' ); ?>"
+														placeholder="any"
+														style="font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px;" />
 												</td>
 												<td>
 													<input type="number" name="<?php echo esc_attr( $gen_prefix ); ?>[sort]"
@@ -252,6 +268,14 @@ $cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_c
 								class="rsu-input"
 								value=""
 								placeholder="e.g. Gen 3" />
+						</td>
+						<td>
+							<input type="text" name="rsu_platforms[__VI__][generations][__GI__][platform_code]"
+								class="rsu-input" placeholder="r1x" style="font-family: monospace; font-size: 11px;" value="" />
+						</td>
+						<td>
+							<input type="text" name="rsu_platforms[__VI__][generations][__GI__][model_code]"
+								class="rsu-input" placeholder="any" style="font-family: monospace; font-size: 11px;" value="" />
 						</td>
 						<td>
 							<input type="text" name="rsu_platforms[__VI__][generations][__GI__][description]"

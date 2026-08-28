@@ -629,6 +629,74 @@ class RSU_Rivian_API {
 	}
 
 	/**
+	 * Pull the platform, model, version and locale out of a notes URL.
+	 *
+	 * Rivian's document paths look like:
+	 *   /Vehicle/{platform}/{model}/UpdateDetails/{version}/PDF-digital/{region}/{locale}/…
+	 * where platform identifies the hardware generation (observed: "r1x" for
+	 * R1 Gen 1, "r1x_1_6" for Gen 2) and model is the body style (R1T, R1S).
+	 * The same software version ships a separate document per combination, so
+	 * these fields are what tell two documents apart.
+	 *
+	 * @param string $url Signed document URL.
+	 * @return array|WP_Error array{ platform, model, version, region, locale }.
+	 */
+	public static function parse_notes_url( $url ) {
+		$path = (string) wp_parse_url( $url, PHP_URL_PATH );
+
+		if ( '' === $path ) {
+			return new WP_Error(
+				'rsu_rivian_unparsable_url',
+				__( 'That does not look like a Rivian release-notes link.', 'rivian-software-updates' )
+			);
+		}
+
+		$segments = array_values( array_filter( explode( '/', rawurldecode( $path ) ), 'strlen' ) );
+		$at       = array_search( 'UpdateDetails', $segments, true );
+
+		// The two segments before UpdateDetails are platform and model; the one
+		// after is the version. Anchoring on the keyword rather than on fixed
+		// offsets survives Rivian adding or renaming a leading segment.
+		if ( false === $at || $at < 2 || ! isset( $segments[ $at + 1 ] ) ) {
+			return new WP_Error(
+				'rsu_rivian_unparsable_url',
+				__( 'That link is not in the expected Update Details format.', 'rivian-software-updates' )
+			);
+		}
+
+		$raw_version = sanitize_text_field( $segments[ $at + 1 ] );
+
+		return array(
+			'platform' => sanitize_text_field( $segments[ $at - 2 ] ),
+			'model'    => sanitize_text_field( $segments[ $at - 1 ] ),
+			'version'  => self::expand_version( $raw_version ),
+			'raw'      => $raw_version,
+			'region'   => isset( $segments[ $at + 3 ] ) ? sanitize_text_field( $segments[ $at + 3 ] ) : '',
+			'locale'   => isset( $segments[ $at + 4 ] ) ? sanitize_text_field( $segments[ $at + 4 ] ) : '',
+		);
+	}
+
+	/**
+	 * Turn a packed path version back into a dotted version string.
+	 *
+	 * Paths carry "2026310" for 2026.31.0 — year, two-digit minor, then the
+	 * remainder as the patch. Anything that does not fit that shape is handed
+	 * back untouched rather than mangled into a wrong version.
+	 *
+	 * @param string $packed Version as it appears in the path.
+	 * @return string
+	 */
+	private static function expand_version( $packed ) {
+		if ( ! preg_match( '/^(\d{4})(\d{2})(\d+)$/', $packed, $m ) ) {
+			return $packed;
+		}
+
+		// The trailing group is kept verbatim: a leading zero is significant in
+		// Rivian's numbering, where 2026.24.01 is a hotfix of 2026.24.
+		return $m[1] . '.' . $m[2] . '.' . $m[3];
+	}
+
+	/**
 	 * Whether a release-notes URL is on a Rivian-controlled host.
 	 *
 	 * The URL arrives from an external API and is later fetched server-side,

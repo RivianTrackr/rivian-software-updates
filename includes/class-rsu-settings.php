@@ -208,6 +208,11 @@ class RSU_Settings {
 						'label'       => isset( $gen_row['label'] ) ? sanitize_text_field( $gen_row['label'] ) : $gen_slug,
 						'description' => isset( $gen_row['description'] ) ? sanitize_text_field( $gen_row['description'] ) : '',
 						'sort'        => isset( $gen_row['sort'] ) && is_numeric( $gen_row['sort'] ) ? intval( $gen_row['sort'] ) : $gen_sort,
+						// Which Rivian release-notes documents belong to this
+						// generation: the platform segment, and optionally the
+						// body style when those are tracked separately.
+						'platform_code' => isset( $gen_row['platform_code'] ) ? sanitize_text_field( $gen_row['platform_code'] ) : '',
+						'model_code'    => isset( $gen_row['model_code'] ) ? sanitize_text_field( $gen_row['model_code'] ) : '',
 					);
 
 					$gen_sort += 10;

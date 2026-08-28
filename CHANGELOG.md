@@ -2,6 +2,19 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.30.0] - 2026-08-28
+
+### Added
+- **Release notes are filed under the generation they were published for.** Rivian ships a separate document per hardware platform and body style — the path carries `r1x` for R1 Gen 1 and `r1x_1_6` for Gen 2, plus `R1T`/`R1S` — so the same software version has different notes for different cars. The document path is now parsed on capture, matched to one of the existing Gen 1 / Gen 2 tags, and imported sections carry that generation so the pills come out right. Notes, revision history, and cached PDFs are all keyed per vehicle *and* generation, so a Gen 1 and a Gen 2 car mapped to the same tab no longer overwrite each other.
+- **Import from a pasted Rivian link.** The import dialog gained a URL field: paste any signed Update Details link and the server fetches it (the browser cannot, and the signature dies within the hour), archives it exactly like a polled document, works out which vehicle and generation it belongs to, and loads the parsed text into the existing preview. This is the only way to cover a generation or body style that is not on the connected account — Rivian only signs links for vehicles you own. Pasting a link for a different version warns rather than silently filing it under the wrong post.
+- **Generations can claim documents.** Each generation in RSU Settings gained a **Platform code** (e.g. `r1x`) and an optional **Model** (e.g. `R1T`). Setting only the platform code shares one generation across body styles; adding a model code splits body styles into separate generations with their own notes, history, and pills. A platform registry saved before these fields existed still resolves, via built-in defaults for the `gen1`/`gen2` slugs.
+- **Identical documents are called out.** The revision history names any other generation holding a byte-identical PDF, so it is visible whether two variants genuinely differ or Rivian simply published the same notes twice.
+- **Body style on the archive.** Each stored revision records the platform and model from its path, shown as a badge in the release-notes history.
+
+### Changed
+- `get_pending_notes()` returns a flat list of vehicle/generation entries rather than one entry per vehicle, so several documents can be pending on one post at once; the editor imports each into its own generation.
+- Cached filenames, revision lookups, download links, and the dismiss/revised endpoints are all generation-scoped. Keys without a generation are unchanged, so documents captured before this release stay readable.
+
 ## [2.29.0] - 2026-08-28
 
 ### Added
