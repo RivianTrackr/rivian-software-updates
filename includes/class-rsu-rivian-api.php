@@ -607,17 +607,24 @@ class RSU_Rivian_API {
 			return null;
 		}
 
-		$url = isset( $detail['url'] ) ? esc_url_raw( $detail['url'] ) : '';
+		$raw = isset( $detail['url'] ) ? esc_url_raw( $detail['url'] ) : '';
+		$url = $raw;
 
-		// Only ever follow Rivian-hosted notes URLs.
-		if ( $url && ! self::is_allowed_notes_url( $url ) ) {
-			$url = '';
+		// A URL on an unexpected host is dropped rather than followed — but the
+		// host is reported, never silently swallowed, because "no release notes"
+		// and "notes on a host we don't allow yet" need different fixes.
+		$rejected = '';
+		if ( $raw && ! self::is_allowed_notes_url( $raw ) ) {
+			$url      = '';
+			$rejected = (string) wp_parse_url( $raw, PHP_URL_HOST );
 		}
 
 		return array(
-			'url'     => $url,
-			'version' => sanitize_text_field( $detail['version'] ),
-			'locale'  => isset( $detail['locale'] ) ? sanitize_text_field( $detail['locale'] ) : '',
+			'url'          => $url,
+			'url_rejected' => $rejected,
+			'has_url'      => '' !== $raw,
+			'version'      => sanitize_text_field( $detail['version'] ),
+			'locale'       => isset( $detail['locale'] ) ? sanitize_text_field( $detail['locale'] ) : '',
 		);
 	}
 
@@ -639,7 +646,27 @@ class RSU_Rivian_API {
 
 		$host = strtolower( $host );
 
-		foreach ( array( 'rivian.com', 'rivianservices.com' ) as $domain ) {
+		/**
+		 * Hosts a release-notes document may be fetched from.
+		 *
+		 * Rivian serves these from its own domains and from its CDN/object
+		 * storage providers. Add a host here (or via this filter) if the
+		 * settings screen reports one being rejected.
+		 *
+		 * @param array $domains Allowed registrable domains.
+		 */
+		$domains = apply_filters(
+			'rsu_rivian_allowed_notes_hosts',
+			array( 'rivian.com', 'rivianservices.com', 'cloudfront.net', 'amazonaws.com' )
+		);
+
+		foreach ( (array) $domains as $domain ) {
+			$domain = strtolower( ltrim( (string) $domain, '.' ) );
+
+			if ( '' === $domain ) {
+				continue;
+			}
+
 			if ( $host === $domain || substr( $host, -( strlen( $domain ) + 1 ) ) === '.' . $domain ) {
 				return true;
 			}
