@@ -33,6 +33,15 @@ class RSU_Rivian_Poller {
 	/** Post meta prefix holding a pending release-notes URL, per vehicle slug. */
 	const NOTES_META_PREFIX = '_rsu_notes_url_';
 
+	/** Post meta prefix holding the cached document filename, per vehicle slug. */
+	const NOTES_FILE_PREFIX = '_rsu_notes_file_';
+
+	/** Upload subdirectory holding cached release-notes documents. */
+	const NOTES_DIR = 'rsu-release-notes';
+
+	/** Upper bound on a cached release-notes document (bytes). */
+	const MAX_NOTES_BYTES = 20971520; // 20 MB.
+
 	public function __construct() {
 		add_filter( 'cron_schedules', array( $this, 'register_schedule' ) ); // phpcs:ignore WordPress.WP.CronInterval.ChangeDetected -- documented five-minute poll.
 		add_action( self::CRON_HOOK, array( __CLASS__, 'run' ) );
@@ -342,9 +351,15 @@ class RSU_Rivian_Poller {
 			update_post_meta( $post_id, '_rsu_vehicles', array_values( $vehicles ) );
 		}
 
-		// Park the notes URL for the editor-side importer.
+		// Park the notes URL, then pull the document down straight away — the
+		// signed link is only good for about an hour.
+		$cached = false;
+
 		if ( ! empty( $detail['url'] ) ) {
 			update_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, esc_url_raw( $detail['url'] ) );
+
+			$stored = self::store_notes_document( $post_id, $slug, $detail['url'] );
+			$cached = ! is_wp_error( $stored );
 		}
 
 		$record = array(
@@ -353,6 +368,7 @@ class RSU_Rivian_Poller {
 			'version'      => $version,
 			'url'          => isset( $detail['url'] ) ? $detail['url'] : '',
 			'url_rejected' => isset( $detail['url_rejected'] ) ? $detail['url_rejected'] : '',
+			'cached'       => $cached,
 			'post_id'      => (int) $post_id,
 			'created'      => $created,
 			'at'           => time(),
@@ -368,6 +384,151 @@ class RSU_Rivian_Poller {
 		do_action( 'rsu_rivian_update_detected', $record );
 
 		return $record;
+	}
+
+	/**
+	 * Download a release-notes document and cache it on disk.
+	 *
+	 * Rivian hands out pre-signed S3 URLs that expire about an hour after they
+	 * are issued, so the document has to be pulled while the poller still holds
+	 * a fresh link — by the time someone opens the draft the URL is usually
+	 * dead. The editor then reads this copy instead of re-fetching.
+	 *
+	 * @param int    $post_id Draft the document belongs to.
+	 * @param string $slug    Vehicle slug.
+	 * @param string $url     Signed document URL.
+	 * @return string|WP_Error Stored filename, or error.
+	 */
+	private static function store_notes_document( $post_id, $slug, $url ) {
+		$response = wp_safe_remote_get(
+			$url,
+			array(
+				'timeout' => 30,
+				'headers' => array( 'Accept' => 'application/pdf,*/*' ),
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return $response;
+		}
+
+		$code = (int) wp_remote_retrieve_response_code( $response );
+
+		if ( $code < 200 || $code >= 300 ) {
+			return new WP_Error(
+				'rsu_rivian_notes_http',
+				sprintf(
+					/* translators: %d: HTTP status code. */
+					__( 'Downloading the release notes returned HTTP %d.', 'rivian-software-updates' ),
+					$code
+				)
+			);
+		}
+
+		$body = wp_remote_retrieve_body( $response );
+
+		if ( '' === $body || 0 !== strpos( $body, '%PDF-' ) ) {
+			return new WP_Error(
+				'rsu_rivian_notes_not_pdf',
+				__( 'The release-notes link did not return a PDF.', 'rivian-software-updates' )
+			);
+		}
+
+		if ( strlen( $body ) > self::MAX_NOTES_BYTES ) {
+			return new WP_Error(
+				'rsu_rivian_notes_too_large',
+				__( 'The release-notes document is unexpectedly large.', 'rivian-software-updates' )
+			);
+		}
+
+		$dir = self::notes_dir();
+
+		if ( is_wp_error( $dir ) ) {
+			return $dir;
+		}
+
+		$filename = sprintf( '%d-%s.pdf', (int) $post_id, sanitize_key( $slug ) );
+
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents -- binary write to our own upload subdirectory.
+		if ( false === file_put_contents( trailingslashit( $dir ) . $filename, $body ) ) {
+			return new WP_Error(
+				'rsu_rivian_notes_unwritable',
+				__( 'Could not save the release-notes document to the uploads directory.', 'rivian-software-updates' )
+			);
+		}
+
+		update_post_meta( $post_id, self::NOTES_FILE_PREFIX . $slug, $filename );
+
+		return $filename;
+	}
+
+	/**
+	 * Path to the cache directory, creating it if needed.
+	 *
+	 * @return string|WP_Error Absolute path.
+	 */
+	public static function notes_dir() {
+		$uploads = wp_upload_dir();
+
+		if ( ! empty( $uploads['error'] ) ) {
+			return new WP_Error( 'rsu_rivian_no_uploads', $uploads['error'] );
+		}
+
+		$dir = trailingslashit( $uploads['basedir'] ) . self::NOTES_DIR;
+
+		if ( ! is_dir( $dir ) && ! wp_mkdir_p( $dir ) ) {
+			return new WP_Error(
+				'rsu_rivian_no_notes_dir',
+				__( 'Could not create the release-notes cache directory.', 'rivian-software-updates' )
+			);
+		}
+
+		return $dir;
+	}
+
+	/**
+	 * Absolute path of a cached document, if one exists.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $slug    Vehicle slug.
+	 * @return string Path, or '' when there is no cached copy.
+	 */
+	public static function cached_notes_path( $post_id, $slug ) {
+		$filename = get_post_meta( $post_id, self::NOTES_FILE_PREFIX . $slug, true );
+
+		if ( ! $filename ) {
+			return '';
+		}
+
+		// Never let a stored name escape the cache directory.
+		$filename = basename( $filename );
+		$dir      = self::notes_dir();
+
+		if ( is_wp_error( $dir ) ) {
+			return '';
+		}
+
+		$path = trailingslashit( $dir ) . $filename;
+
+		return file_exists( $path ) ? $path : '';
+	}
+
+	/**
+	 * Delete a cached document and forget both notes meta keys.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $slug    Vehicle slug.
+	 * @return void
+	 */
+	public static function forget_notes( $post_id, $slug ) {
+		$path = self::cached_notes_path( $post_id, $slug );
+
+		if ( $path ) {
+			wp_delete_file( $path );
+		}
+
+		delete_post_meta( $post_id, self::NOTES_FILE_PREFIX . $slug );
+		delete_post_meta( $post_id, self::NOTES_META_PREFIX . $slug );
 	}
 
 	/**
@@ -409,7 +570,10 @@ class RSU_Rivian_Poller {
 
 		update_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, esc_url_raw( $detail['url'] ) );
 
+		$stored = self::store_notes_document( $post_id, $slug, $detail['url'] );
+
 		$record = array(
+			'cached'       => ! is_wp_error( $stored ),
 			'kind'         => 'notes',
 			'slug'         => $slug,
 			'version'      => $detail['version'],
@@ -591,9 +755,12 @@ class RSU_Rivian_Poller {
 			$lines[] = __( 'Edit the draft:', 'rivian-software-updates' );
 			$lines[] = $edit_link;
 
-			if ( ! empty( $record['url'] ) ) {
+			if ( ! empty( $record['cached'] ) ) {
 				$lines[] = '';
 				$lines[] = __( 'Opening the draft pulls in the release notes automatically — review the sections, then publish.', 'rivian-software-updates' );
+			} elseif ( ! empty( $record['url'] ) ) {
+				$lines[] = '';
+				$lines[] = __( 'The document could not be downloaded, and Rivian\'s link expires about an hour after it is issued — open it now if you want to import the notes by hand.', 'rivian-software-updates' );
 			}
 		}
 
@@ -610,6 +777,12 @@ class RSU_Rivian_Poller {
 		$pending = array();
 
 		foreach ( array_keys( RSU_Platforms::get_all() ) as $slug ) {
+			// A cached copy is authoritative — the signed URL has usually expired.
+			if ( self::cached_notes_path( $post_id, $slug ) ) {
+				$pending[ $slug ] = 'cached';
+				continue;
+			}
+
 			$url = get_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, true );
 
 			if ( $url && RSU_Rivian_API::is_allowed_notes_url( $url ) ) {
