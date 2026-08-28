@@ -30,7 +30,8 @@ $dynamic = $wpdb->get_col(
 	"SELECT DISTINCT meta_key FROM {$wpdb->postmeta}
 	 WHERE meta_key LIKE '_rsu_content_%'
 	    OR meta_key LIKE '_rsu_sections_%'
-	    OR meta_key LIKE '_rsu_notes_url_%'"
+	    OR meta_key LIKE '_rsu_notes_url_%'
+	    OR meta_key LIKE '_rsu_notes_file_%'"
 );
 
 $meta_keys = array_merge( $static_keys, $dynamic );
@@ -52,6 +53,18 @@ delete_option( 'rsu_rivian_session' );
 delete_option( 'rsu_rivian_vehicle_map' );
 delete_option( 'rsu_rivian_state' );
 delete_transient( 'rsu_rivian_vehicles' );
+
+// Remove cached release-notes documents and their directory.
+$uploads = wp_upload_dir();
+if ( empty( $uploads['error'] ) ) {
+	$notes_dir = trailingslashit( $uploads['basedir'] ) . 'rsu-release-notes';
+	if ( is_dir( $notes_dir ) ) {
+		foreach ( (array) glob( $notes_dir . '/*.pdf' ) as $pdf ) {
+			wp_delete_file( $pdf );
+		}
+		@rmdir( $notes_dir ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- best effort; a non-empty dir is left alone.
+	}
+}
 
 // Drop the OTA poll event so it cannot fire after the plugin is gone.
 $timestamp = wp_next_scheduled( 'rsu_rivian_poll' );

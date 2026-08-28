@@ -2,6 +2,19 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.28.1] - 2026-08-28
+
+### Fixed
+- **Release-notes links expire, so the deferred fetch usually failed.** Rivian serves the Update Details PDF from S3 as a pre-signed URL carrying `X-Amz-Expires=3600` — valid for roughly an hour after it is issued. The poller stored that URL and left the download until someone opened the draft, so anything opened later than an hour after detection got a 403 and imported nothing. The document is now downloaded during the poll, while the link is still fresh, and cached under `wp-content/uploads/rsu-release-notes/`; the editor reads that copy. The URL is kept for reference and as a fallback for drafts recorded before this change, and a 401/403 on that fallback now says the link expired rather than reporting a bare status code.
+- **The detection email no longer promises an import that cannot happen.** It says the notes will import automatically only when the document was actually captured; if the download failed it says so and points out the link is short-lived.
+
+### Security
+- Cached documents are validated before being written (`%PDF-` magic bytes, 20 MB cap) and are read back through `basename()` against a fixed directory, so a tampered meta value cannot traverse out of the cache directory.
+- Cached PDFs are deleted when the notes are saved into a post, when a vehicle is deselected, when a pending import is dismissed, and on uninstall.
+
+### Notes
+- The document path encodes the platform, model, version, and locale — e.g. `/Vehicle/r1x_1_6/R1S/UpdateDetails/2026310/PDF-digital/US/en-US/update-details-2026310.pdf`, where `2026310` is version `2026.31.0` with the dots removed. These URLs cannot be hand-built for another vehicle or generation: the AWS SigV4 signature covers the exact path, so any edit yields `SignatureDoesNotMatch`. Notes for a given vehicle can only come from `getOTAUpdateDetails` called with that vehicle's own id.
+
 ## [2.28.0] - 2026-08-28
 
 ### Fixed

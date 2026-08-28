@@ -602,6 +602,25 @@ class RSU_Rivian_Admin {
 			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this post.', 'rivian-software-updates' ) ), 403 );
 		}
 
+		// The poller downloads the document while its signed link is fresh, so
+		// the cached copy is the normal path; the URL is only a fallback for
+		// documents recorded before caching existed.
+		$cached = RSU_Rivian_Poller::cached_notes_path( $post_id, $slug );
+
+		if ( $cached ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_get_contents -- binary read from our own upload subdirectory.
+			$body = file_get_contents( $cached );
+
+			if ( false !== $body && '' !== $body ) {
+				wp_send_json_success(
+					array(
+						'contentType' => 'application/pdf',
+						'data'        => base64_encode( $body ),
+					)
+				);
+			}
+		}
+
 		// Only ever fetch a URL this plugin recorded for this post and vehicle.
 		$url = get_post_meta( $post_id, RSU_Rivian_Poller::NOTES_META_PREFIX . $slug, true );
 
@@ -643,6 +662,14 @@ class RSU_Rivian_Admin {
 			);
 		}
 
+		if ( 403 === $code || 401 === $code ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Rivian\'s release-notes link has expired — they are only valid for about an hour. Use Import to upload the PDF by hand.', 'rivian-software-updates' ),
+				)
+			);
+		}
+
 		if ( $code < 200 || $code >= 300 || '' === $body ) {
 			wp_send_json_error(
 				array(
@@ -680,7 +707,7 @@ class RSU_Rivian_Admin {
 			wp_send_json_error( array( 'message' => __( 'You are not allowed to edit this post.', 'rivian-software-updates' ) ), 403 );
 		}
 
-		delete_post_meta( $post_id, RSU_Rivian_Poller::NOTES_META_PREFIX . $slug );
+		RSU_Rivian_Poller::forget_notes( $post_id, $slug );
 
 		wp_send_json_success();
 	}
