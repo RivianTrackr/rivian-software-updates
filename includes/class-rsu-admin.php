@@ -120,6 +120,7 @@ class RSU_Admin {
 			if ( ! in_array( $slug, $active_slugs, true ) ) {
 				delete_post_meta( $post_id, '_rsu_sections_' . $slug );
 				delete_post_meta( $post_id, $vehicle['meta_key'] );
+				delete_post_meta( $post_id, RSU_Rivian_Poller::NOTES_META_PREFIX . $slug );
 				continue;
 			}
 
@@ -134,6 +135,10 @@ class RSU_Admin {
 
 					// Store structured JSON.
 					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
+
+					// The queued release-notes URL has been consumed — stop
+					// the editor re-importing it on the next visit.
+					delete_post_meta( $post_id, RSU_Rivian_Poller::NOTES_META_PREFIX . $slug );
 
 					// Render to HTML for frontend display.
 					$html = self::render_sections_to_html( $sections, $slug );
@@ -1107,13 +1112,23 @@ class RSU_Admin {
 			true
 		);
 
-		// URLs for the lazy-loaded PDF importer (pdf.js bundle + worker).
+		$post_id = 0;
+		if ( isset( $GLOBALS['post'] ) && $GLOBALS['post'] instanceof WP_Post ) {
+			$post_id = (int) $GLOBALS['post']->ID;
+		}
+
+		// URLs for the lazy-loaded PDF importer (pdf.js bundle + worker), plus
+		// any release-notes documents the Rivian poller queued for this post.
 		wp_localize_script(
 			'rsu-admin',
 			'RSU_ADMIN',
 			array(
 				'pdfImportUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf-import.min.js?ver=' . RSU_VERSION,
 				'pdfWorkerUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf.worker.min.js?ver=' . RSU_VERSION,
+				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
+				'nonce'        => wp_create_nonce( RSU_Rivian_Admin::NONCE ),
+				'postId'       => $post_id,
+				'pendingNotes' => $post_id ? RSU_Rivian_Poller::get_pending_notes( $post_id ) : array(),
 			)
 		);
 	}

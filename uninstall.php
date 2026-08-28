@@ -28,7 +28,9 @@ $static_keys = array(
 // Dynamic vehicle content/sections keys.
 $dynamic = $wpdb->get_col(
 	"SELECT DISTINCT meta_key FROM {$wpdb->postmeta}
-	 WHERE meta_key LIKE '_rsu_content_%' OR meta_key LIKE '_rsu_sections_%'"
+	 WHERE meta_key LIKE '_rsu_content_%'
+	    OR meta_key LIKE '_rsu_sections_%'
+	    OR meta_key LIKE '_rsu_notes_url_%'"
 );
 
 $meta_keys = array_merge( $static_keys, $dynamic );
@@ -46,6 +48,16 @@ if ( ! empty( $meta_keys ) ) {
 delete_option( 'rsu_settings' );
 delete_option( 'rsu_platforms' );
 delete_option( 'rsu_cache_last_purge' );
+delete_option( 'rsu_rivian_session' );
+delete_option( 'rsu_rivian_vehicle_map' );
+delete_option( 'rsu_rivian_state' );
+delete_transient( 'rsu_rivian_vehicles' );
+
+// Drop the OTA poll event so it cannot fire after the plugin is gone.
+$timestamp = wp_next_scheduled( 'rsu_rivian_poll' );
+if ( $timestamp ) {
+	wp_unschedule_event( $timestamp, 'rsu_rivian_poll' );
+}
 
 // Remove the version-scoped widget HTML transients.
 $wpdb->query(

@@ -34,6 +34,7 @@ class RSU_Settings {
 		'cf_zone_id'                => '',
 		'cf_api_token'              => '',
 		'cf_purge_scope'            => 'everything',
+		'rivian_notify_email'       => '',
 	);
 
 	public function __construct() {
@@ -316,6 +317,10 @@ class RSU_Settings {
 		$clean['cf_purge_scope'] = isset( $input['cf_purge_scope'] ) && 'urls' === $input['cf_purge_scope']
 			? 'urls'
 			: 'everything';
+
+		// Where OTA detection emails go. Blank falls back to the admin email.
+		$notify = isset( $input['rivian_notify_email'] ) ? sanitize_email( trim( $input['rivian_notify_email'] ) ) : '';
+		$clean['rivian_notify_email'] = is_email( $notify ) ? $notify : '';
 
 		return $clean;
 	}
