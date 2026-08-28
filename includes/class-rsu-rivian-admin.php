@@ -22,6 +22,9 @@ class RSU_Rivian_Admin {
 	/** Transient holding the account's vehicle list. */
 	const VEHICLES_TRANSIENT = 'rsu_rivian_vehicles';
 
+	/** Upper bound on a fetched release-notes document (bytes). */
+	const MAX_NOTES_BYTES = 20971520; // 20 MB.
+
 	public function __construct() {
 		add_action( 'admin_menu', array( $this, 'add_menu_page' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_assets' ) );
@@ -247,9 +250,87 @@ class RSU_Rivian_Admin {
 					</div>
 					<?php self::render_vehicle_map(); ?>
 				</div>
+				<div class="rsu-card">
+					<div class="rsu-card__header">
+						<h2 class="rsu-card__title"><?php esc_html_e( 'Last response from Rivian', 'rivian-software-updates' ); ?></h2>
+						<p class="rsu-card__desc">
+							<?php esc_html_e( 'Exactly what the API returned on the most recent check. Rivian often publishes the release-notes document a while after the version itself appears — polling keeps watching and attaches it when it lands.', 'rivian-software-updates' ); ?>
+						</p>
+					</div>
+					<?php self::render_diagnostics( isset( $state['observed'] ) ? $state['observed'] : array() ); ?>
+				</div>
 			<?php endif; ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Render the per-vehicle view of the last OTA response.
+	 *
+	 * @param array $observed Observations keyed by Rivian vehicle id.
+	 * @return void
+	 */
+	private static function render_diagnostics( $observed ) {
+		if ( empty( $observed ) || ! is_array( $observed ) ) {
+			printf(
+				'<div class="rsu-notice rsu-notice--info">%s</div>',
+				esc_html__( 'Nothing recorded yet — run "Check now" above.', 'rivian-software-updates' )
+			);
+
+			return;
+		}
+
+		$platforms = RSU_Platforms::get_all();
+
+		foreach ( $observed as $entry ) {
+			$slug  = isset( $entry['slug'] ) ? $entry['slug'] : '';
+			$label = isset( $platforms[ $slug ]['label'] ) ? $platforms[ $slug ]['label'] : strtoupper( $slug );
+
+			foreach ( array( 'available' => __( 'Available', 'rivian-software-updates' ), 'current' => __( 'Current', 'rivian-software-updates' ) ) as $key => $heading ) {
+				$detail = isset( $entry[ $key ] ) ? $entry[ $key ] : array();
+
+				if ( empty( $detail['version'] ) ) {
+					continue;
+				}
+				?>
+				<div class="rsu-field-row">
+					<span class="rsu-field-label">
+						<?php echo esc_html( $label . ' — ' . $heading ); ?>
+						<small style="display:block;color:#86868b;font-weight:400;font-family:'SF Mono',Monaco,monospace;">
+							<?php echo esc_html( $detail['version'] ); ?>
+						</small>
+					</span>
+					<span class="rsu-field-control">
+						<?php if ( ! empty( $detail['url'] ) ) : ?>
+							<span style="color:#0a5e2a;font-weight:600;">&#10003; <?php esc_html_e( 'Release notes available', 'rivian-software-updates' ); ?></span>
+							<a href="<?php echo esc_url( $detail['url'] ); ?>" target="_blank" rel="noopener noreferrer"
+								style="display:block;margin-top:4px;font-size:12px;word-break:break-all;">
+								<?php echo esc_html( $detail['url'] ); ?>
+							</a>
+						<?php elseif ( ! empty( $detail['url_rejected'] ) ) : ?>
+							<span style="color:#c41e3a;font-weight:600;">
+								<?php
+								printf(
+									/* translators: %s: hostname. */
+									esc_html__( 'Document offered on an unrecognized host: %s', 'rivian-software-updates' ),
+									'<code>' . esc_html( $detail['url_rejected'] ) . '</code>'
+								);
+								?>
+							</span>
+							<small style="display:block;margin-top:4px;color:#6e6e73;">
+								<?php esc_html_e( 'Add it to the rsu_rivian_allowed_notes_hosts filter to allow fetching from there.', 'rivian-software-updates' ); ?>
+							</small>
+						<?php else : ?>
+							<span style="color:#856404;font-weight:600;">&#9679; <?php esc_html_e( 'Rivian returned no release-notes document yet', 'rivian-software-updates' ); ?></span>
+							<small style="display:block;margin-top:4px;color:#6e6e73;">
+								<?php esc_html_e( 'Still watching — the draft is updated and you are emailed when it appears.', 'rivian-software-updates' ); ?>
+							</small>
+						<?php endif; ?>
+					</span>
+				</div>
+				<?php
+			}
+		}
 	}
 
 	/**
@@ -542,6 +623,25 @@ class RSU_Rivian_Admin {
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
 		$body = wp_remote_retrieve_body( $response );
+
+		// The document is fetched from a CDN host, so bound what is accepted
+		// rather than trusting the response: PDFs of release notes are small.
+		if ( strlen( $body ) > self::MAX_NOTES_BYTES ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'That release-notes document is unexpectedly large — refusing to load it.', 'rivian-software-updates' ),
+				)
+			);
+		}
+
+		// pdf.js needs a PDF; anything else means the URL is not what we expect.
+		if ( '' !== $body && 0 !== strpos( $body, '%PDF-' ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'That release-notes link did not return a PDF. Use Import to paste the notes instead.', 'rivian-software-updates' ),
+				)
+			);
+		}
 
 		if ( $code < 200 || $code >= 300 || '' === $body ) {
 			wp_send_json_error(

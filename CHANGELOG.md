@@ -2,6 +2,22 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.28.0] - 2026-08-28
+
+### Fixed
+- **Drafts could be created empty and stay that way forever.** Rivian frequently publishes the release-notes document some time *after* the version itself appears in the API, so the first poll to see a version often gets `url: null`. The poller recorded the version as seen and then `continue`d past it on every later poll, so the notes were never picked up and the draft sat empty — exactly what happened to 2026.31.0. New versions whose document has not landed yet are now kept on a watch list and re-checked on every poll; the moment the document appears it is attached to the existing draft and a follow-up email goes out. Drafts created before this watch list existed are healed too, via a title match. The watch gives up after a week, since some releases never get a document.
+- **A release-notes URL on an unexpected host was discarded silently.** The host allowlist rejected the URL and blanked it, which was indistinguishable from Rivian returning nothing — the two need completely different fixes. The rejected host is now reported in the email and on the settings screen, and the allowlist covers Rivian's CDN and object-storage hosts (`cloudfront.net`, `amazonaws.com`) in addition to its own domains. A new `rsu_rivian_allowed_notes_hosts` filter adds a host without a code change.
+
+### Added
+- **Release-notes PDF links in the notification email.** Every detection email now carries the document link under "Official release notes (PDF)". When there is no document yet the email says polling continues and a follow-up is coming; when one was offered on an unrecognized host the email names that host and points at the filter.
+- **"Last response from Rivian" panel** on Settings → Rivian Account, showing per vehicle what the most recent check actually returned — the available and current versions, and for each whether a notes document was present (with its link), absent, or rejected for its host. This is the primary evidence when a draft comes up empty, rather than guessing at the cause.
+
+### Security
+- The proxy that fetches a release-notes document now caps the response at 20 MB and requires it to actually be a PDF (`%PDF-` magic bytes) before handing it to pdf.js — compensating controls for the widened host allowlist, alongside the existing `edit_post` check, recorded-URL-only rule, and `wp_safe_remote_get` private-network blocking.
+
+### Changed
+- The same document is never queued twice: a draft that already has a pending notes URL, has had its notes written by hand, or has left draft status is left alone. Without this the backfill re-attached and re-emailed on every five-minute poll.
+
 ## [2.27.0] - 2026-08-27
 
 ### Added

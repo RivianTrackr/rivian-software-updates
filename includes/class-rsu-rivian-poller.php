@@ -173,8 +173,11 @@ class RSU_Rivian_Poller {
 			return $report;
 		}
 
-		$state = self::get_state();
-		$seen  = isset( $state['seen'] ) && is_array( $state['seen'] ) ? $state['seen'] : array();
+		$state    = self::get_state();
+		$seen     = isset( $state['seen'] ) && is_array( $state['seen'] ) ? $state['seen'] : array();
+		$awaiting = isset( $state['awaiting'] ) && is_array( $state['awaiting'] ) ? $state['awaiting'] : array();
+		$done     = isset( $state['notes_done'] ) && is_array( $state['notes_done'] ) ? $state['notes_done'] : array();
+		$observed = array();
 
 		foreach ( $map as $vehicle_id => $slug ) {
 			$details = RSU_Rivian_API::get_ota_update_details( $vehicle_id );
@@ -200,32 +203,96 @@ class RSU_Rivian_Poller {
 				}
 			}
 
-			$known = isset( $seen[ $vehicle_id ] ) && is_array( $seen[ $vehicle_id ] ) ? $seen[ $vehicle_id ] : array();
+			// Keep the raw observation for the settings screen — when a version
+			// arrives without notes, this is the only record of what Rivian
+			// actually said, and guessing is worse than looking.
+			$observed[ $vehicle_id ] = array(
+				'at'        => time(),
+				'slug'      => $slug,
+				'available' => self::summarize_detail( $details['available'] ),
+				'current'   => self::summarize_detail( $details['current'] ),
+			);
+
+			$known    = isset( $seen[ $vehicle_id ] ) && is_array( $seen[ $vehicle_id ] ) ? $seen[ $vehicle_id ] : array();
+			$watching = isset( $awaiting[ $vehicle_id ] ) && is_array( $awaiting[ $vehicle_id ] ) ? $awaiting[ $vehicle_id ] : array();
+			$settled  = isset( $done[ $vehicle_id ] ) && is_array( $done[ $vehicle_id ] ) ? $done[ $vehicle_id ] : array();
 
 			foreach ( $candidates as $version => $detail ) {
-				if ( in_array( $version, $known, true ) ) {
+				if ( ! in_array( $version, $known, true ) ) {
+					$known[] = $version;
+
+					$result = self::handle_new_version( $slug, $detail );
+
+					if ( is_wp_error( $result ) ) {
+						$report['errors'][] = $result->get_error_message();
+						continue;
+					}
+
+					$report['detections'][] = $result;
+
+					// Rivian routinely publishes the release-notes document a
+					// little after the version itself appears, so an empty URL
+					// now is not final — keep asking on later polls.
+					if ( empty( $result['url'] ) ) {
+						$watching[ $version ] = array(
+							'post_id' => $result['post_id'],
+							'since'   => time(),
+						);
+					} else {
+						$settled[] = $version;
+					}
+
 					continue;
 				}
 
-				$known[] = $version;
-
-				$result = self::handle_new_version( $slug, $detail );
-
-				if ( is_wp_error( $result ) ) {
-					$report['errors'][] = $result->get_error_message();
+				// Already recorded. The only thing still outstanding is the
+				// notes document; fill it in the moment it shows up.
+				if ( empty( $detail['url'] ) ) {
+					// Stop waiting eventually — some releases never get a document.
+					if ( isset( $watching[ $version ] ) && time() - (int) $watching[ $version ]['since'] > WEEK_IN_SECONDS ) {
+						unset( $watching[ $version ] );
+					}
 					continue;
 				}
 
-				$report['detections'][] = $result;
+				// Settled already — do not look it up again on every poll.
+				if ( in_array( $version, $settled, true ) ) {
+					continue;
+				}
+
+				// Prefer the draft recorded when the version was first seen; fall
+				// back to a title match so drafts created before this watch list
+				// existed still get their notes.
+				$target = isset( $watching[ $version ] )
+					? (int) $watching[ $version ]['post_id']
+					: self::find_update_post( $version );
+
+				unset( $watching[ $version ] );
+				$settled[] = $version;
+
+				if ( ! $target ) {
+					continue;
+				}
+
+				$filled = self::backfill_notes( $slug, $detail, $target );
+
+				if ( ! is_wp_error( $filled ) ) {
+					$report['detections'][] = $filled;
+				}
 			}
 
 			// Keep the tail only — enough to avoid re-detecting a rollback.
-			$seen[ $vehicle_id ] = array_slice( $known, -10 );
+			$seen[ $vehicle_id ]     = array_slice( $known, -10 );
+			$awaiting[ $vehicle_id ] = $watching;
+			$done[ $vehicle_id ]     = array_slice( $settled, -10 );
 		}
 
 		self::update_state(
 			array(
 				'seen'     => $seen,
+				'awaiting'   => $awaiting,
+				'notes_done' => $done,
+				'observed'   => $observed,
 				'last_run' => $report,
 			)
 		);
@@ -281,12 +348,14 @@ class RSU_Rivian_Poller {
 		}
 
 		$record = array(
-			'slug'    => $slug,
-			'version' => $version,
-			'url'     => isset( $detail['url'] ) ? $detail['url'] : '',
-			'post_id' => (int) $post_id,
-			'created' => $created,
-			'at'      => time(),
+			'kind'         => 'new',
+			'slug'         => $slug,
+			'version'      => $version,
+			'url'          => isset( $detail['url'] ) ? $detail['url'] : '',
+			'url_rejected' => isset( $detail['url_rejected'] ) ? $detail['url_rejected'] : '',
+			'post_id'      => (int) $post_id,
+			'created'      => $created,
+			'at'           => time(),
 		);
 
 		self::notify( $record );
@@ -299,6 +368,87 @@ class RSU_Rivian_Poller {
 		do_action( 'rsu_rivian_update_detected', $record );
 
 		return $record;
+	}
+
+	/**
+	 * Attach a release-notes document that showed up after first detection.
+	 *
+	 * @param string $slug    Plugin vehicle slug.
+	 * @param array  $detail  array{ url, version, ... }.
+	 * @param int    $post_id Draft recorded at first detection.
+	 * @return array|WP_Error Detection record.
+	 */
+	private static function backfill_notes( $slug, $detail, $post_id ) {
+		$post = $post_id ? get_post( $post_id ) : null;
+
+		if ( ! $post || ! in_array( $post->post_status, array( 'draft', 'pending', 'auto-draft' ), true ) ) {
+			return new WP_Error(
+				'rsu_rivian_not_a_draft',
+				__( 'That version is no longer an open draft — leaving it alone.', 'rivian-software-updates' )
+			);
+		}
+
+		// Already queued for this vehicle — nothing to do, and no second email.
+		if ( get_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, true ) ) {
+			return new WP_Error(
+				'rsu_rivian_already_queued',
+				__( 'That draft is already waiting on this release-notes document.', 'rivian-software-updates' )
+			);
+		}
+
+		// Notes already written by hand win; do not queue an import over them.
+		$sections = get_post_meta( $post_id, '_rsu_sections_' . $slug, true );
+		$decoded  = $sections ? json_decode( $sections, true ) : array();
+
+		if ( ! empty( $decoded ) ) {
+			return new WP_Error(
+				'rsu_rivian_already_written',
+				__( 'That draft already has release notes for this vehicle.', 'rivian-software-updates' )
+			);
+		}
+
+		update_post_meta( $post_id, self::NOTES_META_PREFIX . $slug, esc_url_raw( $detail['url'] ) );
+
+		$record = array(
+			'kind'         => 'notes',
+			'slug'         => $slug,
+			'version'      => $detail['version'],
+			'url'          => $detail['url'],
+			'url_rejected' => '',
+			'post_id'      => (int) $post_id,
+			'created'      => false,
+			'at'           => time(),
+		);
+
+		self::notify( $record );
+
+		/**
+		 * Fires when a release-notes document is attached to an existing draft.
+		 *
+		 * @param array $record Detection record.
+		 */
+		do_action( 'rsu_rivian_notes_attached', $record );
+
+		return $record;
+	}
+
+	/**
+	 * Reduce an OTA detail to the fields the diagnostics panel shows.
+	 *
+	 * @param array|null $detail Normalized detail.
+	 * @return array
+	 */
+	private static function summarize_detail( $detail ) {
+		if ( ! is_array( $detail ) ) {
+			return array( 'version' => '' );
+		}
+
+		return array(
+			'version'      => isset( $detail['version'] ) ? $detail['version'] : '',
+			'url'          => isset( $detail['url'] ) ? $detail['url'] : '',
+			'has_url'      => ! empty( $detail['has_url'] ),
+			'url_rejected' => isset( $detail['url_rejected'] ) ? $detail['url_rejected'] : '',
+		);
 	}
 
 	/**
@@ -376,43 +526,75 @@ class RSU_Rivian_Poller {
 			? $vehicles[ $record['slug'] ]['label']
 			: strtoupper( $record['slug'] );
 
-		$edit_link = get_edit_post_link( $record['post_id'], 'raw' );
+		$edit_link  = get_edit_post_link( $record['post_id'], 'raw' );
+		$notes_late = isset( $record['kind'] ) && 'notes' === $record['kind'];
 
-		$subject = sprintf(
-			/* translators: 1: vehicle label, 2: version string. */
-			__( '[%1$s] Rivian software update %2$s is available', 'rivian-software-updates' ),
-			$label,
-			$record['version']
-		);
-
-		$lines = array(
-			sprintf(
+		if ( $notes_late ) {
+			$subject = sprintf(
 				/* translators: 1: vehicle label, 2: version string. */
-				__( 'A new Rivian software update was detected for %1$s: version %2$s.', 'rivian-software-updates' ),
+				__( '[%1$s] Release notes are now available for %2$s', 'rivian-software-updates' ),
 				$label,
 				$record['version']
-			),
-			'',
-			$record['created']
-				? __( 'A draft post has been created for it.', 'rivian-software-updates' )
-				: __( 'This vehicle was added to the existing draft for that version.', 'rivian-software-updates' ),
-		);
+			);
+
+			$lines = array(
+				sprintf(
+					/* translators: 1: version string, 2: vehicle label. */
+					__( 'Rivian has published the release-notes document for %1$s (%2$s).', 'rivian-software-updates' ),
+					$record['version'],
+					$label
+				),
+				'',
+				__( 'It has been attached to the existing draft — open it and the notes import themselves.', 'rivian-software-updates' ),
+			);
+		} else {
+			$subject = sprintf(
+				/* translators: 1: vehicle label, 2: version string. */
+				__( '[%1$s] Rivian software update %2$s is available', 'rivian-software-updates' ),
+				$label,
+				$record['version']
+			);
+
+			$lines = array(
+				sprintf(
+					/* translators: 1: vehicle label, 2: version string. */
+					__( 'A new Rivian software update was detected for %1$s: version %2$s.', 'rivian-software-updates' ),
+					$label,
+					$record['version']
+				),
+				'',
+				$record['created']
+					? __( 'A draft post has been created for it.', 'rivian-software-updates' )
+					: __( 'This vehicle was added to the existing draft for that version.', 'rivian-software-updates' ),
+			);
+		}
+
+		// The notes document itself — the thing worth clicking.
+		if ( ! empty( $record['url'] ) ) {
+			$lines[] = '';
+			$lines[] = __( 'Official release notes (PDF):', 'rivian-software-updates' );
+			$lines[] = $record['url'];
+		} elseif ( ! empty( $record['url_rejected'] ) ) {
+			$lines[] = '';
+			$lines[] = sprintf(
+				/* translators: %s: hostname. */
+				__( 'Rivian returned a release-notes document on an unrecognized host (%s), so it was not fetched. Add that host to the rsu_rivian_allowed_notes_hosts filter to enable it.', 'rivian-software-updates' ),
+				$record['url_rejected']
+			);
+		} else {
+			$lines[] = '';
+			$lines[] = __( 'Rivian has not published the release-notes document for this version yet. Polling continues, and you will get a follow-up email as soon as it appears.', 'rivian-software-updates' );
+		}
 
 		if ( $edit_link ) {
 			$lines[] = '';
 			$lines[] = __( 'Edit the draft:', 'rivian-software-updates' );
 			$lines[] = $edit_link;
-			$lines[] = '';
-			$lines[] = __( 'Opening the draft pulls in the official release notes automatically — review the sections, then publish.', 'rivian-software-updates' );
-		}
 
-		if ( ! empty( $record['url'] ) ) {
-			$lines[] = '';
-			$lines[] = __( 'Official release notes document:', 'rivian-software-updates' );
-			$lines[] = $record['url'];
-		} else {
-			$lines[] = '';
-			$lines[] = __( 'Rivian did not return a release-notes document for this version, so the draft is empty.', 'rivian-software-updates' );
+			if ( ! empty( $record['url'] ) ) {
+				$lines[] = '';
+				$lines[] = __( 'Opening the draft pulls in the release notes automatically — review the sections, then publish.', 'rivian-software-updates' );
+			}
 		}
 
 		wp_mail( $to, $subject, implode( "\n", $lines ) );
