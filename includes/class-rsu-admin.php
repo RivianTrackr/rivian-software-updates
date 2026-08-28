@@ -120,7 +120,7 @@ class RSU_Admin {
 			if ( ! in_array( $slug, $active_slugs, true ) ) {
 				delete_post_meta( $post_id, '_rsu_sections_' . $slug );
 				delete_post_meta( $post_id, $vehicle['meta_key'] );
-				RSU_Rivian_Poller::forget_notes( $post_id, $slug );
+				RSU_Rivian_Poller::forget_notes( $post_id, $slug, true );
 				continue;
 			}
 
@@ -136,9 +136,11 @@ class RSU_Admin {
 					// Store structured JSON.
 					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
 
-					// The queued release notes have been consumed — drop the
-					// URL and the cached PDF so nothing re-imports on the next visit.
-					RSU_Rivian_Poller::forget_notes( $post_id, $slug );
+					// The queued release notes have been consumed — stop the
+					// editor re-importing them, but keep the archived PDFs:
+					// Rivian can reissue notes for a version already written up,
+					// and the history is what makes that comparable.
+					RSU_Rivian_Poller::forget_notes( $post_id, $slug, true );
 
 					// Render to HTML for frontend display.
 					$html = self::render_sections_to_html( $sections, $slug );

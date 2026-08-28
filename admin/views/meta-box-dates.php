@@ -246,3 +246,58 @@ $all_vehicles = RSU_Platforms::get_all();
 	refresh( false );
 } )();
 </script>
+
+<?php
+// ── Archived release-notes documents ──
+// Rivian can reissue the notes for a version it has already shipped, so every
+// distinct PDF is kept and listed here rather than being overwritten.
+$rsu_history = array();
+foreach ( RSU_Platforms::get_all() as $rsu_slug => $rsu_vehicle ) {
+	$rsu_revisions = RSU_Rivian_Poller::get_revisions( $post->ID, $rsu_slug );
+	if ( ! empty( $rsu_revisions ) ) {
+		$rsu_history[ $rsu_slug ] = array(
+			'label'     => $rsu_vehicle['label'],
+			'revisions' => $rsu_revisions,
+		);
+	}
+}
+
+if ( ! empty( $rsu_history ) ) :
+	?>
+	<div class="rsu-notes-history">
+		<p class="rsu-notes-history__title">Release notes history</p>
+		<?php foreach ( $rsu_history as $rsu_slug => $rsu_group ) : ?>
+			<p class="rsu-notes-history__vehicle"><?php echo esc_html( $rsu_group['label'] ); ?></p>
+			<ul class="rsu-notes-history__list">
+				<?php foreach ( array_reverse( $rsu_group['revisions'] ) as $rsu_rev ) :
+					$rsu_index = isset( $rsu_rev['index'] ) ? (int) $rsu_rev['index'] : 0;
+					$rsu_link  = wp_nonce_url(
+						admin_url( 'admin-post.php?action=rsu_rivian_notes_pdf&post_id=' . (int) $post->ID . '&vehicle=' . rawurlencode( $rsu_slug ) . '&revision=' . $rsu_index ),
+						'rsu_rivian_download_' . (int) $post->ID . '_' . $rsu_slug . '_' . $rsu_index
+					);
+					?>
+					<li>
+						<a href="<?php echo esc_url( $rsu_link ); ?>" target="_blank" rel="noopener noreferrer">
+							Revision <?php echo (int) $rsu_index; ?>
+						</a>
+						<span class="rsu-notes-history__meta">
+							<?php echo esc_html( date_i18n( get_option( 'date_format' ) . ' ' . get_option( 'time_format' ), (int) $rsu_rev['at'] ) ); ?>
+							<?php if ( ! empty( $rsu_rev['draft'] ) ) : ?>
+								<span class="rsu-notes-history__draft" title="Rivian marked this document THIS IS DRAFT CONTENT">DRAFT</span>
+							<?php endif; ?>
+						</span>
+					</li>
+				<?php endforeach; ?>
+			</ul>
+		<?php endforeach; ?>
+	</div>
+	<style>
+	.rsu-notes-history { margin-top: 16px; padding-top: 14px; border-top: 1px solid #d2d2d7; }
+	.rsu-notes-history__title { margin: 0 0 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #6e6e73; }
+	.rsu-notes-history__vehicle { margin: 10px 0 4px; font-size: 12px; font-weight: 600; color: #1d1d1f; }
+	.rsu-notes-history__list { margin: 0; padding: 0; list-style: none; }
+	.rsu-notes-history__list li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 4px 0; font-size: 12px; }
+	.rsu-notes-history__meta { color: #86868b; font-size: 11px; display: inline-flex; align-items: center; gap: 6px; }
+	.rsu-notes-history__draft { background: #fff3cd; color: #856404; border-radius: 4px; padding: 1px 5px; font-size: 9px; font-weight: 700; letter-spacing: 0.5px; }
+	</style>
+<?php endif; ?>

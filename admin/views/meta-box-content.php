@@ -45,6 +45,10 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 .rsu-auto-import { display: flex; align-items: center; gap: 10px; margin: 12px 20px 0; padding: 12px 16px; border-radius: 10px; background: var(--rsu-bg-info); color: #1e40af; font-size: 13px; font-weight: 500; line-height: 1.5; }
 .rsu-auto-import--done { background: #d1f4e0; color: #0a5e2a; }
 .rsu-auto-import--error { background: var(--rsu-error-light); color: #c41e3a; }
+.rsu-auto-import--revised { background: #fff3cd; color: #856404; }
+.rsu-auto-import__load { flex: none; border: 1px solid currentColor; background: transparent; color: inherit; font-size: 12px; font-weight: 600; cursor: pointer; padding: 5px 10px; border-radius: 6px; }
+.rsu-auto-import__load:hover { background: rgba(0, 0, 0, 0.06); }
+.rsu-auto-import__load:disabled { opacity: 0.6; cursor: default; }
 .rsu-auto-import__text { flex: 1; }
 .rsu-auto-import__spinner { flex: none; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; opacity: 0.7; animation: rsu-auto-import-spin 0.8s linear infinite; }
 .rsu-auto-import--done .rsu-auto-import__spinner, .rsu-auto-import--error .rsu-auto-import__spinner { display: none; }
