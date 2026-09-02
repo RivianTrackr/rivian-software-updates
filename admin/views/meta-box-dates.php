@@ -48,6 +48,8 @@ $all_vehicles = RSU_Platforms::get_all();
 ?>
 
 <div class="rsu-details-wrap">
+	<p class="rsu-details-hint">Title the post with the release family, e.g. <code>2026.31</code>. The exact version each generation received goes under Build numbers.</p>
+
 	<div class="rsu-field">
 		<label for="rsu-date-noticed">First Noticed</label>
 		<input type="date" id="rsu-date-noticed" name="rsu_date_noticed"
@@ -63,7 +65,7 @@ $all_vehicles = RSU_Platforms::get_all();
 
 	<div class="rsu-field rsu-builds-field">
 		<span class="rsu-builds-field__label">Build numbers</span>
-		<p class="rsu-builds-field__desc">The exact version each generation received, e.g. 2026.31.00 for Gen 1 and 2026.31.30 for Gen 2. Only vehicles checked above are kept on save.</p>
+		<p class="rsu-builds-field__desc">The exact version each generation received, e.g. 2026.31.00 for Gen 1 and 2026.31.30 for Gen 2. Only vehicles checked in the Release Notes box are kept on save.</p>
 		<?php
 		foreach ( $all_vehicles as $v_slug => $vehicle ) :
 			$generations = ! empty( $vehicle['generations'] ) ? $vehicle['generations'] : array();

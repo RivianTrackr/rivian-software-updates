@@ -408,6 +408,12 @@ class RSU_Admin {
 							$gen_labels
 						);
 
+						// A list with no items renders nothing; drop it rather
+						// than keep an empty block cluttering the editor.
+						if ( empty( $items ) ) {
+							continue;
+						}
+
 						$clean_block = array(
 							'type'  => 'list',
 							'items' => $items,
@@ -433,10 +439,15 @@ class RSU_Admin {
 										$valid_generations,
 										$gen_labels
 									);
-									$note_blocks[] = array( 'type' => 'list', 'items' => $nb_items );
+									if ( ! empty( $nb_items ) ) {
+										$note_blocks[] = array( 'type' => 'list', 'items' => $nb_items );
+									}
 								} else {
 									$nb_content = isset( $nb['content'] ) ? sanitize_textarea_field( $nb['content'] ) : '';
 									$nb_content = self::strip_pill_pollution( $nb_content, $generation, $gen_labels );
+									if ( '' === trim( $nb_content ) ) {
+										continue;
+									}
 									$note_blocks[] = array(
 										'type'    => 'paragraph',
 										'content' => $nb_content,
@@ -453,6 +464,10 @@ class RSU_Admin {
 							);
 						}
 
+						if ( empty( $note_blocks ) ) {
+							continue;
+						}
+
 						$clean_block = array(
 							'type'   => 'note',
 							'blocks' => $note_blocks,
@@ -464,6 +479,9 @@ class RSU_Admin {
 					} else {
 						$content = isset( $block['content'] ) ? sanitize_textarea_field( $block['content'] ) : '';
 						$content = self::strip_pill_pollution( $content, $generation, $gen_labels );
+						if ( '' === trim( $content ) ) {
+							continue;
+						}
 						$clean_block = array(
 							'type'    => $type,
 							'content' => $content,

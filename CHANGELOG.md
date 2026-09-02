@@ -2,6 +2,21 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.32.0] - 2026-09-02
+
+### Fixed
+- **Generation selectors rendered as a tiled pattern once set.** "Gen 1 Only" on a bullet, block, or section painted the dropdown chevron across the whole control, because the active style used the `background` shorthand and reset the icon's repeat. The chevron also vanished on hover for the same reason. Both are now `background-color`.
+- **Bullets could not be removed from the keyboard.** Tab inside a bullet is taken by indenting, so the remove button was never reached, and it was `visibility: hidden` until mouse hover on top of that. **Ctrl+Backspace** (Cmd+Backspace on a Mac) now removes the current bullet with an Undo toast, and the button itself fades in whenever the row is hovered or focused.
+- **Blank blocks no longer survive a save.** An empty paragraph, a list with no items, or a note with nothing inside is dropped on save instead of reappearing in the editor.
+
+### Changed
+- **Less chrome per row.** Generation selectors that are still on "All" stay invisible until the row is hovered or focused; set ones always show. Block drag handles and close buttons do the same, so a paragraph is mostly its text.
+- **Sections move without the mouse.** Each section header gained up and down buttons, and Alt+Up / Alt+Down in a heading does the same. A **Collapse all / Expand all** button in the toolbar handles long releases, and collapsed state survives edits.
+- **Undo is visible.** Removing a section or block, copying from another vehicle, and importing all show a toast with an Undo button. Ctrl+Z still works.
+- **Import dialog is wider and side by side.** Source text and preview sit next to each other at roughly full height, so a whole Rivian document can be checked without scrolling both panes. When a tab already has sections, the dialog offers **Replace the existing sections** instead of always appending.
+- **Update Details explains the title convention.** A hint says to title the post with the release family and put per-generation versions under Build numbers.
+- **One stylesheet for the editor.** The ~200 lines of CSS inlined in the Release Notes meta box moved into `admin/css/rsu-admin.css`, replacing the older duplicate rules there. The unused undo-bar styles went with them.
+
 ## [2.31.0] - 2026-09-02
 
 ### Added
