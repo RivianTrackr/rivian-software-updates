@@ -168,8 +168,12 @@ class RSU_Admin {
 
 		// Per-vehicle, per-generation build numbers (e.g. 2026.31.00 for R1 Gen 1,
 		// 2026.31.30 for R1 Gen 2). Every release carries these, not just hotfixes.
+		// Only vehicles on the post keep builds: a build typed for an unchecked
+		// vehicle would otherwise surface in the history table and widget for a
+		// vehicle the release is not tagged with.
 		if ( isset( $_POST['rsu_builds'] ) ) {
 			$raw_builds = is_array( $_POST['rsu_builds'] ) ? wp_unslash( $_POST['rsu_builds'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by RSU_Builds::sanitize().
+			$raw_builds = array_intersect_key( (array) $raw_builds, array_flip( $active_slugs ) );
 			RSU_Builds::save( $post_id, $raw_builds );
 		}
 

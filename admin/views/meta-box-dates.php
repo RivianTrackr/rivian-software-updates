@@ -63,7 +63,7 @@ $all_vehicles = RSU_Platforms::get_all();
 
 	<div class="rsu-field rsu-builds-field">
 		<span class="rsu-builds-field__label">Build numbers</span>
-		<p class="rsu-builds-field__desc">The exact version each generation received, e.g. 2026.31.00 for Gen 1 and 2026.31.30 for Gen 2. Filled in automatically when a connected vehicle reports the update.</p>
+		<p class="rsu-builds-field__desc">The exact version each generation received, e.g. 2026.31.00 for Gen 1 and 2026.31.30 for Gen 2. Only vehicles checked above are kept on save.</p>
 		<?php
 		foreach ( $all_vehicles as $v_slug => $vehicle ) :
 			$generations = ! empty( $vehicle['generations'] ) ? $vehicle['generations'] : array();
