@@ -1043,10 +1043,8 @@ var RSUSectionBuilder = (function () {
 		return _pdfImporterPromise;
 	}
 
-	function showImport(btn, initialText, generation) {
-		// Accepts the toolbar button, or a bare vehicle slug when opened by the
-		// revised-notes flow rather than by a click.
-		var vehicle = (typeof btn === 'string') ? btn : btn.getAttribute('data-vehicle');
+	function showImport(btn, initialText) {
+		var vehicle = btn.getAttribute('data-vehicle');
 		var dialog = createElement(
 			'<dialog class="rsu-import-dialog">' +
 				'<div class="rsu-import-dialog__header">' +
@@ -1058,10 +1056,6 @@ var RSUSectionBuilder = (function () {
 						'<button type="button" class="rsu-import-dialog__pdf-btn"><span class="dashicons dashicons-pdf" style="font-size:14px;width:14px;height:14px;"></span> Upload PDF</button>' +
 						'<input type="file" class="rsu-import-dialog__pdf-input" accept=".pdf,application/pdf" style="display:none;" />' +
 						'<span class="rsu-import-dialog__pdf-status"></span>' +
-					'</div>' +
-					'<div class="rsu-import-dialog__source">' +
-						'<input type="url" class="rsu-import-dialog__url-input" placeholder="Or paste a Rivian release-notes link (expires ~1h after Rivian issues it)" />' +
-						'<button type="button" class="rsu-import-dialog__url-btn">Fetch</button>' +
 					'</div>' +
 					'<textarea class="rsu-import-dialog__textarea" placeholder="Paste release notes here...\n\nCold Weather Improvements\n• Battery preconditioning now more efficient\n• Cabin heating reduced warm-up time\n\nNavigation\nUpdated route planning algorithm."></textarea>' +
 					'<div class="rsu-import-dialog__preview-label">Preview</div>' +
@@ -1113,52 +1107,6 @@ var RSUSectionBuilder = (function () {
 				});
 		});
 
-		var urlInput = qs('.rsu-import-dialog__url-input', dialog);
-		var urlBtn = qs('.rsu-import-dialog__url-btn', dialog);
-		// Sections applied from this dialog carry whichever generation the
-		// fetched document turned out to be for.
-		var importGeneration = generation || '';
-
-		urlBtn.addEventListener('click', function () {
-			var value = urlInput.value.trim();
-			if (!value) return;
-
-			urlBtn.disabled = true;
-			urlBtn.textContent = 'Fetching…';
-			pdfStatus.classList.remove('rsu-import-dialog__pdf-status--error');
-			pdfStatus.textContent = 'Fetching the document…';
-
-			var cfg = window.RSU_ADMIN || {};
-
-			rivianPost('import_url', { post_id: cfg.postId, url: value, vehicle: vehicle })
-				.then(function (data) {
-					importGeneration = data.generation || '';
-					return loadPdfImporter().then(function (importer) {
-						return importer.extractText(base64ToBytes(data.data), { workerSrc: cfg.pdfWorkerUrl || '' })
-							.then(function (text) { return { text: text, meta: data }; });
-					});
-				})
-				.then(function (result) {
-					if (!result.text || !result.text.trim()) throw new Error('No text found in that document.');
-					textarea.value = result.text;
-					refreshPreview();
-
-					var note = result.meta.label || '';
-					if (result.meta.draft) note += ' · marked draft content';
-					if (result.meta.mismatch) note += ' — ' + result.meta.mismatch;
-					pdfStatus.textContent = note || 'Fetched.';
-					if (result.meta.mismatch) pdfStatus.classList.add('rsu-import-dialog__pdf-status--error');
-				})
-				.catch(function (err) {
-					pdfStatus.textContent = err.message;
-					pdfStatus.classList.add('rsu-import-dialog__pdf-status--error');
-				})
-				.then(function () {
-					urlBtn.disabled = false;
-					urlBtn.textContent = 'Fetch';
-				});
-		});
-
 		function refreshPreview() {
 			var parsed = textarea.value.trim() ? parseTextToSections(textarea.value) : [];
 			renderImportPreview(previewEl, parsed);
@@ -1192,11 +1140,6 @@ var RSUSectionBuilder = (function () {
 
 			var parsed = parseTextToSections(text);
 			if (parsed.length) {
-				// Gen 1 and Gen 2 get different notes for the same version, so
-				// imported sections carry the pill of the document they came from.
-				if (importGeneration) {
-					parsed.forEach(function (section) { section.generation = importGeneration; });
-				}
 				pushUndo(builder);
 				builder._sections = builder._sections.concat(parsed);
 				renderSections(builder);
@@ -1487,250 +1430,6 @@ var RSUSectionBuilder = (function () {
 		}
 	});
 
-	// ── Auto-import release notes queued by the Rivian poller ──
-	// The poller records a release-notes document URL on the draft but cannot
-	// parse it (pdf.js is browser-only), so the editor finishes the job: fetch
-	// the document through the server-side proxy, run the same extraction the
-	// manual PDF import uses, and drop the sections into the vehicle's builder.
-
-	function rivianPost(action, fields) {
-		var cfg = window.RSU_ADMIN || {};
-		var body = new FormData();
-		body.append('action', 'rsu_rivian_' + action);
-		body.append('nonce', cfg.nonce || '');
-		Object.keys(fields || {}).forEach(function (key) { body.append(key, fields[key]); });
-
-		return fetch(cfg.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: body })
-			.then(function (res) { return res.json(); })
-			.then(function (json) {
-				if (!json || !json.success) {
-					throw new Error((json && json.data && json.data.message) || 'Request failed.');
-				}
-				return json.data || {};
-			});
-	}
-
-	function base64ToBytes(b64) {
-		var binary = window.atob(b64);
-		var bytes = new Uint8Array(binary.length);
-		for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-		return bytes;
-	}
-
-	function autoImportBanner() {
-		var host = qs('.rsu-admin-wrap');
-		if (!host) return null;
-
-		var existing = qs('.rsu-auto-import', host);
-		if (existing) return existing;
-
-		var el = document.createElement('div');
-		el.className = 'rsu-auto-import';
-		el.innerHTML =
-			'<span class="rsu-auto-import__spinner" aria-hidden="true"></span>' +
-			'<span class="rsu-auto-import__text"></span>' +
-			'<button type="button" class="rsu-auto-import__dismiss">Dismiss</button>';
-		host.insertBefore(el, host.firstChild);
-		return el;
-	}
-
-	function setBannerState(banner, text, state) {
-		if (!banner) return;
-		qs('.rsu-auto-import__text', banner).textContent = text;
-		banner.className = 'rsu-auto-import' + (state ? ' rsu-auto-import--' + state : '');
-	}
-
-	// Fetch a queued document and turn it into importable text.
-	function extractPendingText(entry) {
-		var cfg = window.RSU_ADMIN || {};
-
-		return Promise.all([
-			loadPdfImporter(),
-			rivianPost('fetch_notes', {
-				post_id: cfg.postId,
-				vehicle: entry.vehicle,
-				generation: entry.generation || ''
-			})
-		]).then(function (loaded) {
-			return loaded[0].extractText(base64ToBytes(loaded[1].data), {
-				workerSrc: cfg.pdfWorkerUrl || ''
-			});
-		}).then(function (text) {
-			if (!text || !text.trim()) throw new Error('The release-notes document had no readable text.');
-			return text;
-		});
-	}
-
-	// Import one queued document. Resolves to the number of sections added
-	// (0 when skipped), rejects with a message the banner can show.
-	function importPendingFor(entry, banner) {
-		var builder = qs('.rsu-section-builder[data-vehicle="' + entry.vehicle + '"]');
-
-		if (!builder) return Promise.resolve(0);
-
-		getBuilder(builder);
-		readFromDOM(builder);
-
-		// Gen 1 and Gen 2 notes land in the same builder, so only skip when
-		// this generation's sections are already present.
-		var already = (builder._sections || []).some(function (section) {
-			return (section.generation || '') === (entry.generation || '');
-		});
-
-		if (already) return Promise.resolve(0);
-
-		setBannerState(banner, 'Fetching the official ' + entry.label + ' release notes…', 'busy');
-
-		return extractPendingText(entry).then(function (text) {
-			var parsed = parseTextToSections(text);
-			if (!parsed.length) throw new Error('No sections could be detected in the release notes.');
-
-			// Tag with the generation the document was published for, so the
-			// existing Gen 1 / Gen 2 pills come out right.
-			if (entry.generation) {
-				parsed.forEach(function (section) { section.generation = entry.generation; });
-			}
-
-			pushUndo(builder);
-			builder._sections = builder._sections.concat(parsed);
-			renderSections(builder);
-			_dirty = true;
-
-			return parsed.length;
-		});
-	}
-
-	// Rivian reissues notes for a version it has already published, so a
-	// revision must be offered rather than applied — the post may already be
-	// written, and only a human can tell what actually changed.
-	function offerRevision(entry) {
-		var host = qs('.rsu-admin-wrap');
-		if (!host) return;
-
-		var cfg = window.RSU_ADMIN || {};
-		var el = document.createElement('div');
-		el.className = 'rsu-auto-import rsu-auto-import--revised';
-
-		var what = 'Rivian revised the ' + entry.label + ' release notes';
-		if (entry.revision) what += ' (revision ' + entry.revision + ')';
-		if (entry.revisedAt) what += ' on ' + entry.revisedAt;
-		what += '.';
-		if (entry.draft) what += ' This document is marked draft content, so it may change again.';
-
-		el.innerHTML =
-			'<span class="rsu-auto-import__text"></span>' +
-			'<button type="button" class="rsu-auto-import__load">Load revised notes</button>' +
-			'<button type="button" class="rsu-auto-import__dismiss">Dismiss</button>';
-		qs('.rsu-auto-import__text', el).textContent = what;
-		host.insertBefore(el, host.firstChild);
-
-		function dismiss() {
-			rivianPost('clear_revised', {
-				post_id: cfg.postId,
-				vehicle: entry.vehicle,
-				generation: entry.generation || ''
-			})['catch'](function () {});
-			el.remove();
-		}
-
-		var loadBtn = qs('.rsu-auto-import__load', el);
-
-		loadBtn.addEventListener('click', function () {
-			loadBtn.disabled = true;
-			loadBtn.textContent = 'Loading…';
-
-			extractPendingText(entry)
-				.then(function (text) {
-					// Opens the normal import dialog with its preview, so the
-					// revised text can be compared before anything is applied.
-					showImport(entry.vehicle, text, entry.generation || '');
-					dismiss();
-				})
-				.catch(function (err) {
-					qs('.rsu-auto-import__text', el).textContent = 'Could not load the revised notes — ' + err.message;
-					el.className = 'rsu-auto-import rsu-auto-import--error';
-					loadBtn.disabled = false;
-					loadBtn.textContent = 'Retry';
-				});
-		});
-
-		qs('.rsu-auto-import__dismiss', el).addEventListener('click', dismiss);
-	}
-
-	var _autoImportRan = false;
-
-	function autoImportPendingNotes() {
-		if (_autoImportRan) return;
-		_autoImportRan = true;
-
-		var cfg = window.RSU_ADMIN || {};
-		var pending = cfg.pendingNotes || [];
-
-		if (!pending.length || !cfg.postId || !cfg.ajaxUrl) return;
-
-		// Revised notes are offered; everything else imports on its own.
-		var fresh = [];
-		pending.forEach(function (entry) {
-			if (entry.state === 'revised') offerRevision(entry);
-			else fresh.push(entry);
-		});
-
-		if (!fresh.length) return;
-
-		var banner = autoImportBanner();
-		if (!banner) return;
-
-		qs('.rsu-auto-import__dismiss', banner).addEventListener('click', function () {
-			fresh.forEach(function (entry) {
-				rivianPost('clear_notes', {
-					post_id: cfg.postId,
-					vehicle: entry.vehicle,
-					generation: entry.generation || ''
-				})['catch'](function () {});
-			});
-			banner.remove();
-		});
-
-		var imported = 0;
-		var failures = [];
-
-		// Sequential: pdf.js parsing is heavy, and two at once stalls the editor.
-		fresh.reduce(function (chain, entry) {
-			return chain.then(function () {
-				return importPendingFor(entry, banner).then(
-					function (count) { imported += count; },
-					function (err) { failures.push(entry.label + ': ' + err.message); }
-				);
-			});
-		}, Promise.resolve()).then(function () {
-			if (failures.length) {
-				setBannerState(
-					banner,
-					'Could not import automatically — ' + failures.join(' / ') +
-						' You can still use Import to paste or upload the notes.',
-					'error'
-				);
-				return;
-			}
-
-			if (!imported) {
-				setBannerState(banner, 'Release notes were already filled in for this update.', 'done');
-				return;
-			}
-
-			var draft = fresh.some(function (entry) { return entry.draft; });
-
-			setBannerState(
-				banner,
-				'Imported ' + imported + ' section' + (imported > 1 ? 's' : '') +
-					' from Rivian’s release notes. Review them, then save.' +
-					(draft ? ' This document is marked draft content, so Rivian may revise it.' : ''),
-				'done'
-			);
-			showToast('Release notes imported from Rivian');
-		});
-	}
-
 	// Run init immediately, plus retry for Block Editor.
 	init();
 	if (document.readyState === 'loading') {
@@ -1743,8 +1442,6 @@ var RSUSectionBuilder = (function () {
 		var uninitialized = builders.filter(function (b) { return !b._initialized; });
 		if (uninitialized.length) init();
 		if (retryCount >= 10 || !uninitialized.length) clearInterval(retryTimer);
-		// Only once every builder is live, so sections land in the right tab.
-		if (builders.length && !uninitialized.length) autoImportPendingNotes();
 	}, 500);
 
 	return {

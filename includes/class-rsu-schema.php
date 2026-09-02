@@ -170,7 +170,7 @@ class RSU_Schema {
 	/**
 	 * Build the SoftwareApplication "about" entries for a post.
 	 *
-	 * For hotfixes with per-generation build numbers, one entry is emitted per
+	 * When per-generation build numbers are recorded, one entry is emitted per
 	 * vehicle+generation using the specific build as softwareVersion. Otherwise a
 	 * single entry per vehicle uses the post title version.
 	 *
@@ -181,10 +181,7 @@ class RSU_Schema {
 	 * @return array List of SoftwareApplication node arrays.
 	 */
 	private function build_about( $post_id, $version, $active_vehicles, $all_vehicles ) {
-		$builds = get_post_meta( $post_id, '_rsu_hotfix_builds', true );
-		if ( ! is_array( $builds ) ) {
-			$builds = array();
-		}
+		$builds = RSU_Builds::get( $post_id );
 
 		$about = array();
 

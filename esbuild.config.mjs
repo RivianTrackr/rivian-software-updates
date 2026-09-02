@@ -42,17 +42,6 @@ const builds = [
     sourcemap: 'linked',
     drop: ['console', 'debugger'],
   },
-  // Rivian account settings screen (connect flow, vehicle mapping)
-  {
-    ...jsDefaults,
-    bundle: true,
-    entryPoints: ['admin/js/rsu-rivian-connect.js'],
-    outfile: 'admin/js/rsu-rivian-connect.min.js',
-    format: 'iife',
-    minify: true,
-    sourcemap: 'linked',
-    drop: ['console', 'debugger'],
-  },
   // PDF importer (pdf.js + structure extraction) — lazy-loaded by rsu-admin.js
   {
     ...jsDefaults,

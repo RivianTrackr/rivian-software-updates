@@ -34,7 +34,6 @@ class RSU_Settings {
 		'cf_zone_id'                => '',
 		'cf_api_token'              => '',
 		'cf_purge_scope'            => 'everything',
-		'rivian_notify_email'       => '',
 	);
 
 	public function __construct() {
@@ -208,11 +207,6 @@ class RSU_Settings {
 						'label'       => isset( $gen_row['label'] ) ? sanitize_text_field( $gen_row['label'] ) : $gen_slug,
 						'description' => isset( $gen_row['description'] ) ? sanitize_text_field( $gen_row['description'] ) : '',
 						'sort'        => isset( $gen_row['sort'] ) && is_numeric( $gen_row['sort'] ) ? intval( $gen_row['sort'] ) : $gen_sort,
-						// Which Rivian release-notes documents belong to this
-						// generation: the platform segment, and optionally the
-						// body style when those are tracked separately.
-						'platform_code' => isset( $gen_row['platform_code'] ) ? sanitize_text_field( $gen_row['platform_code'] ) : '',
-						'model_code'    => isset( $gen_row['model_code'] ) ? sanitize_text_field( $gen_row['model_code'] ) : '',
 					);
 
 					$gen_sort += 10;
@@ -324,8 +318,6 @@ class RSU_Settings {
 			: 'everything';
 
 		// Where OTA detection emails go. Blank falls back to the admin email.
-		$notify = isset( $input['rivian_notify_email'] ) ? sanitize_email( trim( $input['rivian_notify_email'] ) ) : '';
-		$clean['rivian_notify_email'] = is_email( $notify ) ? $notify : '';
 
 		return $clean;
 	}

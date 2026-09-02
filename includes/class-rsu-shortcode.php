@@ -76,47 +76,9 @@ class RSU_Shortcode {
 				}
 			}
 
-			// Hotfix metadata: flag and per-generation build numbers.
-			$is_hotfix   = (bool) get_post_meta( $post_id, '_rsu_is_hotfix', true );
-			$builds_meta = get_post_meta( $post_id, '_rsu_hotfix_builds', true );
-			$builds      = array();
-			if ( is_array( $builds_meta ) ) {
-				// Prefix labels with the vehicle name only when more than one
-				// vehicle carries builds; otherwise the "Available For" column
-				// already identifies the vehicle and the prefix is just noise.
-				$vehicles_with_builds = 0;
-				foreach ( $builds_meta as $v_slug => $gens ) {
-					if ( isset( $all_vehicles[ $v_slug ] ) && is_array( $gens ) && array_filter( $gens, 'strlen' ) ) {
-						$vehicles_with_builds++;
-					}
-				}
-				$prefix_vehicle = $vehicles_with_builds > 1;
-
-				foreach ( $builds_meta as $v_slug => $gens ) {
-					if ( ! isset( $all_vehicles[ $v_slug ] ) || ! is_array( $gens ) ) {
-						continue;
-					}
-					$v_label  = $all_vehicles[ $v_slug ]['label'];
-					$gen_defs = ! empty( $all_vehicles[ $v_slug ]['generations'] ) ? $all_vehicles[ $v_slug ]['generations'] : array();
-					$multi    = count( $gen_defs ) > 1;
-					foreach ( $gens as $g_slug => $build ) {
-						if ( '' === trim( (string) $build ) ) {
-							continue;
-						}
-						$parts = array();
-						if ( $prefix_vehicle ) {
-							$parts[] = $v_label;
-						}
-						if ( $multi && isset( $gen_defs[ $g_slug ]['label'] ) ) {
-							$parts[] = $gen_defs[ $g_slug ]['label'];
-						}
-						$builds[] = array(
-							'label' => implode( ' ', $parts ),
-							'value' => $build,
-						);
-					}
-				}
-			}
+			// Hotfix flag plus the exact build each generation received.
+			$is_hotfix = (bool) get_post_meta( $post_id, '_rsu_is_hotfix', true );
+			$builds    = RSU_Builds::describe( RSU_Builds::get( $post_id ) );
 
 			$grouped[ $year ][] = array(
 				'version'        => get_the_title(),

@@ -2,6 +2,19 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.31.0] - 2026-09-02
+
+### Added
+- **Build numbers on every release, not just hotfixes.** One Rivian release reaches each platform under its own version string — 2026.31 ships as 2026.31.00 on Gen 1 R1, 2026.31.30 on Gen 2 R1 and 2026.31.40 on R2. The post title stays the release family and the Update Details box now carries a **Build numbers** field per vehicle generation on every post. The chips already shown on hotfixes (release notes page, history table, structured data) now appear for base releases too, and the Latest Software Updates widget lists each generation's exact build under the family headline.
+- **Base releases list their patches.** A release notes page shows the hotfixes that followed it, each with its builds and date, so the relationship reads both ways. The hotfix banner gained a direct link to the full release notes.
+- **Duplicate-title warning.** Marking a post as a hotfix and picking a base release with the same title shows a warning in the editor, since two posts with one title collide on the URL slug. The suggested hotfix title now derives from the selected base release.
+
+### Changed
+- Build numbers moved from `_rsu_hotfix_builds` to `_rsu_builds`. The old key is still read and is migrated on the next save, so nothing published changes.
+
+### Removed
+- **The Rivian account integration.** Connecting an account, the vehicle map, the five-minute poll, auto-created drafts, detection emails, the release-notes archive with revision tracking, the pasted-link import, and the per-generation platform and model codes are all gone. Release notes are written by hand or imported from an uploaded PDF or pasted text, as before 2.28. Leftover cron events and options are cleared once on the next admin load; archived documents in `uploads/rsu-release-notes` are left in place and removed on uninstall.
+
 ## [2.30.0] - 2026-08-28
 
 ### Added

@@ -19,6 +19,7 @@ $static_keys = array(
 	'_rsu_date_released',
 	'_rsu_is_hotfix',
 	'_rsu_parent_release',
+	'_rsu_builds',
 	'_rsu_hotfix_builds',
 	// Legacy keys.
 	'_rsu_version',
@@ -51,6 +52,8 @@ if ( ! empty( $meta_keys ) ) {
 delete_option( 'rsu_settings' );
 delete_option( 'rsu_platforms' );
 delete_option( 'rsu_cache_last_purge' );
+// Legacy Rivian account integration (removed in 2.31.0).
+delete_option( 'rsu_rivian_removed' );
 delete_option( 'rsu_rivian_session' );
 delete_option( 'rsu_rivian_vehicle_map' );
 delete_option( 'rsu_rivian_state' );

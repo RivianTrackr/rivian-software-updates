@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Rivian Software Updates
  * Description: Structured release notes for Rivian vehicle software updates with vehicle tabs, generation pills, and SEO schema.
- * Version: 2.30.0
+ * Version: 2.31.0
  * Author: RivianTrackr
  * Text Domain: rivian-software-updates
  * Requires at least: 5.8
@@ -13,7 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'RSU_VERSION', '2.30.0' );
+define( 'RSU_VERSION', '2.31.0' );
 define( 'RSU_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'RSU_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'RSU_PLUGIN_FILE', __FILE__ );
@@ -35,22 +35,31 @@ spl_autoload_register( function ( $class ) {
 // Initialize plugin.
 add_action( 'plugins_loaded', 'rsu_init' );
 
-// Stop polling Rivian when the plugin is switched off; RSU_Rivian_Poller
-// reschedules itself on the next init if an account is still connected.
-register_deactivation_hook( __FILE__, function () {
-	require_once RSU_PLUGIN_DIR . 'includes/class-rsu-rivian-poller.php';
-	RSU_Rivian_Poller::unschedule();
-} );
+// The Rivian account integration (2.28–2.30) polled the connected account
+// for new versions. It is gone; clear whatever it left behind, once.
+add_action( 'admin_init', 'rsu_forget_rivian_account' );
+
+function rsu_forget_rivian_account() {
+	if ( get_option( 'rsu_rivian_removed' ) ) {
+		return;
+	}
+
+	wp_clear_scheduled_hook( 'rsu_rivian_poll' );
+	delete_option( 'rsu_rivian_session' );
+	delete_option( 'rsu_rivian_vehicle_map' );
+	delete_option( 'rsu_rivian_state' );
+	delete_transient( 'rsu_rivian_vehicles' );
+
+	update_option( 'rsu_rivian_removed', '1', false );
+}
 
 function rsu_init() {
 	if ( is_admin() ) {
 		new RSU_Admin();
 		new RSU_Settings();
-		new RSU_Rivian_Admin();
 	}
 
 	new RSU_Cache();
-	new RSU_Rivian_Poller();
 	new RSU_Frontend();
 	new RSU_Schema();
 	new RSU_SEO();

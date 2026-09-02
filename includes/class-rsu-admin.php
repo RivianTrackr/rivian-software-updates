@@ -120,7 +120,6 @@ class RSU_Admin {
 			if ( ! in_array( $slug, $active_slugs, true ) ) {
 				delete_post_meta( $post_id, '_rsu_sections_' . $slug );
 				delete_post_meta( $post_id, $vehicle['meta_key'] );
-				RSU_Rivian_Poller::forget_notes( $post_id, $slug, true );
 				continue;
 			}
 
@@ -135,12 +134,6 @@ class RSU_Admin {
 
 					// Store structured JSON.
 					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
-
-					// The queued release notes have been consumed — stop the
-					// editor re-importing them, but keep the archived PDFs:
-					// Rivian can reissue notes for a version already written up,
-					// and the history is what makes that comparable.
-					RSU_Rivian_Poller::forget_notes( $post_id, $slug, true );
 
 					// Render to HTML for frontend display.
 					$html = self::render_sections_to_html( $sections, $slug );
@@ -173,7 +166,18 @@ class RSU_Admin {
 			}
 		}
 
-		// Hotfix details: flag, parent release, and per-generation build numbers.
+		// Per-vehicle, per-generation build numbers (e.g. 2026.31.00 for R1 Gen 1,
+		// 2026.31.30 for R1 Gen 2). Every release carries these, not just hotfixes.
+		// Only vehicles on the post keep builds: a build typed for an unchecked
+		// vehicle would otherwise surface in the history table and widget for a
+		// vehicle the release is not tagged with.
+		if ( isset( $_POST['rsu_builds'] ) ) {
+			$raw_builds = is_array( $_POST['rsu_builds'] ) ? wp_unslash( $_POST['rsu_builds'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- sanitized by RSU_Builds::sanitize().
+			$raw_builds = array_intersect_key( (array) $raw_builds, array_flip( $active_slugs ) );
+			RSU_Builds::save( $post_id, $raw_builds );
+		}
+
+		// Hotfix details: flag and parent release.
 		if ( ! empty( $_POST['rsu_is_hotfix'] ) ) {
 			update_post_meta( $post_id, '_rsu_is_hotfix', '1' );
 
@@ -186,41 +190,9 @@ class RSU_Admin {
 			} else {
 				delete_post_meta( $post_id, '_rsu_parent_release' );
 			}
-
-			// Per-vehicle, per-generation build numbers (e.g. 2026.15.01 for R1 Gen 1).
-			$builds = array();
-			if ( isset( $_POST['rsu_hotfix_builds'] ) && is_array( $_POST['rsu_hotfix_builds'] ) ) {
-				$all = RSU_Platforms::get_all();
-				foreach ( wp_unslash( $_POST['rsu_hotfix_builds'] ) as $v_slug => $gens ) {
-					$v_slug = sanitize_key( $v_slug );
-					if ( ! isset( $all[ $v_slug ] ) || ! is_array( $gens ) ) {
-						continue;
-					}
-					$valid_gens = ! empty( $all[ $v_slug ]['generations'] )
-						? array_keys( $all[ $v_slug ]['generations'] )
-						: array();
-					foreach ( $gens as $g_slug => $build ) {
-						$g_slug = sanitize_key( $g_slug );
-						if ( ! in_array( $g_slug, $valid_gens, true ) ) {
-							continue;
-						}
-						$build = sanitize_text_field( $build );
-						if ( '' !== $build ) {
-							$builds[ $v_slug ][ $g_slug ] = $build;
-						}
-					}
-				}
-			}
-
-			if ( ! empty( $builds ) ) {
-				update_post_meta( $post_id, '_rsu_hotfix_builds', $builds );
-			} else {
-				delete_post_meta( $post_id, '_rsu_hotfix_builds' );
-			}
 		} else {
 			delete_post_meta( $post_id, '_rsu_is_hotfix' );
 			delete_post_meta( $post_id, '_rsu_parent_release' );
-			delete_post_meta( $post_id, '_rsu_hotfix_builds' );
 		}
 	}
 
@@ -1119,18 +1091,14 @@ class RSU_Admin {
 			$post_id = (int) $GLOBALS['post']->ID;
 		}
 
-		// URLs for the lazy-loaded PDF importer (pdf.js bundle + worker), plus
-		// any release-notes documents the Rivian poller queued for this post.
+		// URLs for the lazy-loaded PDF importer (pdf.js bundle + worker).
 		wp_localize_script(
 			'rsu-admin',
 			'RSU_ADMIN',
 			array(
 				'pdfImportUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf-import.min.js?ver=' . RSU_VERSION,
 				'pdfWorkerUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf.worker.min.js?ver=' . RSU_VERSION,
-				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
-				'nonce'        => wp_create_nonce( RSU_Rivian_Admin::NONCE ),
 				'postId'       => $post_id,
-				'pendingNotes' => $post_id ? RSU_Rivian_Poller::get_pending_notes( $post_id ) : array(),
 			)
 		);
 	}

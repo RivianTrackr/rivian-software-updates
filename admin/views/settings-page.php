@@ -118,8 +118,6 @@ $cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_c
 											<th style="width: 110px;">Slug</th>
 											<th>Label</th>
 											<th>Description</th>
-											<th style="width: 110px;" title="Platform segment in Rivian's release-notes paths — r1x for R1 Gen 1, r1x_1_6 for Gen 2. Used to file downloaded notes under the right generation.">Platform code</th>
-											<th style="width: 90px;" title="Optional body style (R1T, R1S). Set it only to track body styles as separate generations.">Model</th>
 											<th style="width: 70px;">Order</th>
 											<th style="width: 36px;"></th>
 										</tr>
@@ -154,20 +152,6 @@ $cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_c
 														class="rsu-input"
 														value="<?php echo esc_attr( $gen['description'] ); ?>"
 														placeholder="e.g. 2028+" />
-												</td>
-												<td>
-													<input type="text" name="<?php echo esc_attr( $gen_prefix ); ?>[platform_code]"
-														class="rsu-input"
-														value="<?php echo esc_attr( isset( $gen['platform_code'] ) ? $gen['platform_code'] : '' ); ?>"
-														placeholder="r1x"
-														style="font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px;" />
-												</td>
-												<td>
-													<input type="text" name="<?php echo esc_attr( $gen_prefix ); ?>[model_code]"
-														class="rsu-input"
-														value="<?php echo esc_attr( isset( $gen['model_code'] ) ? $gen['model_code'] : '' ); ?>"
-														placeholder="any"
-														style="font-family: 'SF Mono', Monaco, Consolas, monospace; font-size: 11px;" />
 												</td>
 												<td>
 													<input type="number" name="<?php echo esc_attr( $gen_prefix ); ?>[sort]"
@@ -268,14 +252,6 @@ $cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_c
 								class="rsu-input"
 								value=""
 								placeholder="e.g. Gen 3" />
-						</td>
-						<td>
-							<input type="text" name="rsu_platforms[__VI__][generations][__GI__][platform_code]"
-								class="rsu-input" placeholder="r1x" style="font-family: monospace; font-size: 11px;" value="" />
-						</td>
-						<td>
-							<input type="text" name="rsu_platforms[__VI__][generations][__GI__][model_code]"
-								class="rsu-input" placeholder="any" style="font-family: monospace; font-size: 11px;" value="" />
 						</td>
 						<td>
 							<input type="text" name="rsu_platforms[__VI__][generations][__GI__][description]"
@@ -664,31 +640,6 @@ $cache_purge_url   = wp_nonce_url( admin_url( 'admin-post.php?action=rsu_purge_c
 				</div>
 			</div>
 
-		</div>
-
-		<!-- ==================== Rivian Account ==================== -->
-		<div class="rsu-card">
-			<div class="rsu-card__header">
-				<h2 class="rsu-card__title">Rivian Account</h2>
-				<p class="rsu-card__desc">Connect your Rivian account under <a href="<?php echo esc_url( admin_url( 'options-general.php?page=rsu-rivian' ) ); ?>">Settings &rsaquo; Rivian Account</a> to watch for new software updates and draft posts automatically.</p>
-			</div>
-
-			<div class="rsu-field-row">
-				<div class="rsu-field-label">
-					<label>Notification email</label>
-					<p>Where to send the alert when a new update is detected. Leave blank to use the site admin address (<code><?php echo esc_html( get_option( 'admin_email' ) ); ?></code>).</p>
-				</div>
-				<div class="rsu-field-control">
-					<input type="email"
-						name="rsu_settings[rivian_notify_email]"
-						class="rsu-input"
-						autocomplete="off"
-						spellcheck="false"
-						placeholder="<?php echo esc_attr( get_option( 'admin_email' ) ); ?>"
-						value="<?php echo esc_attr( $settings['rivian_notify_email'] ); ?>"
-						style="width: 320px;" />
-				</div>
-			</div>
 		</div>
 
 		<!-- ==================== Save Bar ==================== -->
