@@ -139,6 +139,13 @@ class RSU_Widget extends WP_Widget {
 		$date_noticed  = get_post_meta( $post_id, '_rsu_date_noticed', true );
 		$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
 		$is_hotfix     = get_post_meta( $post_id, '_rsu_is_hotfix', true );
+		// Only the builds for the vehicles on this row — a vehicle whose latest
+		// update is a different post has its own row and its own builds.
+		$builds = RSU_Builds::get( $post_id );
+		if ( ! empty( $slugs ) ) {
+			$builds = array_intersect_key( $builds, array_flip( $slugs ) );
+		}
+		$builds = RSU_Builds::describe( $builds );
 
 		$labels = array();
 		foreach ( $slugs as $slug ) {
@@ -166,6 +173,19 @@ class RSU_Widget extends WP_Widget {
 			</span>
 
 			<span class="rsu-widget-latest__version"><?php echo esc_html( $version ); ?></span>
+
+			<?php if ( ! empty( $builds ) ) : ?>
+				<span class="rsu-widget-latest__builds">
+					<?php foreach ( $builds as $build ) : ?>
+						<span class="rsu-widget-latest__build">
+							<?php if ( '' !== $build['label'] ) : ?>
+								<span class="rsu-widget-latest__build-label"><?php echo esc_html( $build['label'] ); ?></span>
+							<?php endif; ?>
+							<span class="rsu-widget-latest__build-value"><?php echo esc_html( $build['value'] ); ?></span>
+						</span>
+					<?php endforeach; ?>
+				</span>
+			<?php endif; ?>
 
 			<span class="rsu-widget-latest__dates">
 				<?php if ( '' !== $noticed_display ) : ?>

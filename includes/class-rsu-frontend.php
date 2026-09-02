@@ -87,16 +87,31 @@ class RSU_Frontend {
 
 		$is_hotfix      = get_post_meta( $post_id, '_rsu_is_hotfix', true );
 		$parent_id      = (int) get_post_meta( $post_id, '_rsu_parent_release', true );
-		$hotfix_builds  = get_post_meta( $post_id, '_rsu_hotfix_builds', true );
-		if ( ! is_array( $hotfix_builds ) ) {
-			$hotfix_builds = array();
-		}
+		$builds         = RSU_Builds::get( $post_id );
 		$parent_link = ( $is_hotfix && $parent_id && 'publish' === get_post_status( $parent_id ) )
 			? array(
 				'title' => get_the_title( $parent_id ),
 				'url'   => get_permalink( $parent_id ),
 			)
 			: null;
+
+		// A base release lists the patches that shipped on top of it, so the
+		// relationship reads both ways: the hotfix points up, the base points
+		// down. Each entry carries the exact builds the patch delivered.
+		$patches = array();
+		if ( ! $is_hotfix ) {
+			foreach ( RSU_Builds::get_patches( $post_id ) as $patch ) {
+				$released  = get_post_meta( $patch->ID, '_rsu_date_released', true );
+				$noticed   = get_post_meta( $patch->ID, '_rsu_date_noticed', true );
+				$when      = $released ? $released : $noticed;
+				$patches[] = array(
+					'title'  => get_the_title( $patch->ID ),
+					'url'    => get_permalink( $patch->ID ),
+					'date'   => $when ? date_i18n( 'M j, Y', strtotime( $when ) ) : '',
+					'builds' => RSU_Builds::describe( RSU_Builds::get( $patch->ID ) ),
+				);
+			}
+		}
 
 		if ( ! in_array( $default, $active_vehicles, true ) ) {
 			$default = $active_vehicles[0];
@@ -115,9 +130,41 @@ class RSU_Frontend {
 						<span class="rsu-hotfix-banner__text">
 							Patch for <a href="<?php echo esc_url( $parent_link['url'] ); ?>"><?php echo esc_html( $parent_link['title'] ); ?></a>
 						</span>
+						<a class="rsu-hotfix-banner__link" href="<?php echo esc_url( $parent_link['url'] ); ?>">
+							Full <?php echo esc_html( $parent_link['title'] ); ?> release notes
+							<span aria-hidden="true">&rarr;</span>
+						</a>
 					<?php else : ?>
 						<span class="rsu-hotfix-banner__text">Patch release</span>
 					<?php endif; ?>
+				</div>
+			<?php elseif ( ! empty( $patches ) ) : ?>
+				<div class="rsu-patches">
+					<span class="rsu-patches__label">
+						<span class="rsu-patches__badge"><?php echo 1 === count( $patches ) ? 'Patched' : (int) count( $patches ) . ' patches'; ?></span>
+						This release was followed by
+					</span>
+					<?php foreach ( $patches as $patch ) : ?>
+						<a class="rsu-patch" href="<?php echo esc_url( $patch['url'] ); ?>">
+							<span class="rsu-patch__title"><?php echo esc_html( $patch['title'] ); ?></span>
+							<?php if ( ! empty( $patch['builds'] ) ) : ?>
+								<span class="rsu-patch__builds">
+									<?php foreach ( $patch['builds'] as $build ) : ?>
+										<span class="rsu-patch__build">
+											<?php if ( '' !== $build['label'] ) : ?>
+												<span class="rsu-patch__build-label"><?php echo esc_html( $build['label'] ); ?></span>
+											<?php endif; ?>
+											<span class="rsu-patch__build-value"><?php echo esc_html( $build['value'] ); ?></span>
+										</span>
+									<?php endforeach; ?>
+								</span>
+							<?php endif; ?>
+							<?php if ( '' !== $patch['date'] ) : ?>
+								<span class="rsu-patch__date"><?php echo esc_html( $patch['date'] ); ?></span>
+							<?php endif; ?>
+							<span class="rsu-patch__arrow" aria-hidden="true">&rarr;</span>
+						</a>
+					<?php endforeach; ?>
 				</div>
 			<?php endif; ?>
 
@@ -212,7 +259,7 @@ class RSU_Frontend {
 					<?php echo $is_default ? '' : 'hidden'; ?>>
 					<div class="rsu-panel__content">
 						<?php
-						$v_builds = isset( $hotfix_builds[ $slug ] ) && is_array( $hotfix_builds[ $slug ] ) ? $hotfix_builds[ $slug ] : array();
+						$v_builds = isset( $builds[ $slug ] ) && is_array( $builds[ $slug ] ) ? $builds[ $slug ] : array();
 						if ( $v_builds ) :
 							$gen_labels = RSU_Platforms::get_generations( $slug );
 							$multi_gen  = count( $gen_labels ) > 1;

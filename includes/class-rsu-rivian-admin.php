@@ -797,11 +797,14 @@ class RSU_Rivian_Admin {
 		$body = file_get_contents( $path );
 
 		// A link for a different release is almost always a paste mistake, so
-		// say so rather than silently filing it under the wrong post.
+		// say so rather than silently filing it under the wrong post. A post
+		// titled with the release family ("2026.31") owns every build in that
+		// family (2026.31.00, 2026.31.30), as does one whose recorded builds
+		// name the version outright.
 		$title    = (string) get_post_field( 'post_title', $post_id );
 		$mismatch = '';
 
-		if ( $result['version'] && false === strpos( $title, $result['version'] ) ) {
+		if ( $result['version'] && ! RSU_Rivian_Poller::post_covers_version( $post_id, $result['version'] ) ) {
 			$mismatch = sprintf(
 				/* translators: 1: version from the link, 2: post title. */
 				__( 'Heads up: that link is for version %1$s, but this post is "%2$s".', 'rivian-software-updates' ),

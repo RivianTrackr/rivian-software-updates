@@ -689,21 +689,33 @@
 	outline: none;
 }
 
-.rsu-hotfix-builds__label {
+.rsu-details-wrap .rsu-builds-field {
+	border-top: 1px solid #e8e8ed;
+	padding-top: 14px;
+}
+
+.rsu-builds-field__label {
 	display: block;
 	font-size: 11px;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	color: #6e6e73;
-	margin-bottom: 8px;
+	margin-bottom: 6px;
 }
 
-.rsu-hotfix-vehicle {
+.rsu-builds-field__desc {
+	font-size: 12px;
+	color: #86868b;
+	margin: 0 0 12px;
+	line-height: 1.5;
+}
+
+.rsu-builds-vehicle {
 	margin-bottom: 12px;
 }
 
-.rsu-hotfix-vehicle__label {
+.rsu-builds-vehicle__label {
 	display: block;
 	font-size: 12px;
 	font-weight: 700;
@@ -711,14 +723,14 @@
 	margin-bottom: 6px;
 }
 
-.rsu-hotfix-build {
+.rsu-build-row {
 	display: flex;
 	align-items: center;
 	gap: 8px;
 	margin-bottom: 6px;
 }
 
-.rsu-hotfix-build__gen {
+.rsu-build-row__gen {
 	flex: 0 0 64px;
 	font-size: 12px;
 	font-weight: 500 !important;
@@ -726,8 +738,25 @@
 	margin-bottom: 0 !important;
 }
 
-.rsu-hotfix-build input[type="text"] {
+.rsu-build-row input[type="text"] {
 	flex: 1;
+	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+	font-size: 13px;
+}
+
+.rsu-hotfix-warning {
+	margin: 12px 0 0;
+	padding: 8px 10px;
+	font-size: 12px;
+	line-height: 1.5;
+	color: #856404;
+	background: #fff3cd;
+	border: 1px solid color-mix(in srgb, #856404 25%, transparent);
+	border-radius: 8px;
+}
+
+.rsu-hotfix-warning[hidden] {
+	display: none;
 }
 
 .rsu-hotfix-suggest {

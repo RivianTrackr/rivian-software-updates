@@ -2,6 +2,19 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.31.0] - 2026-09-02
+
+### Added
+- **Build numbers on every release, not just hotfixes.** One Rivian release reaches each platform under its own version string — 2026.31 ships as 2026.31.00 on Gen 1 R1, 2026.31.30 on Gen 2 R1 and 2026.31.40 on R2. The post title stays the release family and the Update Details box now carries a **Build numbers** field per vehicle generation on every post. The chips already shown on hotfixes (release notes page, history table, structured data) now appear for base releases too, and the Latest Software Updates widget lists each generation's exact build under the family headline.
+- **The poller understands release families.** A version reported by a connected car is matched to the post titled with its family (2026.31.30 joins "2026.31") or to any post whose recorded builds name it, so the three platforms' builds land on one draft instead of three. The build is written into the empty slot for the generation the release-notes path names — a value the editor typed is never overwritten. New drafts are titled with the family rather than the full build.
+- **Patches are detected.** When a generation that already carries a build on the release reports a different one (2026.31.01 after 2026.31.00), the poller files it on a hotfix draft tied to that release, titled "2026.31 Hotfix", and reuses that draft when the other generation's patch arrives. The detection email says so, and the checkbox can simply be unticked if the guess is wrong. Builds are processed oldest first so a car sitting on the base build with the patch pending is filed the right way round.
+- **Base releases list their patches.** A release notes page shows the hotfixes that followed it, each with its builds and date, so the relationship reads both ways. The hotfix banner gained a direct link to the full release notes.
+- **Duplicate-title warning.** Marking a post as a hotfix and picking a base release with the same title shows a warning in the editor, since two posts with one title collide on the URL slug. The suggested hotfix title now derives from the selected base release.
+
+### Changed
+- Build numbers moved from `_rsu_hotfix_builds` to `_rsu_builds`. The old key is still read and is migrated on the next save, so nothing published changes.
+- The pasted-link import's "different version" warning accepts a link whose build belongs to the post's release family or is among its recorded builds, rather than requiring the exact string in the title.
+
 ## [2.30.0] - 2026-08-28
 
 ### Added

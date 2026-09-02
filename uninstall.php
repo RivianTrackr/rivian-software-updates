@@ -19,6 +19,7 @@ $static_keys = array(
 	'_rsu_date_released',
 	'_rsu_is_hotfix',
 	'_rsu_parent_release',
+	'_rsu_builds',
 	'_rsu_hotfix_builds',
 	// Legacy keys.
 	'_rsu_version',

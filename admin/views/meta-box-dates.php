@@ -1,6 +1,6 @@
 <?php
 /**
- * Meta box: Update Details (dates + hotfix).
+ * Meta box: Update Details (dates, build numbers, hotfix).
  *
  * @package Rivian_Software_Updates
  * @var WP_Post $post
@@ -11,12 +11,9 @@ defined( 'ABSPATH' ) || exit;
 $date_noticed  = get_post_meta( $post->ID, '_rsu_date_noticed', true );
 $date_released = get_post_meta( $post->ID, '_rsu_date_released', true );
 
-$is_hotfix     = get_post_meta( $post->ID, '_rsu_is_hotfix', true );
-$parent_id     = (int) get_post_meta( $post->ID, '_rsu_parent_release', true );
-$hotfix_builds = get_post_meta( $post->ID, '_rsu_hotfix_builds', true );
-if ( ! is_array( $hotfix_builds ) ) {
-	$hotfix_builds = array();
-}
+$is_hotfix = get_post_meta( $post->ID, '_rsu_is_hotfix', true );
+$parent_id = (int) get_post_meta( $post->ID, '_rsu_parent_release', true );
+$builds    = RSU_Builds::get( $post->ID );
 
 // Candidate base releases: published update posts that are not hotfixes, newest first.
 $base_releases = get_posts( array(
@@ -40,6 +37,13 @@ $base_releases = get_posts( array(
 	),
 ) );
 
+// Titles keyed by ID so the editor can warn when a hotfix reuses its base
+// release's title — two posts with one title collide on the URL slug.
+$base_titles = array();
+foreach ( $base_releases as $release ) {
+	$base_titles[ (int) $release->ID ] = $release->post_title;
+}
+
 $all_vehicles = RSU_Platforms::get_all();
 ?>
 
@@ -57,6 +61,39 @@ $all_vehicles = RSU_Platforms::get_all();
 			value="<?php echo esc_attr( $date_released ); ?>" />
 	</div>
 
+	<div class="rsu-field rsu-builds-field">
+		<span class="rsu-builds-field__label">Build numbers</span>
+		<p class="rsu-builds-field__desc">The exact version each generation received, e.g. 2026.31.00 for Gen 1 and 2026.31.30 for Gen 2. Filled in automatically when a connected vehicle reports the update.</p>
+		<?php
+		foreach ( $all_vehicles as $v_slug => $vehicle ) :
+			$generations = ! empty( $vehicle['generations'] ) ? $vehicle['generations'] : array();
+			if ( empty( $generations ) ) {
+				continue;
+			}
+			?>
+			<div class="rsu-builds-vehicle">
+				<span class="rsu-builds-vehicle__label"><?php echo esc_html( $vehicle['label'] ); ?></span>
+				<?php
+				foreach ( $generations as $g_slug => $gen ) :
+					$value = isset( $builds[ $v_slug ][ $g_slug ] ) ? $builds[ $v_slug ][ $g_slug ] : '';
+					$field = 'rsu_builds[' . $v_slug . '][' . $g_slug . ']';
+					$id    = 'rsu-build-' . $v_slug . '-' . $g_slug;
+					?>
+					<div class="rsu-build-row">
+						<label class="rsu-build-row__gen" for="<?php echo esc_attr( $id ); ?>">
+							<?php echo esc_html( $gen['label'] ); ?>
+						</label>
+						<input type="text" id="<?php echo esc_attr( $id ); ?>"
+							name="<?php echo esc_attr( $field ); ?>"
+							value="<?php echo esc_attr( $value ); ?>"
+							class="rsu-build-row__input"
+							placeholder="e.g. 2026.31.00" />
+					</div>
+				<?php endforeach; ?>
+			</div>
+		<?php endforeach; ?>
+	</div>
+
 	<div class="rsu-field rsu-hotfix">
 		<label class="rsu-hotfix-toggle">
 			<input type="checkbox" id="rsu-is-hotfix" name="rsu_is_hotfix" value="1"
@@ -65,7 +102,7 @@ $all_vehicles = RSU_Platforms::get_all();
 		</label>
 
 		<div class="rsu-hotfix-fields" id="rsu-hotfix-fields" <?php echo $is_hotfix ? '' : 'hidden'; ?>>
-			<p class="rsu-hotfix-desc">Patch tied to a base release, with per-generation build numbers.</p>
+			<p class="rsu-hotfix-desc">A patch on top of a base release. The base release page lists its patches, and this page links back to the full notes.</p>
 
 			<div class="rsu-hotfix-row">
 				<label for="rsu-parent-release">Base release</label>
@@ -80,38 +117,6 @@ $all_vehicles = RSU_Platforms::get_all();
 				</select>
 			</div>
 
-			<div class="rsu-hotfix-builds">
-				<span class="rsu-hotfix-builds__label">Build numbers</span>
-				<?php
-				foreach ( $all_vehicles as $v_slug => $vehicle ) :
-					$generations = ! empty( $vehicle['generations'] ) ? $vehicle['generations'] : array();
-					if ( empty( $generations ) ) {
-						continue;
-					}
-					?>
-					<div class="rsu-hotfix-vehicle">
-						<span class="rsu-hotfix-vehicle__label"><?php echo esc_html( $vehicle['label'] ); ?></span>
-						<?php
-						foreach ( $generations as $g_slug => $gen ) :
-							$value = isset( $hotfix_builds[ $v_slug ][ $g_slug ] ) ? $hotfix_builds[ $v_slug ][ $g_slug ] : '';
-							$field = 'rsu_hotfix_builds[' . $v_slug . '][' . $g_slug . ']';
-							$id    = 'rsu-build-' . $v_slug . '-' . $g_slug;
-							?>
-							<div class="rsu-hotfix-build">
-								<label class="rsu-hotfix-build__gen" for="<?php echo esc_attr( $id ); ?>">
-									<?php echo esc_html( $gen['label'] ); ?>
-								</label>
-								<input type="text" id="<?php echo esc_attr( $id ); ?>"
-									name="<?php echo esc_attr( $field ); ?>"
-									value="<?php echo esc_attr( $value ); ?>"
-									class="rsu-hotfix-build__input"
-									placeholder="e.g. 2026.15.01" />
-							</div>
-						<?php endforeach; ?>
-					</div>
-				<?php endforeach; ?>
-			</div>
-
 			<div class="rsu-hotfix-suggest" id="rsu-hotfix-suggest" hidden>
 				<span class="rsu-hotfix-suggest__label">Suggested title</span>
 				<div class="rsu-hotfix-suggest__bar">
@@ -119,6 +124,10 @@ $all_vehicles = RSU_Platforms::get_all();
 					<button type="button" class="button" id="rsu-hotfix-suggest-apply">Use title</button>
 				</div>
 			</div>
+
+			<p class="rsu-hotfix-warning" id="rsu-hotfix-warning" hidden>
+				This title matches the base release, so the two posts will collide on the same URL. Give the hotfix its own title.
+			</p>
 		</div>
 	</div>
 </div>
@@ -127,15 +136,19 @@ $all_vehicles = RSU_Platforms::get_all();
 ( function () {
 	var toggle     = document.getElementById( 'rsu-is-hotfix' );
 	var fields     = document.getElementById( 'rsu-hotfix-fields' );
+	var parentSel  = document.getElementById( 'rsu-parent-release' );
 	var suggestBox = document.getElementById( 'rsu-hotfix-suggest' );
 	var suggestVal = document.getElementById( 'rsu-hotfix-suggest-value' );
 	var applyBtn   = document.getElementById( 'rsu-hotfix-suggest-apply' );
+	var warning    = document.getElementById( 'rsu-hotfix-warning' );
 	if ( ! toggle || ! fields ) {
 		return;
 	}
 
+	var baseTitles = <?php echo wp_json_encode( $base_titles ); ?> || {};
+
 	var builds = Array.prototype.slice.call(
-		fields.querySelectorAll( '.rsu-hotfix-build__input' )
+		document.querySelectorAll( '.rsu-build-row__input' )
 	);
 
 	// Title last applied by this helper, so we only auto-fill when the title is
@@ -154,16 +167,26 @@ $all_vehicles = RSU_Platforms::get_all();
 		return build;
 	}
 
-	// Build the suggested title from the base release family of the first build,
-	// suffixed with " Hotfix" (e.g. "2026.15.30" -> "2026.15 Hotfix").
-	function suggestedTitle() {
+	// The family this hotfix belongs to: the selected base release's title when
+	// one is chosen, otherwise derived from the first build number entered.
+	function familyName() {
+		if ( parentSel && parentSel.value && baseTitles[ parentSel.value ] ) {
+			return familyOf( baseTitles[ parentSel.value ].trim() );
+		}
 		for ( var i = 0; i < builds.length; i++ ) {
 			var v = builds[ i ].value.trim();
 			if ( v ) {
-				return familyOf( v ) + ' Hotfix';
+				return familyOf( v );
 			}
 		}
 		return '';
+	}
+
+	// Build the suggested title from the release family, suffixed with " Hotfix"
+	// (e.g. "2026.15.30" -> "2026.15 Hotfix").
+	function suggestedTitle() {
+		var family = familyName();
+		return family ? family + ' Hotfix' : '';
 	}
 
 	// Read/write the post title across both the block and classic editors.
@@ -194,6 +217,22 @@ $all_vehicles = RSU_Platforms::get_all();
 		return false;
 	}
 
+	// Flag a hotfix whose title is identical to its base release's title.
+	function refreshWarning() {
+		if ( ! warning ) {
+			return;
+		}
+		var duplicate = false;
+		if ( toggle.checked && parentSel && parentSel.value && baseTitles[ parentSel.value ] ) {
+			duplicate = editorTitle().trim().toLowerCase() === baseTitles[ parentSel.value ].trim().toLowerCase();
+		}
+		if ( duplicate ) {
+			warning.removeAttribute( 'hidden' );
+		} else {
+			warning.setAttribute( 'hidden', '' );
+		}
+	}
+
 	function refresh( fromUserInput ) {
 		var title = suggestedTitle();
 
@@ -216,6 +255,8 @@ $all_vehicles = RSU_Platforms::get_all();
 				setEditorTitle( title );
 			}
 		}
+
+		refreshWarning();
 	}
 
 	toggle.addEventListener( 'change', function () {
@@ -226,6 +267,12 @@ $all_vehicles = RSU_Platforms::get_all();
 		}
 		refresh( true );
 	} );
+
+	if ( parentSel ) {
+		parentSel.addEventListener( 'change', function () {
+			refresh( true );
+		} );
+	}
 
 	builds.forEach( function ( input ) {
 		input.addEventListener( 'input', function () {
@@ -238,6 +285,23 @@ $all_vehicles = RSU_Platforms::get_all();
 			var title = suggestedTitle();
 			if ( title ) {
 				setEditorTitle( title );
+				refreshWarning();
+			}
+		} );
+	}
+
+	// Watch the title itself so the duplicate warning tracks manual edits.
+	var titleField = document.getElementById( 'title' );
+	if ( titleField ) {
+		titleField.addEventListener( 'input', refreshWarning );
+	}
+	if ( window.wp && wp.data && wp.data.subscribe && wp.data.select( 'core/editor' ) ) {
+		var lastTitle = editorTitle();
+		wp.data.subscribe( function () {
+			var now = editorTitle();
+			if ( now !== lastTitle ) {
+				lastTitle = now;
+				refreshWarning();
 			}
 		} );
 	}

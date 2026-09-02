@@ -262,6 +262,11 @@ class RSU_Rivian_Poller {
 				}
 			}
 
+			// Oldest build first: when a car sits on 2026.31.00 with 2026.31.01
+			// pending, the base build must be recorded before the patch is
+			// judged against it, or the two would be filed the wrong way round.
+			uksort( $candidates, 'strnatcasecmp' );
+
 			// Keep the raw observation for the settings screen — when a version
 			// arrives without notes, this is the only record of what Rivian
 			// actually said, and guessing is worse than looking.
@@ -403,22 +408,86 @@ class RSU_Rivian_Poller {
 	/**
 	 * Create or join the draft for a newly seen version.
 	 *
+	 * A version reported by a car is a build — 2026.31.00 for a Gen 1 R1,
+	 * 2026.31.30 for a Gen 2 — and the post that owns it is the one titled
+	 * with the release family, "2026.31". The build is recorded against the
+	 * generation the release-notes path names, so one post ends up carrying
+	 * every generation's exact version.
+	 *
+	 * When that generation already holds a different build (2026.31.00 is on
+	 * the post and 2026.31.01 arrives), Rivian has patched the release: the
+	 * new build goes on a hotfix draft tied to the base post rather than
+	 * overwriting what shipped first.
+	 *
 	 * Only the post is touched here — downloading the notes and emailing are
 	 * handled by the caller, so a single message can report both.
 	 *
 	 * @param string $slug   Plugin vehicle slug.
 	 * @param array  $detail array{ url, version, ... }.
-	 * @return array|WP_Error array{ post_id, created }.
+	 * @return array|WP_Error array{ post_id, created, hotfix, parent_id }.
 	 */
 	private static function handle_new_version( $slug, $detail ) {
-		$version = $detail['version'];
-		$post_id = self::find_update_post( $version );
-		$created = false;
+		$version   = $detail['version'];
+		$post_id   = self::find_update_post( $version );
+		$created   = false;
+		$hotfix    = false;
+		$parent_id = 0;
+
+		// Which generation this build belongs to, from the notes path. Empty
+		// when the path is absent or names nothing the registry claims.
+		$generation = '';
+		if ( ! empty( $detail['url'] ) ) {
+			$parsed = RSU_Rivian_API::parse_notes_url( $detail['url'] );
+			if ( ! is_wp_error( $parsed ) ) {
+				$generation = RSU_Platforms::resolve_generation( $slug, $parsed['platform'], $parsed['model'] );
+			}
+		}
+
+		// The slot the build is recorded in. A vehicle with a single
+		// generation (R2) declares no platform code, so its path resolves to
+		// nothing — but the build can only belong to that one generation.
+		// Notes stay filed under whatever the path resolved to, as before.
+		$build_generation = $generation;
+		if ( '' === $build_generation ) {
+			$sole_generations = array_keys( RSU_Platforms::get_generations( $slug ) );
+			if ( 1 === count( $sole_generations ) ) {
+				$build_generation = $sole_generations[0];
+			}
+		}
+
+		$is_build = RSU_Builds::is_build( $version );
+
+		if ( $post_id && $is_build && $build_generation ) {
+			$builds   = RSU_Builds::get( $post_id );
+			$existing = isset( $builds[ $slug ][ $build_generation ] ) ? $builds[ $slug ][ $build_generation ] : '';
+
+			if ( '' !== $existing && RSU_Builds::normalize( $existing ) !== RSU_Builds::normalize( $version ) ) {
+				// This generation already shipped a different build of the same
+				// release, so the new one is a patch. A hotfix post may not be
+				// its own base: patch a hotfix and it joins the same parent.
+				$base_id = get_post_meta( $post_id, '_rsu_is_hotfix', true )
+					? (int) get_post_meta( $post_id, '_rsu_parent_release', true )
+					: (int) $post_id;
+
+				if ( $base_id ) {
+					$parent_id = $base_id;
+					$hotfix    = true;
+					$post_id   = self::find_hotfix_post( $base_id, $slug, $build_generation, $version );
+				}
+			}
+		}
 
 		if ( ! $post_id ) {
+			// Title the draft with the release family when the version is a
+			// build, so every generation's build lands on the one post.
+			$title = $is_build ? RSU_Builds::family_of( $version ) : $version;
+			if ( $hotfix ) {
+				$title .= ' Hotfix';
+			}
+
 			$post_id = wp_insert_post(
 				array(
-					'post_title'   => $version,
+					'post_title'   => $title,
 					'post_status'  => 'draft',
 					'post_type'    => 'post',
 					'post_content' => '',
@@ -434,6 +503,11 @@ class RSU_Rivian_Poller {
 
 			update_post_meta( $post_id, '_rsu_is_update', '1' );
 			update_post_meta( $post_id, '_rsu_date_noticed', current_time( 'Y-m-d' ) );
+
+			if ( $hotfix ) {
+				update_post_meta( $post_id, '_rsu_is_hotfix', '1' );
+				update_post_meta( $post_id, '_rsu_parent_release', $parent_id );
+			}
 		}
 
 		// Add this vehicle to the post without disturbing vehicles already on it.
@@ -445,15 +519,20 @@ class RSU_Rivian_Poller {
 			update_post_meta( $post_id, '_rsu_vehicles', array_values( $vehicles ) );
 		}
 
+		// Record the exact build for this generation. Only an empty slot is
+		// filled — a value the editor typed is never overwritten from here.
+		if ( $is_build && $build_generation ) {
+			$builds = RSU_Builds::get( $post_id );
+			if ( empty( $builds[ $slug ][ $build_generation ] ) ) {
+				$builds[ $slug ][ $build_generation ] = $version;
+				RSU_Builds::save( $post_id, $builds );
+			}
+		}
+
 		// Record the link even if the download fails, so the email can carry it.
 		// Filed under the generation the path names, matching where a successful
 		// capture would put it.
 		if ( ! empty( $detail['url'] ) ) {
-			$parsed     = RSU_Rivian_API::parse_notes_url( $detail['url'] );
-			$generation = is_wp_error( $parsed )
-				? ''
-				: RSU_Platforms::resolve_generation( $slug, $parsed['platform'], $parsed['model'] );
-
 			update_post_meta(
 				$post_id,
 				self::notes_key( self::NOTES_META_PREFIX, $slug, $generation ),
@@ -462,9 +541,46 @@ class RSU_Rivian_Poller {
 		}
 
 		return array(
-			'post_id' => (int) $post_id,
-			'created' => $created,
+			'post_id'   => (int) $post_id,
+			'created'   => $created,
+			'hotfix'    => $hotfix,
+			'parent_id' => (int) $parent_id,
 		);
+	}
+
+	/**
+	 * Find the hotfix draft a patched build should join, if one exists.
+	 *
+	 * A hotfix child of the base release is reused when it already records
+	 * this build, or when its slot for this vehicle generation is still empty
+	 * (the Gen 1 patch created it, the Gen 2 patch joins it). Anything else
+	 * means a new hotfix post.
+	 *
+	 * @param int    $base_id    Base release post ID.
+	 * @param string $slug       Vehicle slug.
+	 * @param string $generation Generation slug.
+	 * @param string $version    Build string.
+	 * @return int Post ID, or 0 when none fits.
+	 */
+	private static function find_hotfix_post( $base_id, $slug, $generation, $version ) {
+		$children = RSU_Builds::get_patches( $base_id, array( 'draft', 'pending', 'future', 'publish', 'private' ) );
+
+		// Prefer a hotfix that already names this build.
+		foreach ( $children as $child ) {
+			if ( RSU_Builds::find_slot( RSU_Builds::get( $child->ID ), $version ) ) {
+				return (int) $child->ID;
+			}
+		}
+
+		// Otherwise the newest hotfix whose slot for this generation is open.
+		foreach ( array_reverse( $children ) as $child ) {
+			$builds = RSU_Builds::get( $child->ID );
+			if ( empty( $builds[ $slug ][ $generation ] ) ) {
+				return (int) $child->ID;
+			}
+		}
+
+		return 0;
 	}
 
 	/**
@@ -488,6 +604,8 @@ class RSU_Rivian_Poller {
 			'url_rejected' => isset( $detail['url_rejected'] ) ? $detail['url_rejected'] : '',
 			'post_id'      => (int) $post_id,
 			'created'      => $created ? (bool) $created['created'] : false,
+			'hotfix'       => $created ? ! empty( $created['hotfix'] ) : false,
+			'parent_id'    => $created && ! empty( $created['parent_id'] ) ? (int) $created['parent_id'] : 0,
 			'cached'       => (bool) $revision,
 			'revision'     => $revision ? (int) $revision['index'] : 0,
 			'draft'        => $revision ? ! empty( $revision['draft'] ) : false,
@@ -956,14 +1074,17 @@ class RSU_Rivian_Poller {
 	}
 
 	/**
-	 * Find an existing update post for a version string.
+	 * Find the post that owns a version, by title, build, or release family.
 	 *
-	 * Titles are normally the bare version ("2026.24"), but some posts carry
-	 * the descriptive "Rivian Software Update 2026.24" heading, so both forms
-	 * are compared after stripping the prefix.
+	 * In order of preference: a post titled with the version itself; a post
+	 * whose recorded builds name it (a hotfix carrying 2026.31.01, say); and
+	 * finally the base release titled with the version's family — 2026.31.30
+	 * belongs to the post called "2026.31". Hotfix posts never match by
+	 * family, since their title is the family plus a suffix and their builds
+	 * are matched directly.
 	 *
-	 * @param string $version Version string.
-	 * @return int Post ID, or 0.
+	 * @param string $version Version string from the API.
+	 * @return int Post ID, or 0 when nothing owns it.
 	 */
 	private static function find_update_post( $version ) {
 		$posts = get_posts(
@@ -984,14 +1105,60 @@ class RSU_Rivian_Poller {
 		);
 
 		$target = self::normalize_version( $version );
+		$family = RSU_Builds::family_of( $version );
+
+		$by_build  = 0;
+		$by_family = 0;
 
 		foreach ( $posts as $post ) {
-			if ( self::normalize_version( $post->post_title ) === $target ) {
+			$title = self::normalize_version( $post->post_title );
+
+			if ( $title === $target ) {
 				return (int) $post->ID;
+			}
+
+			if ( ! $by_build && RSU_Builds::find_slot( RSU_Builds::get( $post->ID ), $version ) ) {
+				$by_build = (int) $post->ID;
+				continue;
+			}
+
+			if ( ! $by_family && $family !== $target && $title === $family
+				&& ! get_post_meta( $post->ID, '_rsu_is_hotfix', true ) ) {
+				$by_family = (int) $post->ID;
 			}
 		}
 
-		return 0;
+		return $by_build ? $by_build : $by_family;
+	}
+
+	/**
+	 * Whether a post is a plausible home for a version.
+	 *
+	 * True when the title is (or contains) the version, when the title is the
+	 * version's release family, or when the post's recorded builds name the
+	 * version. Used to warn about a pasted link for a different release.
+	 *
+	 * @param int    $post_id Post ID.
+	 * @param string $version Version string.
+	 * @return bool
+	 */
+	public static function post_covers_version( $post_id, $version ) {
+		$title  = self::normalize_version( get_post_field( 'post_title', $post_id ) );
+		$target = self::normalize_version( $version );
+
+		if ( '' === $target ) {
+			return true;
+		}
+
+		if ( $title === $target || false !== strpos( $title, $target ) ) {
+			return true;
+		}
+
+		if ( $title === RSU_Builds::family_of( $version ) ) {
+			return true;
+		}
+
+		return (bool) RSU_Builds::find_slot( RSU_Builds::get( $post_id ), $version );
 	}
 
 	/**
@@ -1001,9 +1168,7 @@ class RSU_Rivian_Poller {
 	 * @return string
 	 */
 	private static function normalize_version( $title ) {
-		$title = preg_replace( '/^\s*Rivian\s+Software\s+Update\s*/i', '', (string) $title );
-
-		return strtolower( trim( $title ) );
+		return RSU_Builds::normalize( $title );
 	}
 
 	// ────────────────────────────── Notify ──────────────────────────────
@@ -1088,8 +1253,20 @@ class RSU_Rivian_Poller {
 				'',
 				$record['created']
 					? __( 'A draft post has been created for it.', 'rivian-software-updates' )
-					: __( 'This vehicle was added to the existing draft for that version.', 'rivian-software-updates' ),
+					: __( 'This vehicle was added to the existing post for that release.', 'rivian-software-updates' ),
 			);
+
+			// A patched build is filed as a hotfix of the release it belongs to,
+			// which is worth saying since the draft's title is not the version.
+			if ( ! empty( $record['hotfix'] ) && ! empty( $record['parent_id'] ) ) {
+				$lines[] = '';
+				$lines[] = sprintf(
+					/* translators: 1: version string, 2: base release title. */
+					__( 'This looks like a patch: %2$s already shipped a different build for this generation, so %1$s has been filed as a hotfix of %2$s. Untick "This is a hotfix" on the draft if that is wrong.', 'rivian-software-updates' ),
+					$record['version'],
+					get_the_title( (int) $record['parent_id'] )
+				);
+			}
 		}
 
 		// Beta builds ship notes stamped as draft, and those get reissued before
