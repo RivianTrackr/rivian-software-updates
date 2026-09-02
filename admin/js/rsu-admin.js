@@ -65,16 +65,34 @@ var RSUSectionBuilder = (function () {
 	}
 
 	// ── Toast notification ──
-	function showToast(msg, duration) {
+	// Optional action: { label, onClick } renders a button in the toast, which
+	// is how a removal offers Undo without a permanent bar in the editor.
+	function showToast(msg, duration, action) {
 		var existing = qs('.rsu-toast');
 		if (existing) existing.remove();
-		var el = createElement('<div class="rsu-toast">' + msg + '</div>');
+		var el = createElement('<div class="rsu-toast"><span class="rsu-toast__text"></span></div>');
+		qs('.rsu-toast__text', el).textContent = msg;
+		if (action && action.label) {
+			var btn = document.createElement('button');
+			btn.type = 'button';
+			btn.className = 'rsu-toast__action';
+			btn.textContent = action.label;
+			btn.addEventListener('click', function () {
+				el.remove();
+				if (typeof action.onClick === 'function') action.onClick();
+			});
+			el.appendChild(btn);
+		}
 		document.body.appendChild(el);
 		requestAnimationFrame(function () { el.classList.add('rsu-toast--visible'); });
 		setTimeout(function () {
 			el.classList.remove('rsu-toast--visible');
 			setTimeout(function () { el.remove(); }, 300);
-		}, duration || 2000);
+		}, duration || (action ? 6000 : 2000));
+	}
+
+	function undoToast(builder, msg) {
+		showToast(msg, 6000, { label: 'Undo', onClick: function () { popUndo(builder); } });
 	}
 
 	// ── Undo stack (per builder) ──
@@ -145,8 +163,23 @@ var RSUSectionBuilder = (function () {
 	// ── Sync data to hidden input ──
 	function syncJSON(builder) {
 		if (builder._jsonInput) {
-			builder._jsonInput.value = JSON.stringify(builder._sections || []);
+			// Collapsed state is editor-only; keep it out of the saved JSON.
+			builder._jsonInput.value = JSON.stringify(builder._sections || [], function (key, value) {
+				return key === '_collapsed' ? undefined : value;
+			});
 		}
+		refreshCollapseAll(builder);
+	}
+
+	// The toolbar's Collapse all / Expand all button reflects the sections.
+	function refreshCollapseAll(builder) {
+		var panel = closest(builder, '.rsu-editor-panel');
+		var btn = panel ? qs('.rsu-collapse-all', panel) : null;
+		if (!btn) return;
+		var sections = qsa('.rsu-sections-list .rsu-section', builder);
+		btn.hidden = sections.length < 2;
+		var anyOpen = sections.some(function (s) { return !s.classList.contains('rsu-section--collapsed'); });
+		btn.textContent = anyOpen ? 'Collapse all' : 'Expand all';
 	}
 
 	// ── Read a single block element into a block object (recursive for notes) ──
@@ -207,6 +240,9 @@ var RSUSectionBuilder = (function () {
 			if (sectionGenSelect && sectionGenSelect.value) {
 				section.generation = sectionGenSelect.value;
 			}
+			if (sEl.classList.contains('rsu-section--collapsed')) {
+				section._collapsed = true;
+			}
 
 			qsa(':scope > .rsu-blocks-list > .rsu-block', sEl).forEach(function (bEl) {
 				section.blocks.push(readBlockFromEl(bEl));
@@ -233,6 +269,15 @@ var RSUSectionBuilder = (function () {
 
 		sections.forEach(function (section, si) {
 			list.appendChild(buildSectionEl(builder, section, si));
+		});
+
+		// Nothing above the first section or below the last.
+		var sectionEls = qsa(':scope > .rsu-section', list);
+		sectionEls.forEach(function (sEl, i) {
+			var up = qs('.rsu-section__move[data-dir="-1"]', sEl);
+			var down = qs('.rsu-section__move[data-dir="1"]', sEl);
+			if (up) up.disabled = i === 0;
+			if (down) down.disabled = i === sectionEls.length - 1;
 		});
 
 		syncJSON(builder);
@@ -363,6 +408,10 @@ var RSUSectionBuilder = (function () {
 				'<div class="rsu-section__header">' +
 					'<button type="button" class="rsu-section__toggle" title="Collapse / expand" data-action="toggle-section">&#9660;</button>' +
 					'<span class="rsu-section__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
+					'<span class="rsu-section__moves">' +
+						'<button type="button" class="rsu-section__move" title="Move section up (Alt+&uarr;)" aria-label="Move section up" data-action="move-section" data-dir="-1">&#9650;</button>' +
+						'<button type="button" class="rsu-section__move" title="Move section down (Alt+&darr;)" aria-label="Move section down" data-action="move-section" data-dir="1">&#9660;</button>' +
+					'</span>' +
 					'<input type="text" class="rsu-section__heading" placeholder="Section heading (e.g. Cold Weather Improvements)" />' +
 					genOptionsHTML(builder, sectionGen) +
 					'<button type="button" class="rsu-section__dupe" title="Duplicate section" data-action="dupe-section"><span class="dashicons dashicons-admin-page" style="font-size:14px;width:14px;height:14px;"></span></button>' +
@@ -547,7 +596,7 @@ var RSUSectionBuilder = (function () {
 				'</button>' +
 				'<textarea class="rsu-bullet-row__input" placeholder="Bullet point text..." rows="1"></textarea>' +
 				genCell +
-				'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet" data-action="remove-bullet">&times;</button>' +
+				'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet (Ctrl+Backspace)" data-action="remove-bullet">&times;</button>' +
 			'</div>'
 		);
 
@@ -578,6 +627,31 @@ var RSUSectionBuilder = (function () {
 				row.parentNode.insertBefore(newRow, row.nextSibling);
 				qs('.rsu-bullet-row__input', newRow).focus();
 				readFromDOM(b);
+			} else if ((e.ctrlKey || e.metaKey) && (e.key === 'Backspace' || e.key === 'Delete')) {
+				// Ctrl/Cmd+Backspace removes the bullet outright. Tab is taken by
+				// indenting, so this is the keyboard route to the remove button.
+				e.preventDefault();
+				var b3 = getBuilder(this);
+				readFromDOM(b3);
+				pushUndo(b3);
+				var neighbour = row.previousElementSibling || row.nextElementSibling;
+				var container = row.parentNode;
+				row.remove();
+				if (!qs('.rsu-bullet-row', container)) {
+					neighbour = buildBulletRow(b3, { text: '' });
+					container.appendChild(neighbour);
+				}
+				var firstRow = container.firstElementChild;
+				if (firstRow && firstRow.classList.contains('rsu-bullet-row--indent')) {
+					setBulletIndent(firstRow, 0);
+				}
+				var nInput = qs('.rsu-bullet-row__input', neighbour);
+				if (nInput) {
+					nInput.focus();
+					nInput.setSelectionRange(nInput.value.length, nInput.value.length);
+				}
+				readFromDOM(b3);
+				undoToast(b3, 'Bullet removed');
 			} else if (e.key === 'Backspace' && this.value === '') {
 				// Backspace on an empty bullet: remove it and focus the previous row.
 				var listContainer = row.parentNode;
@@ -706,6 +780,7 @@ var RSUSectionBuilder = (function () {
 			var idx = sections.indexOf(sectionEl);
 			builder._sections.splice(idx, 1);
 			renderSections(builder);
+			undoToast(builder, 'Section removed');
 
 			// Move focus to next/previous section or add button.
 			var remaining = qsa('.rsu-sections-list .rsu-section', builder);
@@ -731,6 +806,7 @@ var RSUSectionBuilder = (function () {
 		blockEl.remove();
 		readFromDOM(builder);
 		renderSections(builder);
+		undoToast(builder, 'Block removed');
 	}
 
 	// Add a paragraph or list block inside the closest note block.
@@ -934,7 +1010,7 @@ var RSUSectionBuilder = (function () {
 			renderSections(tgtBuilder);
 			selectEl.value = '';
 			_copyInProgress = false;
-			showToast('Sections copied');
+			undoToast(tgtBuilder, 'Sections copied');
 		});
 	});
 
@@ -943,6 +1019,42 @@ var RSUSectionBuilder = (function () {
 		var sectionEl = closest(btn, '.rsu-section');
 		if (!sectionEl) return;
 		sectionEl.classList.toggle('rsu-section--collapsed');
+		var builder = getBuilder(btn);
+		if (builder) refreshCollapseAll(builder);
+	}
+
+	// ── Collapse or expand every section in a panel ──
+	function toggleAllSections(btn) {
+		var panel = closest(btn, '.rsu-editor-panel');
+		var builder = panel ? qs('.rsu-section-builder', panel) : null;
+		if (!builder) return;
+		var sections = qsa('.rsu-sections-list .rsu-section', builder);
+		var anyOpen = sections.some(function (s) { return !s.classList.contains('rsu-section--collapsed'); });
+		sections.forEach(function (s) { s.classList.toggle('rsu-section--collapsed', anyOpen); });
+		refreshCollapseAll(builder);
+	}
+
+	// ── Move a section up or down without the mouse ──
+	function moveSection(btn, dir) {
+		var builder = getBuilder(btn);
+		var sectionEl = closest(btn, '.rsu-section');
+		if (!builder || !sectionEl) return;
+
+		readFromDOM(builder);
+		var idx = qsa('.rsu-sections-list .rsu-section', builder).indexOf(sectionEl);
+		var to = idx + dir;
+		if (idx < 0 || to < 0 || to >= builder._sections.length) return;
+
+		var moved = builder._sections.splice(idx, 1)[0];
+		builder._sections.splice(to, 0, moved);
+		renderSections(builder);
+
+		var target = qsa('.rsu-sections-list .rsu-section', builder)[to];
+		if (target) {
+			var again = qs('.rsu-section__move[data-dir="' + dir + '"]', target);
+			var heading = qs('.rsu-section__heading', target);
+			(again && !again.disabled ? again : heading).focus();
+		}
 	}
 
 	// ── Duplicate section ──
@@ -1052,16 +1164,21 @@ var RSUSectionBuilder = (function () {
 					'<p>Paste plain-text release notes, or upload the official Update Details PDF. Check the preview to confirm headings, bullets, and notes were detected correctly before importing.</p>' +
 				'</div>' +
 				'<div class="rsu-import-dialog__body">' +
-					'<div class="rsu-import-dialog__source">' +
-						'<button type="button" class="rsu-import-dialog__pdf-btn"><span class="dashicons dashicons-pdf" style="font-size:14px;width:14px;height:14px;"></span> Upload PDF</button>' +
-						'<input type="file" class="rsu-import-dialog__pdf-input" accept=".pdf,application/pdf" style="display:none;" />' +
-						'<span class="rsu-import-dialog__pdf-status"></span>' +
+					'<div class="rsu-import-dialog__col">' +
+						'<div class="rsu-import-dialog__source">' +
+							'<button type="button" class="rsu-import-dialog__pdf-btn"><span class="dashicons dashicons-pdf" style="font-size:14px;width:14px;height:14px;"></span> Upload PDF</button>' +
+							'<input type="file" class="rsu-import-dialog__pdf-input" accept=".pdf,application/pdf" style="display:none;" />' +
+							'<span class="rsu-import-dialog__pdf-status"></span>' +
+						'</div>' +
+						'<textarea class="rsu-import-dialog__textarea" placeholder="Paste release notes here...\n\nCold Weather Improvements\n• Battery preconditioning now more efficient\n• Cabin heating reduced warm-up time\n\nNavigation\nUpdated route planning algorithm."></textarea>' +
 					'</div>' +
-					'<textarea class="rsu-import-dialog__textarea" placeholder="Paste release notes here...\n\nCold Weather Improvements\n• Battery preconditioning now more efficient\n• Cabin heating reduced warm-up time\n\nNavigation\nUpdated route planning algorithm."></textarea>' +
-					'<div class="rsu-import-dialog__preview-label">Preview</div>' +
-					'<div class="rsu-import-dialog__preview"></div>' +
+					'<div class="rsu-import-dialog__col">' +
+						'<div class="rsu-import-dialog__preview-label">Preview</div>' +
+						'<div class="rsu-import-dialog__preview"></div>' +
+					'</div>' +
 				'</div>' +
 				'<div class="rsu-import-dialog__actions">' +
+					'<label class="rsu-import-dialog__replace" hidden><input type="checkbox" class="rsu-import-dialog__replace-input" /> Replace the existing sections</label>' +
 					'<button type="button" class="rsu-import-dialog__cancel">Cancel</button>' +
 					'<button type="button" class="rsu-import-dialog__submit" disabled>Import</button>' +
 				'</div>' +
@@ -1076,7 +1193,17 @@ var RSUSectionBuilder = (function () {
 		var pdfBtn = qs('.rsu-import-dialog__pdf-btn', dialog);
 		var pdfInput = qs('.rsu-import-dialog__pdf-input', dialog);
 		var pdfStatus = qs('.rsu-import-dialog__pdf-status', dialog);
+		var replaceLabel = qs('.rsu-import-dialog__replace', dialog);
+		var replaceInput = qs('.rsu-import-dialog__replace-input', dialog);
 		textarea.focus();
+
+		// Importing always appended, so a second paste doubled every section.
+		// Offer to replace instead, but only when there is something to replace.
+		var targetBuilder = qs('.rsu-section-builder[data-vehicle="' + vehicle + '"]');
+		if (targetBuilder) {
+			getBuilder(targetBuilder);
+			if ((targetBuilder._sections || []).length) replaceLabel.removeAttribute('hidden');
+		}
 
 		pdfBtn.addEventListener('click', function () { pdfInput.click(); });
 		pdfInput.addEventListener('change', function () {
@@ -1140,11 +1267,12 @@ var RSUSectionBuilder = (function () {
 
 			var parsed = parseTextToSections(text);
 			if (parsed.length) {
+				var replace = replaceInput && replaceInput.checked;
 				pushUndo(builder);
-				builder._sections = builder._sections.concat(parsed);
+				builder._sections = replace ? parsed : builder._sections.concat(parsed);
 				renderSections(builder);
 				_dirty = true;
-				showToast('Imported ' + parsed.length + ' section' + (parsed.length > 1 ? 's' : ''));
+				undoToast(builder, (replace ? 'Replaced with ' : 'Imported ') + parsed.length + ' section' + (parsed.length > 1 ? 's' : ''));
 			} else {
 				showToast('No sections detected in pasted text');
 			}
@@ -1368,6 +1496,8 @@ var RSUSectionBuilder = (function () {
 			case 'remove-bullet': removeBullet(actionEl); break;
 			case 'toggle-bullet-indent': toggleBulletIndent(actionEl); break;
 			case 'toggle-section': toggleSection(actionEl); break;
+			case 'toggle-all-sections': toggleAllSections(actionEl); break;
+			case 'move-section': moveSection(actionEl, parseInt(actionEl.getAttribute('data-dir'), 10) || 1); break;
 			case 'dupe-section': dupeSection(actionEl); break;
 			case 'show-import': showImport(actionEl); break;
 			case 'undo': undoAction(actionEl); break;
@@ -1412,6 +1542,16 @@ var RSUSectionBuilder = (function () {
 				e.preventDefault();
 				var addBtn = qs('[data-action="add-section"]', builder);
 				if (addBtn) addSection(addBtn);
+			}
+		}
+
+		// Alt+Up / Alt+Down in a section heading: move the section.
+		if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.ctrlKey && !e.metaKey) {
+			var headingEl = document.activeElement;
+			if (headingEl && headingEl.classList.contains('rsu-section__heading')) {
+				e.preventDefault();
+				moveSection(headingEl, e.key === 'ArrowUp' ? -1 : 1);
+				return;
 			}
 		}
 
