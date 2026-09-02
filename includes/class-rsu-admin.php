@@ -120,7 +120,6 @@ class RSU_Admin {
 			if ( ! in_array( $slug, $active_slugs, true ) ) {
 				delete_post_meta( $post_id, '_rsu_sections_' . $slug );
 				delete_post_meta( $post_id, $vehicle['meta_key'] );
-				RSU_Rivian_Poller::forget_notes( $post_id, $slug, true );
 				continue;
 			}
 
@@ -135,12 +134,6 @@ class RSU_Admin {
 
 					// Store structured JSON.
 					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
-
-					// The queued release notes have been consumed — stop the
-					// editor re-importing them, but keep the archived PDFs:
-					// Rivian can reissue notes for a version already written up,
-					// and the history is what makes that comparable.
-					RSU_Rivian_Poller::forget_notes( $post_id, $slug, true );
 
 					// Render to HTML for frontend display.
 					$html = self::render_sections_to_html( $sections, $slug );
@@ -1094,18 +1087,14 @@ class RSU_Admin {
 			$post_id = (int) $GLOBALS['post']->ID;
 		}
 
-		// URLs for the lazy-loaded PDF importer (pdf.js bundle + worker), plus
-		// any release-notes documents the Rivian poller queued for this post.
+		// URLs for the lazy-loaded PDF importer (pdf.js bundle + worker).
 		wp_localize_script(
 			'rsu-admin',
 			'RSU_ADMIN',
 			array(
 				'pdfImportUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf-import.min.js?ver=' . RSU_VERSION,
 				'pdfWorkerUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf.worker.min.js?ver=' . RSU_VERSION,
-				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
-				'nonce'        => wp_create_nonce( RSU_Rivian_Admin::NONCE ),
 				'postId'       => $post_id,
-				'pendingNotes' => $post_id ? RSU_Rivian_Poller::get_pending_notes( $post_id ) : array(),
 			)
 		);
 	}

@@ -52,6 +52,8 @@ if ( ! empty( $meta_keys ) ) {
 delete_option( 'rsu_settings' );
 delete_option( 'rsu_platforms' );
 delete_option( 'rsu_cache_last_purge' );
+// Legacy Rivian account integration (removed in 2.31.0).
+delete_option( 'rsu_rivian_removed' );
 delete_option( 'rsu_rivian_session' );
 delete_option( 'rsu_rivian_vehicle_map' );
 delete_option( 'rsu_rivian_state' );
