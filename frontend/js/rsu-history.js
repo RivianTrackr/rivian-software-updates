@@ -1,29 +1,54 @@
 (function () {
   'use strict';
 
-  var STORAGE_KEY = 'rsu_history_filter';
+  // Shares the "my vehicle" preference with the update-page tabs
+  // (rsu-frontend.js). Picking R2 here selects the R2 tab on the next
+  // release page, and vice versa. "All Vehicles" clears the preference.
+  var PREF_KEY = 'rsu_preferences';
+  var LEGACY_KEYS = ['rsu_history_filter', 'rsu_preferred_platform'];
+
+  function readPrefs() {
+    var prefs = {};
+    try {
+      var raw = localStorage.getItem(PREF_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') prefs = parsed;
+      } else {
+        for (var i = 0; i < LEGACY_KEYS.length; i++) {
+          var legacy = localStorage.getItem(LEGACY_KEYS[i]);
+          if (legacy && legacy !== 'all') {
+            prefs.vehicle = legacy;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      /* storage unavailable — selection just won't persist */
+    }
+    if (typeof prefs.vehicle !== 'string') prefs.vehicle = '';
+    if (!prefs.generation || typeof prefs.generation !== 'object') prefs.generation = {};
+    return prefs;
+  }
+
+  function setPreferredVehicle(slug) {
+    var prefs = readPrefs();
+    prefs.vehicle = slug || '';
+    try {
+      localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+      LEGACY_KEYS.forEach(function (key) {
+        localStorage.removeItem(key);
+      });
+    } catch (e) {
+      /* silent */
+    }
+  }
 
   function init() {
     var containers = document.querySelectorAll('.rsu-history');
     containers.forEach(function (container) {
       setupFilter(container);
     });
-  }
-
-  function getStored() {
-    try {
-      return localStorage.getItem(STORAGE_KEY) || '';
-    } catch (e) {
-      return '';
-    }
-  }
-
-  function setStored(value) {
-    try {
-      localStorage.setItem(STORAGE_KEY, value);
-    } catch (e) {
-      /* storage unavailable — selection just won't persist */
-    }
   }
 
   function setupFilter(container) {
@@ -33,8 +58,8 @@
     var buttons = bar.querySelectorAll('.rsu-history__filter-btn');
     if (buttons.length < 2) return;
 
-    // Restore a remembered selection, but only if that vehicle is still present.
-    var stored = getStored();
+    // Restore the remembered vehicle, but only if it is still present.
+    var stored = readPrefs().vehicle;
     var initial = 'all';
     if (stored) {
       for (var i = 0; i < buttons.length; i++) {
@@ -49,7 +74,7 @@
       btn.addEventListener('click', function () {
         var vehicle = btn.getAttribute('data-vehicle') || 'all';
         applyFilter(container, buttons, vehicle);
-        setStored(vehicle);
+        setPreferredVehicle(vehicle === 'all' ? '' : vehicle);
       });
     });
 

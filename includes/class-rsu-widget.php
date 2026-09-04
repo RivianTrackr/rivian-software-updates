@@ -157,8 +157,8 @@ class RSU_Widget extends WP_Widget {
 		// Hide the First Noticed field when it has no date — a bare "TBD" next to
 		// a real release date reads as unfinished. Public Release keeps its TBD
 		// since "not yet public" is meaningful.
-		$noticed_display  = $date_noticed ? date_i18n( 'm/d/Y', strtotime( $date_noticed ) ) : '';
-		$released_display = $date_released ? date_i18n( 'm/d/Y', strtotime( $date_released ) ) : 'TBD';
+		$noticed_display  = RSU_Dates::format( $date_noticed );
+		$released_display = $date_released ? RSU_Dates::format( $date_released ) : 'TBD';
 
 		ob_start();
 		?>
@@ -305,21 +305,9 @@ class RSU_Widget extends WP_Widget {
 	}
 
 	/**
-	 * Enqueue the frontend stylesheet.
+	 * Enqueue the shared frontend stylesheet (with the accent override).
 	 */
 	private function enqueue_css() {
-		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
-
-		$css_file = RSU_PLUGIN_DIR . 'frontend/css/rsu-frontend' . $suffix . '.css';
-		if ( ! file_exists( $css_file ) ) {
-			$suffix = '';
-		}
-
-		wp_enqueue_style(
-			'rsu-frontend',
-			RSU_PLUGIN_URL . 'frontend/css/rsu-frontend' . $suffix . '.css',
-			array(),
-			RSU_VERSION
-		);
+		RSU_Frontend::enqueue_styles();
 	}
 }

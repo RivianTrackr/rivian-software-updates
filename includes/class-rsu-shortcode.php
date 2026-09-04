@@ -4,7 +4,8 @@
  *
  * Attributes:
  *   limit  — Max rows to show (default: all, -1).
- *   order  — "desc" (newest first, default) or "asc".
+ *   order  — "desc" (newest first, default) or "asc". Applies to the years
+ *            and to the rows within each year, by public release date.
  *
  * @package Rivian_Software_Updates
  */
@@ -52,17 +53,24 @@ class RSU_Shortcode {
 		$this->enqueue_css();
 		$this->enqueue_js();
 
-		// Group posts by year based on public release date.
-		$grouped          = array();
+		// Every row's place on the timeline is its public release date, falling
+		// back to the first-noticed date, then the post date. The same date
+		// drives both the year grouping and the order within a year, so a
+		// release never files under one year and sorts by another.
+		$rows = array();
 		$present_vehicles = array();
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$post_id       = get_the_ID();
+			$date_noticed  = get_post_meta( $post_id, '_rsu_date_noticed', true );
 			$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
-			$year          = $date_released ? date_i18n( 'Y', strtotime( $date_released ) ) : get_the_date( 'Y' );
 
-			if ( ! isset( $grouped[ $year ] ) ) {
-				$grouped[ $year ] = array();
+			$when = RSU_Dates::timestamp( $date_released );
+			if ( ! $when ) {
+				$when = RSU_Dates::timestamp( $date_noticed );
+			}
+			if ( ! $when ) {
+				$when = (int) get_post_time( 'U', false, $post_id );
 			}
 
 			$vehicles       = RSU_Platforms::get_active( $post_id );
@@ -76,25 +84,54 @@ class RSU_Shortcode {
 				}
 			}
 
-			// Hotfix flag plus the exact build each generation received.
+			// Hotfix flag, the base release it patches, and the exact build
+			// each generation received.
 			$is_hotfix = (bool) get_post_meta( $post_id, '_rsu_is_hotfix', true );
-			$builds    = RSU_Builds::describe( RSU_Builds::get( $post_id ) );
+			$parent    = null;
+			if ( $is_hotfix ) {
+				$parent_id = (int) get_post_meta( $post_id, '_rsu_parent_release', true );
+				if ( $parent_id && 'publish' === get_post_status( $parent_id ) ) {
+					$parent = array(
+						'title' => get_the_title( $parent_id ),
+						'url'   => get_permalink( $parent_id ),
+					);
+				}
+			}
+			$builds = RSU_Builds::describe( RSU_Builds::get( $post_id ) );
 
-			$grouped[ $year ][] = array(
+			$rows[] = array(
+				'when'           => $when,
+				'post_time'      => (int) get_post_time( 'U', false, $post_id ),
+				'year'           => date_i18n( 'Y', $when ),
 				'version'        => get_the_title(),
 				'permalink'      => get_permalink(),
-				'date_noticed'   => get_post_meta( $post_id, '_rsu_date_noticed', true ),
+				'date_noticed'   => $date_noticed,
 				'date_released'  => $date_released,
 				'vehicle_labels' => $vehicle_labels,
 				'vehicle_slugs'  => $vehicle_slugs,
 				'is_hotfix'      => $is_hotfix,
+				'parent'         => $parent,
 				'builds'         => $builds,
 			);
 		}
 		wp_reset_postdata();
 
-		// Sort years descending so the latest year is first.
-		krsort( $grouped );
+		// The `order` attribute applies to the whole timeline: years and the
+		// rows within them. Ties fall back to post date so a base release and
+		// its same-day hotfix keep their publish order.
+		$ascending = ( 'ASC' === strtoupper( $atts['order'] ) );
+		usort( $rows, function ( $a, $b ) use ( $ascending ) {
+			$cmp = $a['when'] <=> $b['when'];
+			if ( 0 === $cmp ) {
+				$cmp = $a['post_time'] <=> $b['post_time'];
+			}
+			return $ascending ? $cmp : -$cmp;
+		} );
+
+		$grouped = array();
+		foreach ( $rows as $row ) {
+			$grouped[ $row['year'] ][] = $row;
+		}
 
 		$is_first = true;
 
@@ -128,6 +165,7 @@ class RSU_Shortcode {
 						<i class="fa-solid fa-chevron-down rsu-history__year-chevron"></i>
 					</summary>
 					<table class="rsu-history__table">
+						<caption class="rsu-sr-only"><?php echo esc_html( sprintf( 'Rivian software updates in %s', $year ) ); ?></caption>
 						<thead>
 							<tr>
 								<th>OTA Version</th>
@@ -146,6 +184,11 @@ class RSU_Shortcode {
 												<span class="rsu-history__hotfix-badge">Hotfix</span>
 											<?php endif; ?>
 										</span>
+										<?php if ( $post_data['parent'] ) : ?>
+											<span class="rsu-history__parent">
+												Patch for <a href="<?php echo esc_url( $post_data['parent']['url'] ); ?>"><?php echo esc_html( $post_data['parent']['title'] ); ?></a>
+											</span>
+										<?php endif; ?>
 										<?php if ( ! empty( $post_data['builds'] ) ) : ?>
 											<span class="rsu-history__builds">
 												<?php foreach ( $post_data['builds'] as $build ) : ?>
@@ -162,7 +205,7 @@ class RSU_Shortcode {
 									<td class="rsu-history__date" data-label="First Noticed">
 										<?php if ( $post_data['date_noticed'] ) : ?>
 											<time datetime="<?php echo esc_attr( $post_data['date_noticed'] ); ?>">
-												<?php echo esc_html( date_i18n( 'M j, Y', strtotime( $post_data['date_noticed'] ) ) ); ?>
+												<?php echo esc_html( RSU_Dates::format( $post_data['date_noticed'] ) ); ?>
 											</time>
 										<?php else : ?>
 											<span class="rsu-history__na">&mdash;</span>
@@ -171,7 +214,7 @@ class RSU_Shortcode {
 									<td class="rsu-history__date" data-label="Public Release">
 										<?php if ( $post_data['date_released'] ) : ?>
 											<time datetime="<?php echo esc_attr( $post_data['date_released'] ); ?>">
-												<?php echo esc_html( date_i18n( 'M j, Y', strtotime( $post_data['date_released'] ) ) ); ?>
+												<?php echo esc_html( RSU_Dates::format( $post_data['date_released'] ) ); ?>
 											</time>
 										<?php else : ?>
 											<span class="rsu-history__na">&mdash;</span>
@@ -198,22 +241,10 @@ class RSU_Shortcode {
 	}
 
 	/**
-	 * Enqueue the frontend stylesheet for the history table.
+	 * Enqueue the shared frontend stylesheet (with the accent override).
 	 */
 	private function enqueue_css() {
-		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
-
-		$css_file = RSU_PLUGIN_DIR . 'frontend/css/rsu-frontend' . $suffix . '.css';
-		if ( ! file_exists( $css_file ) ) {
-			$suffix = '';
-		}
-
-		wp_enqueue_style(
-			'rsu-frontend',
-			RSU_PLUGIN_URL . 'frontend/css/rsu-frontend' . $suffix . '.css',
-			array(),
-			RSU_VERSION
-		);
+		RSU_Frontend::enqueue_styles();
 	}
 
 	/**

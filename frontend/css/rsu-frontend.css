@@ -1,6 +1,12 @@
 /* Rivian Software Updates - Frontend Styles */
 
-.rsu-update {
+/* === Design tokens ===
+   Declared once for every surface the plugin renders (update page, history
+   table, sidebar widget) so the accent-color setting, which overrides these
+   on the same three selectors, reaches all of them. `:where()` keeps the
+   block at zero specificity so any per-surface override still wins. */
+
+:where(.rsu-update, .rsu-history, .rsu-widget-latest) {
 	--rsu-bg: #121418;
 	--rsu-bg-card: #16191e;
 	--rsu-bg-hover: #1f2228;
@@ -17,7 +23,14 @@
 	--rsu-divider: #24272d;
 	--rsu-radius: 12px;
 	--rsu-transition: 0.2s ease;
+	--rsu-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 
+	/* Height of anything fixed above the page (a sticky site header). Themes
+	   set this so the sticky tab bar and section anchors clear it. */
+	--rsu-sticky-offset: 0px;
+}
+
+.rsu-update {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 	color: var(--rsu-text);
 	box-sizing: border-box;
@@ -29,6 +42,37 @@
 .rsu-update *::before,
 .rsu-update *::after {
 	box-sizing: border-box;
+}
+
+.rsu-sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+
+/* === Editorial intro (the post body) === */
+
+.rsu-intro {
+	margin-bottom: 24px;
+	font-size: 16px;
+	line-height: 1.6;
+	color: var(--rsu-text);
+}
+
+.rsu-intro > *:last-child {
+	margin-bottom: 0;
+}
+
+.rsu-intro a {
+	color: var(--rsu-accent);
 }
 
 
@@ -68,12 +112,14 @@
 	background: var(--rsu-accent-hover);
 }
 
+/* 80% ink on gold clears the 4.5:1 AA threshold for 11px text; the
+   earlier 65% mix landed just under it. */
 .rsu-date__label {
 	font-weight: 700;
 	font-size: 11px;
 	text-transform: uppercase;
 	letter-spacing: 0.4px;
-	color: color-mix(in srgb, var(--rsu-text-on-accent) 65%, transparent);
+	color: color-mix(in srgb, var(--rsu-text-on-accent) 80%, transparent);
 }
 
 .rsu-date time {
@@ -83,7 +129,7 @@
 
 .rsu-date__tbd {
 	font-weight: 700;
-	color: color-mix(in srgb, var(--rsu-text-on-accent) 65%, transparent);
+	color: color-mix(in srgb, var(--rsu-text-on-accent) 80%, transparent);
 }
 
 /* "Available For" vehicle pill — shown only when a single vehicle is active
@@ -242,7 +288,7 @@
 .rsu-patch__build-value {
 	color: var(--rsu-text);
 	font-weight: 600;
-	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+	font-family: var(--rsu-mono);
 }
 
 .rsu-patch__date {
@@ -281,7 +327,7 @@
 	background: var(--rsu-bg);
 	border: 1px solid var(--rsu-border);
 	font-size: 13px;
-	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+	font-family: var(--rsu-mono);
 }
 
 .rsu-build__label {
@@ -313,6 +359,10 @@
 	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;
 	scrollbar-width: none;
+	/* Stay reachable while scrolling a long set of notes. */
+	position: sticky;
+	top: var(--rsu-sticky-offset);
+	z-index: 5;
 }
 
 .rsu-tabs::-webkit-scrollbar {
@@ -384,6 +434,215 @@
 
 .rsu-panel__content {
 	padding: 28px 32px 32px;
+}
+
+
+/* === Sections & anchors === */
+
+.rsu-section {
+	margin: 0;
+}
+
+/* Jump-link targets clear the sticky tab bar and any fixed site header. */
+.rsu-panel__content [id] {
+	scroll-margin-top: calc(var(--rsu-sticky-offset) + 64px);
+}
+
+
+/* === Generation filter (per panel) === */
+
+.rsu-gen-filter {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px 12px;
+	margin-bottom: 18px;
+}
+
+.rsu-gen-filter__label {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--rsu-text-muted);
+}
+
+.rsu-gen-filter__group {
+	display: inline-flex;
+	gap: 4px;
+	padding: 4px;
+	background: var(--rsu-bg);
+	border: 1px solid var(--rsu-border);
+	border-radius: 10px;
+}
+
+.rsu-gen-filter__btn {
+	appearance: none;
+	border: none;
+	background: transparent;
+	color: var(--rsu-text-secondary);
+	font: inherit;
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.2;
+	padding: 8px 14px;
+	border-radius: 8px;
+	cursor: pointer;
+	-webkit-tap-highlight-color: transparent;
+	transition: background var(--rsu-transition), color var(--rsu-transition);
+}
+
+.rsu-gen-filter__btn:hover {
+	color: var(--rsu-text);
+	background: var(--rsu-bg-hover);
+}
+
+.rsu-gen-filter__btn--active,
+.rsu-gen-filter__btn--active:hover {
+	background: var(--rsu-accent);
+	color: var(--rsu-text-on-accent);
+}
+
+.rsu-gen-filter__btn:focus-visible {
+	outline: 2px solid var(--rsu-accent);
+	outline-offset: 2px;
+}
+
+.rsu-gen-filter__btn:active {
+	transform: scale(0.97);
+}
+
+/* With a generation chosen, the script marks anything tagged for a
+   different one (whole sections, paragraphs, notes, list items, jump-list
+   entries) with .rsu-gen-hidden. Untagged content applies to every
+   generation and always shows. The "Gen N Only" pills are redundant once
+   filtered, so they go too. */
+.rsu-panel .rsu-gen-hidden {
+	display: none;
+}
+
+.rsu-panel[data-rsu-gen] .rsu-gen-pill {
+	display: none;
+}
+
+
+/* === "On this page" jump list === */
+
+.rsu-toc {
+	margin-bottom: 24px;
+	padding: 14px 16px;
+	background: var(--rsu-bg);
+	border: 1px solid var(--rsu-border);
+	border-radius: 10px;
+}
+
+.rsu-toc__label {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--rsu-text-muted);
+}
+
+.rsu-toc__list {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 8px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.rsu-toc__item {
+	margin: 0;
+}
+
+.rsu-toc__link {
+	display: inline-block;
+	padding: 4px 10px;
+	font-size: 13px;
+	font-weight: 500;
+	line-height: 1.4;
+	color: var(--rsu-text-secondary);
+	background: var(--rsu-bg-card);
+	border: 1px solid var(--rsu-border);
+	border-radius: 20px;
+	text-decoration: none;
+	transition: color var(--rsu-transition), border-color var(--rsu-transition), background var(--rsu-transition);
+}
+
+.rsu-toc__link:hover {
+	color: var(--rsu-accent);
+	border-color: color-mix(in srgb, var(--rsu-accent) 45%, var(--rsu-border));
+	background: var(--rsu-accent-tint-8);
+	text-decoration: none;
+}
+
+.rsu-toc__link:focus-visible {
+	outline: 2px solid var(--rsu-accent);
+	outline-offset: 2px;
+}
+
+
+/* === Previous / next update === */
+
+.rsu-adjacent {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+	margin-top: 32px;
+	padding-top: 20px;
+	border-top: 1px solid var(--rsu-divider);
+}
+
+.rsu-adjacent__link {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 12px 16px;
+	border-radius: 10px;
+	background: var(--rsu-bg);
+	border: 1px solid var(--rsu-border);
+	color: var(--rsu-text);
+	text-decoration: none;
+	transition: border-color var(--rsu-transition);
+}
+
+.rsu-adjacent__link:hover {
+	border-color: color-mix(in srgb, var(--rsu-accent) 45%, var(--rsu-border));
+	text-decoration: none;
+}
+
+.rsu-adjacent__link:focus-visible {
+	outline: 2px solid var(--rsu-accent);
+	outline-offset: 2px;
+}
+
+.rsu-adjacent__link--next {
+	grid-column: 2;
+	text-align: end;
+}
+
+.rsu-adjacent__label {
+	font-size: 11px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: var(--rsu-text-muted);
+}
+
+.rsu-adjacent__title {
+	font-family: var(--rsu-mono);
+	font-size: 16px;
+	font-weight: 600;
+	color: var(--rsu-accent);
+}
+
+.rsu-adjacent__date {
+	font-size: 12px;
+	color: var(--rsu-text-secondary);
 }
 
 
@@ -600,23 +859,6 @@
 /* === History Table ([rsu_history] shortcode) === */
 
 .rsu-history {
-	--rsu-bg: #121418;
-	--rsu-bg-card: #16191e;
-	--rsu-bg-hover: #1f2228;
-	--rsu-accent: #fba919;
-	--rsu-accent-hover: #ffbe4a;
-	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #121418);
-	--rsu-accent-tint-15: color-mix(in srgb, #fba919 15%, #121418);
-	--rsu-text: #ece9e4;
-	--rsu-text-secondary: #a6a39c;
-	--rsu-text-heading: #f6f4f0;
-	--rsu-text-muted: #79766f;
-	--rsu-text-on-accent: #15130e;
-	--rsu-border: #3a3e45;
-	--rsu-divider: #24272d;
-	--rsu-radius: 12px;
-	--rsu-transition: 0.2s ease;
-
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 	color: var(--rsu-text);
 	box-sizing: border-box;
@@ -743,6 +985,25 @@
 	white-space: nowrap;
 }
 
+/* "Patch for 2026.30" under a hotfix row's version. */
+.rsu-history__parent {
+	display: block;
+	margin-top: 3px;
+	font-size: 12px;
+	color: var(--rsu-text-muted);
+}
+
+.rsu-history__parent a {
+	color: var(--rsu-text-secondary);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.rsu-history__parent a:hover {
+	color: var(--rsu-accent);
+	text-decoration: underline;
+}
+
 .rsu-history__builds {
 	display: flex;
 	flex-wrap: wrap;
@@ -769,7 +1030,7 @@
 .rsu-history__build-value {
 	color: var(--rsu-accent);
 	font-weight: 600;
-	font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+	font-family: var(--rsu-mono);
 }
 
 .rsu-history__date {
@@ -897,14 +1158,13 @@
 .rsu-widget-latest {
 	/* The one retained blue accent — the header icon. Everything else is brand gold. */
 	--rsu-widget-blue: #60a5fa;
-	--rsu-widget-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 
 	display: block;
 	width: 100%;
-	color: #ece9e4;
-	background: #16191e;
-	border: 1px solid #3a3e45;
-	border-radius: 12px;
+	color: var(--rsu-text);
+	background: var(--rsu-bg-card);
+	border: 1px solid var(--rsu-border);
+	border-radius: var(--rsu-radius);
 	overflow: hidden;
 	box-sizing: border-box;
 	-webkit-font-smoothing: antialiased;
@@ -914,7 +1174,7 @@
 
 /* On-brand hover: border warms toward the gold accent, with a subtle lift. */
 .rsu-widget-latest:hover {
-	border-color: color-mix(in srgb, #fba919 35%, #3a3e45);
+	border-color: color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
 	transform: translateY(-2px);
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
@@ -925,7 +1185,7 @@
 	align-items: center;
 	gap: 8px;
 	padding: 13px 16px;
-	border-bottom: 1px solid #24272d;
+	border-bottom: 1px solid var(--rsu-divider);
 }
 
 .rsu-widget-latest__icon {
@@ -940,7 +1200,7 @@
 	font-weight: 600;
 	letter-spacing: 0.6px;
 	text-transform: uppercase;
-	color: #a6a39c;
+	color: var(--rsu-text-secondary);
 }
 
 .rsu-widget-latest__entries {
@@ -959,16 +1219,16 @@
 }
 
 .rsu-widget-entry + .rsu-widget-entry {
-	border-top: 1px solid #24272d;
+	border-top: 1px solid var(--rsu-divider);
 }
 
 .rsu-widget-entry:hover {
-	background-color: #1f2228;
+	background-color: var(--rsu-bg-hover);
 	text-decoration: none;
 }
 
 .rsu-widget-entry:focus-visible {
-	outline: 2px solid #fba919;
+	outline: 2px solid var(--rsu-accent);
 	outline-offset: -2px;
 }
 
@@ -986,8 +1246,8 @@
 	font-weight: 700;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
-	color: #15130e;
-	background: #fba919;
+	color: var(--rsu-text-on-accent);
+	background: var(--rsu-accent);
 	border-radius: 4px;
 	line-height: 1.4;
 }
@@ -998,20 +1258,20 @@
 	font-weight: 700;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
-	color: #15130e;
-	background: #fba919;
+	color: var(--rsu-text-on-accent);
+	background: var(--rsu-accent);
 	border-radius: 4px;
 	line-height: 1.4;
 }
 
 /* Monospace version — reads like a software build number, not a generic heading. */
 .rsu-widget-latest__version {
-	font-family: var(--rsu-widget-mono);
+	font-family: var(--rsu-mono);
 	font-size: 24px;
 	font-weight: 600;
 	letter-spacing: -0.5px;
 	line-height: 1.1;
-	color: #f6f4f0;
+	color: var(--rsu-text-heading);
 }
 
 /* Exact build per generation, under the family headline. */
@@ -1036,13 +1296,13 @@
 	font-weight: 600;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
-	color: #a6a39c;
+	color: var(--rsu-text-secondary);
 }
 
 .rsu-widget-latest__build-value {
-	font-family: var(--rsu-widget-mono);
+	font-family: var(--rsu-mono);
 	font-weight: 600;
-	color: #ece9e4;
+	color: var(--rsu-text);
 }
 
 .rsu-widget-latest__dates {
@@ -1063,14 +1323,14 @@
 	font-weight: 600;
 	letter-spacing: 0.5px;
 	text-transform: uppercase;
-	color: #79766f;
+	color: var(--rsu-text-muted);
 }
 
 .rsu-widget-latest__meta-value {
-	font-family: var(--rsu-widget-mono);
+	font-family: var(--rsu-mono);
 	font-size: 13px;
 	font-weight: 500;
-	color: #ece9e4;
+	color: var(--rsu-text);
 }
 
 .rsu-widget-entry__cta {
@@ -1080,7 +1340,7 @@
 	margin-top: 2px;
 	font-size: 13px;
 	font-weight: 600;
-	color: #fba919;
+	color: var(--rsu-accent);
 }
 
 .rsu-widget-entry__cta-arrow {
@@ -1108,7 +1368,8 @@
 	}
 
 	.rsu-tab:active,
-	.rsu-history__filter-btn:active {
+	.rsu-history__filter-btn:active,
+	.rsu-gen-filter__btn:active {
 		transform: none;
 	}
 
@@ -1135,8 +1396,15 @@
 		display: block;
 	}
 
+	/* Keep the header row for screen readers; only hide it visually. */
 	.rsu-history__table thead {
-		display: none;
+		position: absolute;
+		width: 1px;
+		height: 1px;
+		margin: -1px;
+		overflow: hidden;
+		clip: rect(0, 0, 0, 0);
+		clip-path: inset(50%);
 	}
 
 	/* The block reset above overrides the user-agent [hidden] rule, so the
@@ -1209,7 +1477,15 @@
 
 	.rsu-tab {
 		padding: 10px 14px;
-		font-size: 12px;
+		font-size: 13px;
+	}
+
+	.rsu-adjacent {
+		grid-template-columns: 1fr;
+	}
+
+	.rsu-adjacent__link--next {
+		grid-column: auto;
 	}
 
 	.rsu-panel__content {
@@ -1259,8 +1535,15 @@
 		--rsu-accent-tint-15: #dbeafe;
 	}
 
-	.rsu-tabs {
+	.rsu-tabs,
+	.rsu-gen-filter,
+	.rsu-toc,
+	.rsu-adjacent {
 		display: none;
+	}
+
+	.rsu-panel .rsu-gen-hidden {
+		display: revert;
 	}
 
 	.rsu-panel {
@@ -1283,7 +1566,8 @@
 		color: #0071e3;
 	}
 
-	.rsu-history {
+	.rsu-history,
+	.rsu-widget-latest {
 		--rsu-bg: #ffffff;
 		--rsu-bg-card: #ffffff;
 		--rsu-bg-hover: #ffffff;
