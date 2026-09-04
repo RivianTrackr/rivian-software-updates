@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.33.5] - 2026-09-04
+
+### Changed
+- **First Noticed and Public Release are metadata again.** The two solid gold pills at the top of an update page are replaced by the quiet label-over-value pattern the widget already uses: an 11px uppercase muted label with the date beneath in the monospace stack. "TBD" drops to the secondary text color instead of sitting in a bold gold block. The pills no longer respond to hover. Gold at the top of the page is now reserved for identity (the "Available For" vehicle chip on single-vehicle posts, which keeps its solid tag treatment with a 6px radius) and for the active vehicle tab. On small screens the pairs wrap in a row rather than stacking into a column.
+
 ## [2.33.4] - 2026-09-04
 
 ### Changed

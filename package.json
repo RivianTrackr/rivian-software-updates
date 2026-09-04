@@ -1,6 +1,6 @@
 {
   "name": "rivian-software-updates",
-  "version": "2.33.4",
+  "version": "2.33.5",
   "private": true,
   "scripts": {
     "build": "node esbuild.config.mjs",
