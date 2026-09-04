@@ -2,6 +2,12 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.33.3] - 2026-09-04
+
+### Changed
+- **Mobile pass on the update page.** On phones the "On this page" jump list is a single horizontally scrolling rail of chips with a fade on the trailing edge, instead of a tall wrapped block that pushed the notes below the fold. Jump chips, vehicle tabs, and the timeline's vehicle filter now meet the 40–44px tap-target minimum. The hotfix banner's "Full release notes" link takes its own line on narrow screens.
+- **The sticky tab bar shows when it is pinned.** Once the bar reaches the top of the viewport it squares its corners and gains a shadow over the notes, so it reads as a toolbar rather than a card floating over text. Driven by an IntersectionObserver that honors `--rsu-sticky-offset`.
+
 ## [2.33.2] - 2026-09-04
 
 ### Removed
