@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.34.3] - 2026-09-04
+
+### Changed
+- **"Available For" joins the meta row.** The last solid gold chip at the top of a single-vehicle update page now uses the same label-over-value pattern as First Noticed and Public Release, with the vehicle name in the sans stack. Gold at the top of the page is now reserved for the active tab alone.
+
 ## [2.34.2] - 2026-09-04
 
 ### Fixed

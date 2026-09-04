@@ -119,28 +119,13 @@
 	color: var(--rsu-text-secondary);
 }
 
-/* "Available For" vehicle chip — shown only when a single vehicle is active
-   (multi-vehicle posts identify the vehicle via the tabs instead). This is
-   identity, so it keeps the solid gold tag treatment the widget uses for
-   its vehicle labels. */
-.rsu-date--vehicle {
-	flex-direction: row;
-	align-items: center;
-	gap: 7px;
-	padding: 6px 11px;
-	border-radius: 6px;
-	background: var(--rsu-accent);
-}
-
-.rsu-date--vehicle .rsu-date__label {
-	color: color-mix(in srgb, var(--rsu-text-on-accent) 80%, transparent);
-	letter-spacing: 0.4px;
-}
-
+/* "Available For" — shown only when a single vehicle is active (multi-vehicle
+   posts identify the vehicle via the tabs). Same quiet label-over-value
+   pattern as the dates; the vehicle name stays in the sans stack. */
 .rsu-date__vehicle {
-	font-size: 13px;
-	font-weight: 700;
-	color: var(--rsu-text-on-accent);
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--rsu-text);
 }
 
 
@@ -1570,11 +1555,6 @@
 
 	.rsu-panel[hidden] {
 		display: block !important;
-	}
-
-	.rsu-date--vehicle {
-		border: 1px solid #cccccc;
-		background: #f9f9f9;
 	}
 
 	.rsu-gen-pill {
