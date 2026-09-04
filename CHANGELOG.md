@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.33.2] - 2026-09-04
+
+### Removed
+- **The "Show notes for" generation control** added in 2.33.0 is gone from the vehicle panels, along with its script and styles. The "Gen 1 Only" / "Gen 2 Only" pills continue to mark generation-specific items inline as before. Section wrappers, heading anchors, and the `data-generation` attributes on tagged markup stay, so nothing about the rendered notes changes apart from the control disappearing. The stored preference no longer records a generation.
+
 ## [2.33.1] - 2026-09-04
 
 ### Fixed
