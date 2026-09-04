@@ -1113,14 +1113,18 @@
 
 /* === Latest Update Widget === */
 
+/* Built to sit beside the site's other sidebar cards: eyebrow inside the
+   body (no header band), the same generous padding, a gold eyebrow icon,
+   a headline on the stat-value scale, and a full-size call to action. The
+   mono version and solid gold vehicle tags are what make it about software. */
 .rsu-widget-latest {
 	display: block;
 	width: 100%;
+	padding: 32px;
 	color: var(--rsu-text);
 	background: var(--rsu-bg-card);
 	border: 1px solid var(--rsu-border);
 	border-radius: var(--rsu-radius);
-	overflow: hidden;
 	box-sizing: border-box;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
@@ -1133,26 +1137,25 @@
 	border-color: color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
 }
 
-/* Header band — one identity for the combined widget. */
+/* Eyebrow: icon + label, like the neighboring cards. */
 .rsu-widget-latest__header {
 	display: flex;
 	align-items: center;
-	gap: 8px;
-	padding: 13px 16px;
-	border-bottom: 1px solid var(--rsu-divider);
+	gap: 10px;
+	margin-bottom: 20px;
 }
 
 .rsu-widget-latest__icon {
 	flex-shrink: 0;
-	font-size: 16px;
+	font-size: 18px;
 	line-height: 1;
-	color: var(--rsu-text-secondary);
+	color: var(--rsu-accent);
 }
 
 .rsu-widget-latest__title {
-	font-size: 12px;
+	font-size: 13px;
 	font-weight: 600;
-	letter-spacing: 0.6px;
+	letter-spacing: 0.8px;
 	text-transform: uppercase;
 	color: var(--rsu-text-secondary);
 }
@@ -1161,28 +1164,29 @@
 	display: block;
 }
 
-/* Each vehicle's latest update — a full-width clickable row. */
+/* Each vehicle's latest update — a clickable block. */
 .rsu-widget-entry {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	padding: 14px 16px;
+	gap: 14px;
 	text-decoration: none;
 	color: inherit;
 }
 
 .rsu-widget-entry + .rsu-widget-entry {
+	margin-top: 24px;
+	padding-top: 24px;
 	border-top: 1px solid var(--rsu-divider);
 }
 
-/* Rows keep their surface on hover; the arrow nudge below is the cue. */
 .rsu-widget-entry:hover {
 	text-decoration: none;
 }
 
 .rsu-widget-entry:focus-visible {
 	outline: 2px solid var(--rsu-accent);
-	outline-offset: -2px;
+	outline-offset: 6px;
+	border-radius: 4px;
 }
 
 .rsu-widget-entry__head {
@@ -1219,13 +1223,15 @@
 	line-height: 1.4;
 }
 
-/* Monospace version — reads like a software build number, not a generic heading. */
+/* Monospace version on the stat-value scale — reads like a build number
+   at the same visual weight as the neighboring cards' headlines. */
 .rsu-widget-latest__version {
 	font-family: var(--rsu-mono);
-	font-size: 24px;
+	font-size: 28px;
 	font-weight: 600;
+	font-variant-numeric: tabular-nums;
 	letter-spacing: -0.5px;
-	line-height: 1.1;
+	line-height: 1.2;
 	color: var(--rsu-text-heading);
 }
 
@@ -1234,20 +1240,20 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: baseline;
-	gap: 4px 14px;
-	margin-top: -4px;
+	gap: 4px 16px;
+	margin-top: -6px;
 }
 
 .rsu-widget-latest__build {
 	display: inline-flex;
 	align-items: baseline;
-	gap: 5px;
-	font-size: 12px;
+	gap: 6px;
+	font-size: 13px;
 	line-height: 1.3;
 }
 
 .rsu-widget-latest__build-label {
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
@@ -1263,19 +1269,19 @@
 .rsu-widget-latest__dates {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px 20px;
+	gap: 10px 28px;
 }
 
 .rsu-widget-latest__meta {
 	display: flex;
 	flex-direction: column;
-	gap: 2px;
+	gap: 3px;
 	line-height: 1.3;
 }
 
 .rsu-widget-latest__meta-label {
-	font-size: 10px;
-	font-weight: 600;
+	font-size: 11px;
+	font-weight: 700;
 	letter-spacing: 0.5px;
 	text-transform: uppercase;
 	color: var(--rsu-text-muted);
@@ -1283,17 +1289,18 @@
 
 .rsu-widget-latest__meta-value {
 	font-family: var(--rsu-mono);
-	font-size: 13px;
-	font-weight: 500;
+	font-size: 15px;
+	font-weight: 600;
 	color: var(--rsu-text);
 }
 
+/* Same size and treatment as the neighboring cards' links. */
 .rsu-widget-entry__cta {
 	display: inline-flex;
 	align-items: center;
-	gap: 6px;
-	margin-top: 2px;
-	font-size: 13px;
+	gap: 8px;
+	margin-top: 4px;
+	font-size: 16px;
 	font-weight: 600;
 	color: var(--rsu-accent);
 }
@@ -1517,8 +1524,12 @@
 	}
 
 	/* Latest update widget */
+	.rsu-widget-latest {
+		padding: 24px;
+	}
+
 	.rsu-widget-latest__version {
-		font-size: 20px;
+		font-size: 24px;
 	}
 
 	.rsu-widget-latest__dates {

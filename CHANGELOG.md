@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.34.1] - 2026-09-04
+
+### Changed
+- **The widget matches its neighbors.** The Latest Software Updates card now follows the same internal rules as the site's other sidebar cards: the eyebrow sits inside the body with a gold icon instead of in a divided header band, padding is 32px (24px on small screens), the version steps up to the 28px stat-value size, the date values and "Read Release Notes" link come up to the sizes the neighboring cards use, and the blocks get real air between them. Mono version and solid gold vehicle tags are unchanged. CSS only.
+
 ## [2.34.0] - 2026-09-04
 
 ### Changed
