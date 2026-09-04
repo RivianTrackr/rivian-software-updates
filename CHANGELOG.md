@@ -2,6 +2,16 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.34.0] - 2026-09-04
+
+### Changed
+- **Tabs size to their labels.** Vehicle tabs no longer stretch to fill the bar, so the active tab is a control instead of a full-width gold banner. Each tab has a 160px floor and the rest of the bar stays the deep background. Phones still split the bar evenly.
+- **The jump list lost its box.** "On this page" is now a label, a row of chips, and a hairline under them, one level of nesting fewer inside the panel.
+- **One hover surface.** Tab, timeline row, year header, and filter button hovers all use the 8% accent tint the style guide defines for subtle surfaces. The off-palette hover gray is gone from the token set.
+- **One Hotfix badge.** The banner badge, the "Patched" badge on a base release, and the widget's tag now use the outlined tinted style the timeline already uses. Solid gold is reserved for identity (vehicle tags) and the active tab.
+- **Vehicle tags share a radius.** The widget's tag moves from 4px to the 6px badge radius the update page uses.
+- **The widget icon is ink, not blue.** Gold is the only saturated accent again, per the style guide.
+
 ## [2.33.5] - 2026-09-04
 
 ### Changed
