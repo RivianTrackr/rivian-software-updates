@@ -2,6 +2,28 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.33.0] - 2026-09-04
+
+Front-end fixes. This release addresses every problem found in a review of how the plugin presents an update to readers; the ideas that go beyond fixing something are collected in `ROADMAP.md`.
+
+### Fixed
+- **The post body is no longer thrown away.** Anything written in the normal editor on an update post now renders as an intro above the vehicle tabs. It used to be dropped on the single view (yet still leaked into feeds and archives).
+- **Feeds and excerpts carry the release notes.** RSS items for an update post now include the dates, each vehicle's build numbers, and its notes. Posts with no hand-written excerpt get one built from the intro or, failing that, the default vehicle's notes, so archive cards, related-post widgets, and social previews stop coming up empty.
+- **Long release notes can be navigated.** Every section renders as a `<section>` with an anchored heading (`#rsu-r1-charging`), panels with three or more sections get an "On this page" jump list, and the vehicle tab bar sticks to the top of the viewport while scrolling. Themes with a fixed header can set `--rsu-sticky-offset` on `.rsu-update` so the bar and the anchors clear it. A shared section link into a non-default vehicle's panel opens that tab and scrolls to the heading.
+- **Generation tags now filter.** Sections, paragraphs, notes, and list items tagged for one generation carry a `data-generation` attribute, and multi-generation panels with tagged content gain a "Show notes for: All / Gen 1 / Gen 2" control that hides whatever does not apply. The choice is remembered per vehicle. Posts saved before this release keep their pills but get no control until re-saved.
+- **One date format everywhere.** The update page, the history table, and the widget all read the site's Date Format setting (Settings → General) instead of three different hard-coded formats.
+- **The accent-color setting reaches every surface.** Design tokens are declared once for the update page, the history table, and the widget, and the override targets all three. The widget previously hard-coded every color; the history table redeclared its own.
+- **One "my vehicle" preference.** The tabs and the `[rsu_history]` filter share a single stored preference, so picking R2 in the timeline opens the R2 tab on the next release and vice versa. "All Vehicles" clears it. The old keys are migrated on first read. The tab script also stops rewriting the URL hash on page load; only an explicit tab choice does that.
+- **The timeline sorts by one date.** Rows are placed by public release date (falling back to first noticed, then the post date) for both the year grouping and the order within a year, so a release can no longer file under one year and sort by another. The `order="asc"` attribute now applies to the years as well, instead of only reversing the rows inside each year.
+- **Previous and next update links.** Each vehicle panel ends with links to the previous and next update for that vehicle, so a reader is not sent back to the timeline to move between releases.
+- **Hotfix rows in the timeline name what they patch.** A "Patch for 2026.30" link sits under the version.
+- **Accessibility.** The First Noticed / Public Release pill labels move from roughly 4.3:1 to about 6.4:1 contrast against the gold fill, clearing AA for 11px text. The history table gains a per-year caption and its header row is visually hidden on phones instead of removed from the accessibility tree. Tab labels no longer drop below 13px on small screens.
+
+### Changed
+- New `RSU_Dates` helper (`includes/class-rsu-dates.php`) and a shared `RSU_Frontend::enqueue_styles()` used by the update page, shortcode, and widget.
+- `RSU_Admin::render_sections_to_html()` wraps each section and emits heading ids; the companion `RSU_Admin::section_anchors()` returns the same ids for jump lists. `parse_html_to_sections()` unwraps `<section>` so re-parsed HTML round-trips.
+- Legacy `localStorage` keys `rsu_preferred_platform` and `rsu_history_filter` are replaced by `rsu_preferences`.
+
 ## [2.32.0] - 2026-09-02
 
 ### Fixed

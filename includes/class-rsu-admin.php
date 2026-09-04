@@ -517,6 +517,7 @@ class RSU_Admin {
 		$heading_tag = RSU_Settings::get( 'heading_level', 'h3' );
 		$note_label  = RSU_Settings::get( 'note_label', 'NOTE' );
 		$html        = '';
+		$anchors     = self::section_anchors( $sections, $vehicle_slug );
 
 		// Get generation labels for pill rendering.
 		$gen_labels = array();
@@ -529,15 +530,28 @@ class RSU_Admin {
 			}
 		}
 
-		foreach ( $sections as $section ) {
+		foreach ( $sections as $index => $section ) {
 			$heading     = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';
 			$section_gen = isset( $section['generation'] ) ? $section['generation'] : '';
-			if ( $heading ) {
-				$heading_pill = self::render_generation_pill( $section_gen, $gen_labels );
-				$html .= '<' . $heading_tag . '>' . esc_html( $heading ) . $heading_pill . '</' . $heading_tag . '>' . "\n";
+			$has_blocks  = ! empty( $section['blocks'] ) && is_array( $section['blocks'] );
+
+			if ( ! $heading && ! $has_blocks ) {
+				continue;
 			}
 
-			if ( empty( $section['blocks'] ) || ! is_array( $section['blocks'] ) ) {
+			// Each section is a <section> carrying its generation, so the
+			// front end can hide whole sections that do not apply to the
+			// reader's car, and the heading carries an id for jump links.
+			$html .= '<section class="rsu-section"' . self::generation_attr( $section_gen, $gen_labels ) . '>' . "\n";
+
+			if ( $heading ) {
+				$heading_pill = self::render_generation_pill( $section_gen, $gen_labels );
+				$id_attr      = isset( $anchors[ $index ] ) ? ' id="' . esc_attr( $anchors[ $index ]['id'] ) . '"' : '';
+				$html .= '<' . $heading_tag . $id_attr . '>' . esc_html( $heading ) . $heading_pill . '</' . $heading_tag . '>' . "\n";
+			}
+
+			if ( ! $has_blocks ) {
+				$html .= "</section>\n";
 				continue;
 			}
 
@@ -545,23 +559,24 @@ class RSU_Admin {
 				$type       = isset( $block['type'] ) ? $block['type'] : 'paragraph';
 				$block_gen  = isset( $block['generation'] ) ? $block['generation'] : '';
 				$block_pill = self::render_generation_pill( $block_gen, $gen_labels );
+				$block_attr = self::generation_attr( $block_gen, $gen_labels );
 
 				switch ( $type ) {
 					case 'paragraph':
 						$content = isset( $block['content'] ) ? trim( $block['content'] ) : '';
 						if ( $content ) {
-							$html .= '<p>' . nl2br( esc_html( $content ) ) . $block_pill . '</p>' . "\n";
+							$html .= '<p' . $block_attr . '>' . nl2br( esc_html( $content ) ) . $block_pill . '</p>' . "\n";
 						}
 						break;
 
 					case 'list':
 						$items    = isset( $block['items'] ) && is_array( $block['items'] ) ? $block['items'] : array();
-						$list_html = self::render_list_html( $items, $gen_labels );
+						$list_html = self::render_list_html( $items, $gen_labels, $block_attr );
 						if ( '' !== $list_html ) {
 							$html .= $list_html;
 							// Block-level pill goes after the list.
 							if ( $block_pill ) {
-								$html .= '<p class="rsu-list-pill">' . $block_pill . '</p>' . "\n";
+								$html .= '<p class="rsu-list-pill"' . $block_attr . '>' . $block_pill . '</p>' . "\n";
 							}
 						}
 						break;
@@ -592,16 +607,86 @@ class RSU_Admin {
 						}
 
 						if ( '' !== $note_inner ) {
-							$html .= '<blockquote><p><strong>' . esc_html( $note_label ) . '</strong>' . $block_pill . '</p>' . "\n";
+							$html .= '<blockquote' . $block_attr . '><p><strong>' . esc_html( $note_label ) . '</strong>' . $block_pill . '</p>' . "\n";
 							$html .= $note_inner;
 							$html .= "</blockquote>\n";
 						}
 						break;
 				}
 			}
+
+			$html .= "</section>\n";
 		}
 
 		return $html;
+	}
+
+	/**
+	 * Anchor ids and labels for a vehicle's section headings, keyed by the
+	 * section's index in the array.
+	 *
+	 * Ids are prefixed with the vehicle slug so R1 and R2 panels never share
+	 * one, and duplicate headings within a vehicle get a numeric suffix. Used
+	 * both when rendering the headings and when building the jump list above
+	 * the notes, so the two always agree.
+	 *
+	 * @param array  $sections     Sections array.
+	 * @param string $vehicle_slug Vehicle slug.
+	 * @return array `[ index => array{ id, label, generation } ]`.
+	 */
+	public static function section_anchors( $sections, $vehicle_slug = '' ) {
+		if ( ! is_array( $sections ) ) {
+			return array();
+		}
+
+		$prefix  = 'rsu-' . ( $vehicle_slug ? sanitize_key( $vehicle_slug ) : 'notes' ) . '-';
+		$anchors = array();
+		$used    = array();
+
+		foreach ( $sections as $index => $section ) {
+			$heading = isset( $section['heading'] ) ? trim( (string) $section['heading'] ) : '';
+			if ( '' === $heading ) {
+				continue;
+			}
+
+			$base = sanitize_title( $heading );
+			if ( '' === $base ) {
+				$base = 'section-' . ( $index + 1 );
+			}
+
+			$id = $prefix . $base;
+			$n  = 2;
+			while ( isset( $used[ $id ] ) ) {
+				$id = $prefix . $base . '-' . $n;
+				$n++;
+			}
+			$used[ $id ] = true;
+
+			$anchors[ $index ] = array(
+				'id'         => $id,
+				'label'      => $heading,
+				'generation' => isset( $section['generation'] ) ? (string) $section['generation'] : '',
+			);
+		}
+
+		return $anchors;
+	}
+
+	/**
+	 * A `data-generation` attribute for generation-tagged markup, or nothing
+	 * when the content applies to every generation (or the vehicle has only
+	 * one, in which case there is nothing to filter).
+	 *
+	 * @param string $generation Generation slug, or empty.
+	 * @param array  $gen_labels Map of generation slug => label.
+	 * @return string Attribute string with a leading space, or ''.
+	 */
+	private static function generation_attr( $generation, $gen_labels ) {
+		if ( empty( $generation ) || count( $gen_labels ) < 2 ) {
+			return '';
+		}
+
+		return ' data-generation="' . esc_attr( $generation ) . '"';
 	}
 
 	/**
@@ -610,11 +695,12 @@ class RSU_Admin {
 	 * Items are walked in order; transitions between levels open/close inner <ul>s.
 	 * Orphan first item with level > 0 is promoted to level 0.
 	 *
-	 * @param array $items      List items.
-	 * @param array $gen_labels Map of generation slug => label.
+	 * @param array  $items      List items.
+	 * @param array  $gen_labels Map of generation slug => label.
+	 * @param string $list_attr  Attribute string for the outermost <ul>.
 	 * @return string
 	 */
-	private static function render_list_html( $items, $gen_labels ) {
+	private static function render_list_html( $items, $gen_labels, $list_attr = '' ) {
 		if ( ! is_array( $items ) || empty( $items ) ) {
 			return '';
 		}
@@ -646,7 +732,9 @@ class RSU_Admin {
 
 			if ( $level > $prev ) {
 				for ( $i = $prev; $i < $level; $i++ ) {
-					$html .= "<ul>\n";
+					// The outer list carries the block's generation; nested
+					// lists inherit visibility from their parent item.
+					$html .= ( -1 === $i ? '<ul' . $list_attr . '>' : '<ul>' ) . "\n";
 				}
 			} elseif ( $level < $prev ) {
 				$html .= "</li>\n";
@@ -658,7 +746,7 @@ class RSU_Admin {
 			}
 
 			$item_pill = self::render_generation_pill( $gen, $gen_labels );
-			$html     .= '<li>' . esc_html( $text ) . $item_pill;
+			$html     .= '<li' . self::generation_attr( $gen, $gen_labels ) . '>' . esc_html( $text ) . $item_pill;
 
 			$prev = $level;
 		}
@@ -800,7 +888,9 @@ class RSU_Admin {
 				if ( '' !== $block['content'] ) {
 					$current['blocks'][] = $block;
 				}
-			} elseif ( 'div' === $tag ) {
+			} elseif ( 'div' === $tag || 'section' === $tag ) {
+				// Wrappers (the front end renders each section as a <section>)
+				// are unwrapped and their children parsed in place.
 				$inner_html = '';
 				foreach ( $node->childNodes as $child ) {
 					$inner_html .= $doc->saveHTML( $child );
