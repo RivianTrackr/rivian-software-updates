@@ -346,14 +346,6 @@ class RSU_Frontend {
 				$gen_labels      = RSU_Platforms::get_generations( $slug );
 				$multi_gen       = count( $gen_labels ) > 1;
 
-				// The generation filter only earns its space when the notes
-				// actually carry generation-specific items. Legacy HTML posts
-				// that were never re-saved have pills but no filterable
-				// wrappers, so they get no control.
-				$has_gen_items = $multi_gen
-					&& false !== strpos( $vehicle_content, 'class="rsu-section"' )
-					&& false !== strpos( $vehicle_content, 'rsu-gen-pill' );
-
 				$adjacent = $this->adjacent_updates( $post_id, $slug );
 				?>
 				<div class="rsu-panel <?php echo $is_default ? 'rsu-panel--active' : ''; ?> <?php echo $single_vehicle ? 'rsu-panel--solo' : ''; ?>"
@@ -377,18 +369,6 @@ class RSU_Frontend {
 										<span class="rsu-build__value"><?php echo esc_html( $build ); ?></span>
 									</span>
 								<?php endforeach; ?>
-							</div>
-						<?php endif; ?>
-
-						<?php if ( $has_gen_items ) : ?>
-							<div class="rsu-gen-filter" role="group" aria-label="Show notes for <?php echo esc_attr( $vehicle['label'] ); ?> generation">
-								<span class="rsu-gen-filter__label">Show notes for</span>
-								<div class="rsu-gen-filter__group">
-									<button type="button" class="rsu-gen-filter__btn rsu-gen-filter__btn--active" data-generation="all" aria-pressed="true">All</button>
-									<?php foreach ( $gen_labels as $g_slug => $g_label ) : ?>
-										<button type="button" class="rsu-gen-filter__btn" data-generation="<?php echo esc_attr( $g_slug ); ?>" aria-pressed="false"><?php echo esc_html( $g_label ); ?></button>
-									<?php endforeach; ?>
-								</div>
 							</div>
 						<?php endif; ?>
 

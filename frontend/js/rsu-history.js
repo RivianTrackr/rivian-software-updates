@@ -27,7 +27,6 @@
       /* storage unavailable — selection just won't persist */
     }
     if (typeof prefs.vehicle !== 'string') prefs.vehicle = '';
-    if (!prefs.generation || typeof prefs.generation !== 'object') prefs.generation = {};
     return prefs;
   }
 

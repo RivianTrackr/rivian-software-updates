@@ -3,8 +3,8 @@
 
   // One shared preference for "my vehicle" across the update page tabs and
   // the [rsu_history] vehicle filter (rsu-history.js reads the same key).
-  // Shape: { vehicle: 'r1', generation: { r1: 'gen2' } }. The pre-2.33 keys
-  // are read once as a fallback and then superseded.
+  // Shape: { vehicle: 'r1' }. The pre-2.33 key is read once as a fallback
+  // and then superseded.
   var PREF_KEY = 'rsu_preferences';
   var LEGACY_VEHICLE_KEY = 'rsu_preferred_platform';
 
@@ -23,7 +23,6 @@
       /* storage unavailable — nothing persists */
     }
     if (typeof prefs.vehicle !== 'string') prefs.vehicle = '';
-    if (!prefs.generation || typeof prefs.generation !== 'object') prefs.generation = {};
     return prefs;
   }
 
@@ -42,16 +41,6 @@
     writePrefs(prefs);
   }
 
-  function setPreferredGeneration(vehicle, generation) {
-    var prefs = readPrefs();
-    if (!generation || generation === 'all') {
-      delete prefs.generation[vehicle];
-    } else {
-      prefs.generation[vehicle] = generation;
-    }
-    writePrefs(prefs);
-  }
-
   function isSlug(value) {
     return typeof value === 'string' && /^[a-zA-Z0-9_-]+$/.test(value);
   }
@@ -60,7 +49,6 @@
     var containers = document.querySelectorAll('.rsu-update');
     containers.forEach(function (container) {
       setupTabs(container);
-      setupGenerationFilters(container);
       setupAnchors(container);
     });
   }
@@ -220,60 +208,6 @@
         targetPanel.addEventListener('animationend', handler);
       }
     }
-  }
-
-  /**
-   * Per-panel "Show notes for: All / Gen 1 / Gen 2" control. Elements tagged
-   * for another generation get .rsu-gen-hidden; the panel's data-rsu-gen
-   * attribute lets CSS drop the now-redundant pills. Remembered per vehicle.
-   */
-  function setupGenerationFilters(container) {
-    var filters = container.querySelectorAll('.rsu-gen-filter');
-    filters.forEach(function (filter) {
-      var panel = filter.closest('.rsu-panel');
-      if (!panel) return;
-
-      var vehicle = panel.dataset.platform || '';
-      var buttons = filter.querySelectorAll('.rsu-gen-filter__btn');
-      if (buttons.length < 2) return;
-
-      function apply(generation, persist) {
-        var found = false;
-        buttons.forEach(function (btn) {
-          var isActive = (btn.dataset.generation || 'all') === generation;
-          if (isActive) found = true;
-          btn.classList.toggle('rsu-gen-filter__btn--active', isActive);
-          btn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        });
-        if (!found) return;
-
-        if (generation === 'all') {
-          delete panel.dataset.rsuGen;
-        } else {
-          panel.dataset.rsuGen = generation;
-        }
-
-        // Tagged elements (sections, paragraphs, notes, list items, jump
-        // links) for another generation are hidden; the pills themselves
-        // are handled by CSS off data-rsu-gen.
-        var tagged = panel.querySelectorAll('[data-generation]:not(.rsu-gen-pill)');
-        tagged.forEach(function (el) {
-          var hide = generation !== 'all' && el.dataset.generation !== generation;
-          el.classList.toggle('rsu-gen-hidden', hide);
-        });
-
-        if (persist && vehicle) setPreferredGeneration(vehicle, generation);
-      }
-
-      buttons.forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          apply(btn.dataset.generation || 'all', true);
-        });
-      });
-
-      var remembered = vehicle ? readPrefs().generation[vehicle] : '';
-      if (isSlug(remembered)) apply(remembered, false);
-    });
   }
 
   /**
