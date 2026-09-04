@@ -1119,14 +1119,13 @@
 	box-sizing: border-box;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	transition: border-color 0.2s ease, transform 0.3s ease, box-shadow 0.3s ease;
+	transition: border-color 0.2s ease;
 }
 
-/* On-brand hover: border warms toward the gold accent, with a subtle lift. */
+/* Card hover per the style guide: the border warms toward the accent.
+   No lift, no shadow, no surface change. */
 .rsu-widget-latest:hover {
 	border-color: color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
-	transform: translateY(-2px);
-	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 /* Header band — one identity for the combined widget. */
@@ -1165,15 +1164,14 @@
 	padding: 14px 16px;
 	text-decoration: none;
 	color: inherit;
-	transition: background-color 0.2s ease;
 }
 
 .rsu-widget-entry + .rsu-widget-entry {
 	border-top: 1px solid var(--rsu-divider);
 }
 
+/* Rows keep their surface on hover; the arrow nudge below is the cue. */
 .rsu-widget-entry:hover {
-	background-color: var(--rsu-bg-hover);
 	text-decoration: none;
 }
 
@@ -1323,13 +1321,8 @@
 	}
 
 	.rsu-widget-latest,
-	.rsu-widget-entry,
 	.rsu-widget-entry__cta-arrow {
 		transition: none;
-	}
-
-	.rsu-widget-latest:hover {
-		transform: none;
 	}
 }
 

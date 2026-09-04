@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.33.4] - 2026-09-04
+
+### Changed
+- **Widget hover follows the style guide.** Hovering a row in the Latest Software Updates widget no longer changes its background, and the card no longer lifts or casts a shadow. The only hover cue left is the one the card pattern specifies: the border warming toward the accent, plus the existing arrow nudge on the "Read Release Notes" link.
+
 ## [2.33.3] - 2026-09-04
 
 ### Changed
