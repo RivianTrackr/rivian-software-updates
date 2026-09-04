@@ -9,7 +9,6 @@
 :where(.rsu-update, .rsu-history, .rsu-widget-latest) {
 	--rsu-bg: #121418;
 	--rsu-bg-card: #16191e;
-	--rsu-bg-hover: #1f2228;
 	--rsu-accent: #fba919;
 	--rsu-accent-hover: #ffbe4a;
 	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #121418);
@@ -165,9 +164,10 @@
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: var(--rsu-text-on-accent);
-	background: var(--rsu-accent);
-	padding: 3px 10px;
+	color: var(--rsu-accent);
+	background: var(--rsu-accent-tint-15);
+	border: 1px solid color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
+	padding: 2px 10px;
 	border-radius: 9999px;
 }
 
@@ -232,9 +232,10 @@
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: var(--rsu-text-on-accent);
-	background: var(--rsu-accent);
-	padding: 3px 10px;
+	color: var(--rsu-accent);
+	background: var(--rsu-accent-tint-15);
+	border: 1px solid color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
+	padding: 2px 10px;
 	border-radius: 9999px;
 	white-space: nowrap;
 }
@@ -381,10 +382,12 @@
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 
+/* Tabs size to their labels (with a floor) so the active tab is a control,
+   not a banner across the full width. Phones split the bar evenly. */
 .rsu-tab {
-	flex: 1;
-	min-width: 0;
-	padding: 14px 20px;
+	flex: 0 1 auto;
+	min-width: 160px;
+	padding: 14px 28px;
 	border: none;
 	border-radius: calc(var(--rsu-radius) - 4px);
 	background: transparent;
@@ -401,7 +404,7 @@
 
 .rsu-tab:hover {
 	color: var(--rsu-text);
-	background: var(--rsu-bg-hover);
+	background: var(--rsu-accent-tint-8);
 }
 
 .rsu-tab--active {
@@ -483,12 +486,12 @@
 
 /* === "On this page" jump list === */
 
+/* No box of its own: label, chips, and a hairline under them, so the jump
+   list reads as part of the notes rather than a card inside the panel. */
 .rsu-toc {
 	margin-bottom: 24px;
-	padding: 14px 16px;
-	background: var(--rsu-bg);
-	border: 1px solid var(--rsu-border);
-	border-radius: 10px;
+	padding-bottom: 20px;
+	border-bottom: 1px solid var(--rsu-divider);
 }
 
 .rsu-toc__label {
@@ -521,7 +524,7 @@
 	font-weight: 500;
 	line-height: 1.4;
 	color: var(--rsu-text-secondary);
-	background: var(--rsu-bg-card);
+	background: var(--rsu-bg);
 	border: 1px solid var(--rsu-border);
 	border-radius: 20px;
 	text-decoration: none;
@@ -855,7 +858,7 @@
 
 .rsu-history__filter-btn:hover {
 	color: var(--rsu-text);
-	background: var(--rsu-bg-hover);
+	background: var(--rsu-accent-tint-8);
 }
 
 .rsu-history__filter-btn--active,
@@ -897,7 +900,7 @@
 }
 
 .rsu-history__table tbody tr:hover {
-	background: var(--rsu-bg-hover);
+	background: var(--rsu-accent-tint-8);
 }
 
 .rsu-history__table tbody td {
@@ -1068,7 +1071,7 @@
 }
 
 .rsu-history__year-header:hover {
-	background: var(--rsu-bg-hover);
+	background: var(--rsu-accent-tint-8);
 	border-color: color-mix(in srgb, var(--rsu-accent) 30%, var(--rsu-border));
 }
 
@@ -1111,9 +1114,6 @@
 /* === Latest Update Widget === */
 
 .rsu-widget-latest {
-	/* The one retained blue accent — the header icon. Everything else is brand gold. */
-	--rsu-widget-blue: #60a5fa;
-
 	display: block;
 	width: 100%;
 	color: var(--rsu-text);
@@ -1146,7 +1146,7 @@
 	flex-shrink: 0;
 	font-size: 16px;
 	line-height: 1;
-	color: var(--rsu-widget-blue);
+	color: var(--rsu-text-secondary);
 }
 
 .rsu-widget-latest__title {
@@ -1192,7 +1192,7 @@
 	gap: 6px;
 }
 
-/* Gold-tinted vehicle tag — square-ish (radius 4px) reads more technical than a pill. */
+/* Solid gold vehicle tag: identity, matching the update page's chip. */
 .rsu-widget-latest__vehicle {
 	padding: 3px 9px;
 	font-size: 11px;
@@ -1201,19 +1201,21 @@
 	text-transform: uppercase;
 	color: var(--rsu-text-on-accent);
 	background: var(--rsu-accent);
-	border-radius: 4px;
+	border-radius: 6px;
 	line-height: 1.4;
 }
 
+/* Status, not identity: outlined tinted like every other Hotfix badge. */
 .rsu-widget-entry__tag {
-	padding: 3px 9px;
+	padding: 2px 9px;
 	font-size: 10px;
 	font-weight: 700;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
-	color: var(--rsu-text-on-accent);
-	background: var(--rsu-accent);
-	border-radius: 4px;
+	color: var(--rsu-accent);
+	background: var(--rsu-accent-tint-8);
+	border: 1px solid var(--rsu-accent-tint-15);
+	border-radius: 6px;
 	line-height: 1.4;
 }
 
@@ -1339,11 +1341,7 @@
 	   instead of a tall wrapped block, so a 20-section release does not push
 	   the notes below the fold. A fade on the trailing edge hints at more. */
 	.rsu-toc {
-		padding: 12px 0 12px 14px;
-	}
-
-	.rsu-toc__label {
-		padding-inline-end: 14px;
+		padding-bottom: 16px;
 	}
 
 	.rsu-toc__list {
@@ -1351,7 +1349,7 @@
 		gap: 8px;
 		overflow-x: auto;
 		padding-inline-end: 32px;
-		scroll-padding-inline-start: 14px;
+		scroll-padding-inline-start: 0;
 		-webkit-overflow-scrolling: touch;
 		scrollbar-width: none;
 		-webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
@@ -1376,6 +1374,9 @@
 	}
 
 	.rsu-tab {
+		flex: 1;
+		min-width: 0;
+		padding-inline: 16px;
 		min-height: 44px;
 	}
 
@@ -1533,7 +1534,6 @@
 	.rsu-update {
 		--rsu-bg: #ffffff;
 		--rsu-bg-card: #ffffff;
-		--rsu-bg-hover: #f5f5f5;
 		--rsu-text: #000000;
 		--rsu-text-secondary: #333333;
 		--rsu-text-heading: #000000;
@@ -1576,7 +1576,6 @@
 	.rsu-widget-latest {
 		--rsu-bg: #ffffff;
 		--rsu-bg-card: #ffffff;
-		--rsu-bg-hover: #ffffff;
 		--rsu-text: #000000;
 		--rsu-text-secondary: #333333;
 		--rsu-text-muted: #666666;
