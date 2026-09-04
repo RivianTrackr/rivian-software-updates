@@ -439,8 +439,28 @@
 
 /* === Sections & anchors === */
 
+/* Sections own the vertical rhythm between them, so it no longer depends
+   on a list's bottom margin or a heading's top margin surviving the theme
+   stylesheet. Inside a section the first heading has no top margin and the
+   last block no bottom margin. */
 .rsu-section {
 	margin: 0;
+}
+
+.rsu-section + .rsu-section {
+	margin-top: 32px;
+}
+
+.rsu-panel__content .rsu-section > h2:first-child,
+.rsu-panel__content .rsu-section > h3:first-child,
+.rsu-panel__content .rsu-section > h4:first-child {
+	margin-top: 0;
+}
+
+.rsu-panel__content .rsu-section > :last-child,
+.rsu-panel__content .rsu-section > ul:last-child > li:last-child,
+.rsu-panel__content .rsu-section > ol:last-child > li:last-child {
+	margin-bottom: 0;
 }
 
 /* Jump-link targets clear the sticky tab bar and any fixed site header. */
@@ -1502,6 +1522,10 @@
 
 	.rsu-panel__content h4 {
 		font-size: 18px;
+	}
+
+	.rsu-section + .rsu-section {
+		margin-top: 24px;
 	}
 
 	/* Latest update widget */
