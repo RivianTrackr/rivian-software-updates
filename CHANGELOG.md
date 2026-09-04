@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.33.1] - 2026-09-04
+
+### Fixed
+- **Section headings lost their top margin.** Wrapping each section in a `<section>` (2.33.0) made every heading the first child of its wrapper, so the "no top margin on the first heading" rule applied to all of them and each heading sat directly under the previous list. Sections now carry the gap themselves (32px, 24px on small screens), the first heading in a section has no top margin, and the last block has no bottom margin, so the rhythm no longer depends on list or heading margins surviving the theme stylesheet.
+
 ## [2.33.0] - 2026-09-04
 
 Front-end fixes. This release addresses every problem found in a review of how the plugin presents an update to readers; the ideas that go beyond fixing something are collected in `ROADMAP.md`.
