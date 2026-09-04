@@ -369,6 +369,13 @@
 	display: none;
 }
 
+/* Once the bar is actually pinned it reads as a toolbar: square top corners
+   (nothing is left to round against) and a shadow over the notes below. */
+.rsu-tabs--stuck {
+	border-radius: 0;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
 .rsu-tab {
 	flex: 1;
 	min-width: 0;
@@ -1323,6 +1330,67 @@
 
 	.rsu-widget-latest:hover {
 		transform: none;
+	}
+}
+
+
+/* === Update Page: Mobile === */
+
+@media (max-width: 600px) {
+	/* The jump list becomes a single horizontally scrolling rail of chips
+	   instead of a tall wrapped block, so a 20-section release does not push
+	   the notes below the fold. A fade on the trailing edge hints at more. */
+	.rsu-toc {
+		padding: 12px 0 12px 14px;
+	}
+
+	.rsu-toc__label {
+		padding-inline-end: 14px;
+	}
+
+	.rsu-toc__list {
+		flex-wrap: nowrap;
+		gap: 8px;
+		overflow-x: auto;
+		padding-inline-end: 32px;
+		scroll-padding-inline-start: 14px;
+		-webkit-overflow-scrolling: touch;
+		scrollbar-width: none;
+		-webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+		mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+	}
+
+	.rsu-toc__list::-webkit-scrollbar {
+		display: none;
+	}
+
+	.rsu-toc__item {
+		flex: 0 0 auto;
+	}
+
+	/* Tap targets: chips, tabs, and filter buttons meet the 40–44px minimum. */
+	.rsu-toc__link {
+		display: inline-flex;
+		align-items: center;
+		min-height: 40px;
+		padding: 6px 14px;
+		white-space: nowrap;
+	}
+
+	.rsu-tab {
+		min-height: 44px;
+	}
+
+	.rsu-history__filter-btn {
+		min-height: 40px;
+	}
+
+	/* The hotfix banner's "Full release notes" link takes its own line
+	   rather than squeezing beside the patch text. */
+	.rsu-hotfix-banner__link {
+		flex-basis: 100%;
+		margin-inline-start: 0;
+		white-space: normal;
 	}
 }
 

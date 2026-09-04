@@ -49,6 +49,7 @@
     var containers = document.querySelectorAll('.rsu-update');
     containers.forEach(function (container) {
       setupTabs(container);
+      setupStickyState(container);
       setupAnchors(container);
     });
   }
@@ -208,6 +209,30 @@
         targetPanel.addEventListener('animationend', handler);
       }
     }
+  }
+
+  /**
+   * Mark the tab bar while it is pinned to the top of the viewport so CSS can
+   * square its corners and add a shadow. Observes the bar against a root
+   * inset by the sticky offset (plus 1px), so it stops fully intersecting
+   * exactly when it sticks.
+   */
+  function setupStickyState(container) {
+    var tablist = container.querySelector('.rsu-tabs');
+    if (!tablist || typeof IntersectionObserver === 'undefined') return;
+
+    var offset = parseFloat(getComputedStyle(container).getPropertyValue('--rsu-sticky-offset')) || 0;
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        var entry = entries[0];
+        var stuck = entry.intersectionRatio < 1 && entry.boundingClientRect.top <= offset + 1;
+        tablist.classList.toggle('rsu-tabs--stuck', stuck);
+      },
+      { threshold: [1], rootMargin: '-' + (offset + 1) + 'px 0px 0px 0px' }
+    );
+
+    observer.observe(tablist);
   }
 
   /**
