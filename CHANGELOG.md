@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.34.2] - 2026-09-04
+
+### Fixed
+- **The widget overshot.** 2.34.1 sized the card off a 2x screenshot and doubled everything: 32px padding against the neighbors' roughly 20px, a 28px version against their 20px headlines. Padding is now 20px (16px on small screens), the version returns to 24px, the date values to 14px, the link to 15px, and the gaps tighten to match. The structure from 2.34.1 (eyebrow inside the body, gold icon, no header band) stays.
+
 ## [2.34.1] - 2026-09-04
 
 ### Changed
