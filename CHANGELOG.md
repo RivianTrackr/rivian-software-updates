@@ -2,6 +2,16 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.36.0] - 2026-10-03
+
+### Added
+- **Batch PDF import that files itself.** The import dialog now takes several Update Details PDFs at once. Each one is read in the browser, and its title line ("R1T/R1S – Model Year 2025 – Software Version 2025.30.00") sets the vehicle and, through the model year, the generation, both of which you can override per file. Files land on their vehicle's tab, switching the vehicle on if it was off. One file for a vehicle tags its sections with the chosen generation, or none for "All generations". Two files for one vehicle, one per generation, are merged with the same algorithm the migration tool uses: shared content stays untagged, differences get a Gen 1 or Gen 2 pill down to the individual bullet, and Additional Improvements stays last. The preview shows the merged result with its pills before anything is imported, conflicting assignments are called out, and a single file can still be dropped back into the text box for editing.
+- **The merge lives in JavaScript too.** `admin/js/rsu-merge.mjs` is a port of `RSU_Migrate::merge_generations()`, including PHP's `similar_text` scoring, and is verified to produce byte-identical output on randomized fixtures.
+
+### Changed
+- **Title lines as Rivian writes them.** The extractor now reads "R1T Gen 1 – Model Year 2022-2024 – Software Version 2026.36" and its R1S Gen 2 and R2 siblings: the trim letter is dropped, an explicit "Gen N" sets the generation (the model years are only a fallback), and the line is stripped instead of becoming a section heading.
+- **Three parsing fixes seen on real PDFs.** A lead-in sentence ending in a colon ("We improved Navigation by adding the following:") stays a paragraph under its heading instead of becoming one. A line ending in a closing quote is judged by the punctuation inside it, so “Who ya gonna call?” is no longer a heading. Paragraph lines up to 2.25× the body size apart are joined, which keeps multi-line paragraphs whole, and "stations ." loses its stray space.
+
 ## [2.35.0] - 2026-10-03
 
 ### Fixed
