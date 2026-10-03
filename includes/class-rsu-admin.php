@@ -1257,6 +1257,25 @@ class RSU_Admin {
 			$post_id = (int) $GLOBALS['post']->ID;
 		}
 
+		// Vehicles and generations, so the PDF importer can route each file to
+		// its tab and read the generation off the model year in the PDF title.
+		$vehicles = array();
+		foreach ( RSU_Platforms::get_all() as $slug => $vehicle ) {
+			$gens = array();
+			foreach ( $vehicle['generations'] as $gen_slug => $gen ) {
+				$gens[ $gen_slug ] = array(
+					'label'       => $gen['label'],
+					'description' => isset( $gen['description'] ) ? $gen['description'] : '',
+					'sort'        => isset( $gen['sort'] ) ? (int) $gen['sort'] : 0,
+				);
+			}
+			$vehicles[ $slug ] = array(
+				'label'       => $vehicle['label'],
+				'description' => isset( $vehicle['description'] ) ? $vehicle['description'] : '',
+				'generations' => $gens,
+			);
+		}
+
 		// URLs for the lazy-loaded PDF importer (pdf.js bundle + worker).
 		wp_localize_script(
 			'rsu-admin',
@@ -1265,6 +1284,7 @@ class RSU_Admin {
 				'pdfImportUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf-import.min.js?ver=' . RSU_VERSION,
 				'pdfWorkerUrl' => RSU_PLUGIN_URL . 'admin/js/rsu-pdf.worker.min.js?ver=' . RSU_VERSION,
 				'postId'       => $post_id,
+				'vehicles'     => $vehicles,
 			)
 		);
 	}

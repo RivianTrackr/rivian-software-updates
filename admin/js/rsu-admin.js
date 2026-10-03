@@ -3,6 +3,8 @@
  * Vanilla JS, no jQuery dependency. Built by esbuild to rsu-admin.min.js
  * and enqueued in the footer; init() retries cover late meta box renders.
  */
+import { mergeGenerations } from './rsu-merge.mjs';
+
 var RSUSectionBuilder = (function () {
 	'use strict';
 
@@ -1206,8 +1208,16 @@ var RSUSectionBuilder = (function () {
 
 	// Render parsed sections into the preview pane (DOM APIs only, never
 	// innerHTML, so pasted text can't inject markup).
-	function renderImportPreview(previewEl, sections) {
+	function renderImportPreview(previewEl, sections, genLabels) {
+		genLabels = genLabels || {};
 		previewEl.innerHTML = '';
+		function pill(gen) {
+			if (!gen) return null;
+			var el = document.createElement('span');
+			el.className = 'rsu-import-preview__gen';
+			el.textContent = (genLabels[gen] || gen) + ' only';
+			return el;
+		}
 		if (!sections.length) {
 			var empty = document.createElement('p');
 			empty.className = 'rsu-import-preview__empty';
@@ -1223,8 +1233,12 @@ var RSUSectionBuilder = (function () {
 					var li = document.createElement('li');
 					li.textContent = item.text;
 					if (item.level === 1) li.className = 'rsu-import-preview__sub';
+					var ip = pill(item.generation);
+					if (ip) li.appendChild(ip);
 					ul.appendChild(li);
 				});
+				var lp = pill(block.generation);
+				if (lp) ul.appendChild(lp);
 				container.appendChild(ul);
 			} else if (block.type === 'note') {
 				var noteEl = document.createElement('div');
@@ -1241,6 +1255,8 @@ var RSUSectionBuilder = (function () {
 				var p = document.createElement('p');
 				p.className = 'rsu-import-preview__para';
 				p.textContent = block.content;
+				var pp = pill(block.generation);
+				if (pp) p.appendChild(pp);
 				container.appendChild(p);
 			}
 		}
@@ -1251,6 +1267,8 @@ var RSUSectionBuilder = (function () {
 			var h = document.createElement('div');
 			h.className = 'rsu-import-preview__heading' + (section.heading ? '' : ' rsu-import-preview__heading--empty');
 			h.textContent = section.heading || '(no heading)';
+			var sp = pill(section.generation);
+			if (sp) h.appendChild(sp);
 			sEl.appendChild(h);
 			(section.blocks || []).forEach(function (block) {
 				appendBlock(sEl, block);
@@ -1282,22 +1300,139 @@ var RSUSectionBuilder = (function () {
 		return _pdfImporterPromise;
 	}
 
+	// ── Vehicle catalogue (localized by PHP) ──
+	function vehicleCatalog() {
+		var cfg = window.RSU_ADMIN || {};
+		return cfg.vehicles || {};
+	}
+	function vehicleLabel(slug) {
+		var v = vehicleCatalog()[slug];
+		return (v && v.label) || slug;
+	}
+	function vehicleGens(slug) {
+		var v = vehicleCatalog()[slug];
+		return (v && v.generations) || {};
+	}
+	function genSlugsSorted(slug) {
+		var gens = vehicleGens(slug);
+		return Object.keys(gens).sort(function (a, b) { return (gens[a].sort || 0) - (gens[b].sort || 0); });
+	}
+	function genLabel(vehicle, gen) {
+		var g = vehicleGens(vehicle)[gen];
+		return (g && g.label) || gen;
+	}
+	// A generation's description carries its model years ("2021–2024", "2025+").
+	function genCoversYear(gen, year) {
+		var d = String((gen && gen.description) || '');
+		var range = d.match(/(\d{4})\s*[–—-]\s*(\d{4})/);
+		if (range) return year >= +range[1] && year <= +range[2];
+		var open = d.match(/(\d{4})\s*\+/);
+		if (open) return year >= +open[1];
+		return false;
+	}
+	// Where a PDF belongs, from its title line. Falls back to the tab it was
+	// opened from; the generation stays "All" when the vehicle has only one
+	// or the model year does not land in any.
+	function guessTarget(meta, fallbackVehicle) {
+		var cat = vehicleCatalog();
+		var vehicle = '';
+		if (meta && meta.vehicle) {
+			var want = String(meta.vehicle).toLowerCase();
+			Object.keys(cat).forEach(function (slug) {
+				if (vehicle) return;
+				if (slug.toLowerCase() === want || String(cat[slug].label || '').toLowerCase() === want) vehicle = slug;
+			});
+		}
+		if (!vehicle) vehicle = fallbackVehicle;
+		var gen = '';
+		var slugs = genSlugsSorted(vehicle);
+		if (slugs.length > 1 && meta && meta.modelYear) {
+			slugs.forEach(function (g) {
+				if (!gen && genCoversYear(vehicleGens(vehicle)[g], meta.modelYear)) gen = g;
+			});
+		}
+		return { vehicle: vehicle, generation: gen, detected: !!(meta && meta.vehicle) };
+	}
+
+	// Turn the parsed files into one section list per vehicle. One file for a
+	// vehicle is tagged with its generation (or left untagged for "All"); two
+	// files, one per generation, are merged so shared content stays untagged
+	// and differences get a pill down to the bullet.
+	function planImport(files) {
+		var byVehicle = {}, errors = [], targets = {};
+		files.forEach(function (f) {
+			if (f.error || !f.sections || !f.sections.length) return;
+			(byVehicle[f.vehicle] = byVehicle[f.vehicle] || []).push(f);
+		});
+		Object.keys(byVehicle).forEach(function (v) {
+			var list = byVehicle[v];
+			var label = vehicleLabel(v);
+			if (list.length === 1) {
+				var f = list[0];
+				var secs = JSON.parse(JSON.stringify(f.sections));
+				if (f.generation) secs.forEach(function (sec) { sec.generation = f.generation; });
+				targets[v] = {
+					sections: secs,
+					summary: label + (f.generation ? ' (' + genLabel(v, f.generation) + ' only)' : '')
+				};
+				return;
+			}
+			var gens = list.map(function (f) { return f.generation; });
+			if (gens.some(function (g) { return !g; })) {
+				errors.push('Pick a generation for each ' + label + ' file, or import a single file for ' + label + '.');
+				return;
+			}
+			var unique = gens.filter(function (g, i) { return gens.indexOf(g) === i; });
+			if (unique.length !== gens.length) {
+				errors.push('Two files are set to the same ' + label + ' generation.');
+				return;
+			}
+			if (list.length > 2) {
+				errors.push(label + ' can merge two generations at a time.');
+				return;
+			}
+			var order = genSlugsSorted(v);
+			list.sort(function (a, b) { return order.indexOf(a.generation) - order.indexOf(b.generation); });
+			targets[v] = {
+				sections: mergeGenerations(list[0].sections, list[1].sections, list[0].generation, list[1].generation),
+				summary: label + ' (' + genLabel(v, list[0].generation) + ' + ' + genLabel(v, list[1].generation) + ' merged)'
+			};
+		});
+		return { targets: targets, errors: errors };
+	}
+
+	// Switch a vehicle on (checkbox + tab) so an import can land on it.
+	function ensureVehicleActive(slug) {
+		var cb = qs('.rsu-vehicle-checkbox[data-vehicle="' + slug + '"]');
+		if (cb && !cb.checked) {
+			cb.checked = true;
+			cb.dispatchEvent(new Event('change', { bubbles: true }));
+		}
+	}
+
+	function escapeHtml(str) {
+		return String(str).replace(/[&<>"']/g, function (c) {
+			return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+		});
+	}
+
 	function showImport(btn, initialText) {
 		var vehicle = btn.getAttribute('data-vehicle');
 		var dialog = createElement(
 			'<dialog class="rsu-import-dialog">' +
 				'<div class="rsu-import-dialog__header">' +
 					'<h3>Import Release Notes</h3>' +
-					'<p>Paste plain-text release notes, or upload the official Update Details PDF. Check the preview to confirm headings, bullets, and notes were detected correctly before importing.</p>' +
+					'<p>Paste plain-text release notes, or upload the official Update Details PDFs. Each PDF is routed to its vehicle and generation from its title line; two PDFs for one vehicle are merged with generation pills where they differ. Check the preview before importing.</p>' +
 				'</div>' +
 				'<div class="rsu-import-dialog__body">' +
 					'<div class="rsu-import-dialog__col">' +
 						'<div class="rsu-import-dialog__source">' +
-							'<button type="button" class="rsu-import-dialog__pdf-btn"><span class="dashicons dashicons-pdf" style="font-size:14px;width:14px;height:14px;"></span> Upload PDF</button>' +
-							'<input type="file" class="rsu-import-dialog__pdf-input" accept=".pdf,application/pdf" style="display:none;" />' +
+							'<button type="button" class="rsu-import-dialog__pdf-btn"><span class="dashicons dashicons-pdf" style="font-size:14px;width:14px;height:14px;"></span> Upload PDFs</button>' +
+							'<input type="file" class="rsu-import-dialog__pdf-input" accept=".pdf,application/pdf" multiple style="display:none;" />' +
 							'<span class="rsu-import-dialog__pdf-status"></span>' +
 						'</div>' +
 						'<textarea class="rsu-import-dialog__textarea" placeholder="Paste release notes here...\n\nCold Weather Improvements\n• Battery preconditioning now more efficient\n• Cabin heating reduced warm-up time\n\nNavigation\nUpdated route planning algorithm."></textarea>' +
+						'<div class="rsu-import-dialog__files" hidden></div>' +
 					'</div>' +
 					'<div class="rsu-import-dialog__col">' +
 						'<div class="rsu-import-dialog__preview-label">Preview</div>' +
@@ -1305,6 +1440,7 @@ var RSUSectionBuilder = (function () {
 					'</div>' +
 				'</div>' +
 				'<div class="rsu-import-dialog__actions">' +
+					'<span class="rsu-import-dialog__error" role="alert"></span>' +
 					'<label class="rsu-import-dialog__replace" hidden><input type="checkbox" class="rsu-import-dialog__replace-input" /> Replace the existing sections</label>' +
 					'<button type="button" class="rsu-import-dialog__cancel">Cancel</button>' +
 					'<button type="button" class="rsu-import-dialog__submit" disabled>Import</button>' +
@@ -1315,8 +1451,11 @@ var RSUSectionBuilder = (function () {
 		dialog.showModal();
 
 		var textarea = qs('.rsu-import-dialog__textarea', dialog);
+		var filesEl = qs('.rsu-import-dialog__files', dialog);
+		var previewLabel = qs('.rsu-import-dialog__preview-label', dialog);
 		var previewEl = qs('.rsu-import-dialog__preview', dialog);
 		var submitBtn = qs('.rsu-import-dialog__submit', dialog);
+		var errorEl = qs('.rsu-import-dialog__error', dialog);
 		var pdfBtn = qs('.rsu-import-dialog__pdf-btn', dialog);
 		var pdfInput = qs('.rsu-import-dialog__pdf-input', dialog);
 		var pdfStatus = qs('.rsu-import-dialog__pdf-status', dialog);
@@ -1324,57 +1463,208 @@ var RSUSectionBuilder = (function () {
 		var replaceInput = qs('.rsu-import-dialog__replace-input', dialog);
 		textarea.focus();
 
-		// Importing always appended, so a second paste doubled every section.
-		// Offer to replace instead, but only when there is something to replace.
-		var targetBuilder = qs('.rsu-section-builder[data-vehicle="' + vehicle + '"]');
-		if (targetBuilder) {
-			getBuilder(targetBuilder);
-			if ((targetBuilder._sections || []).length) replaceLabel.removeAttribute('hidden');
+		// Files mode: one entry per PDF. Paste mode is the textarea.
+		var files = [];
+		var selected = -1;
+
+		function builderHasSections(slug) {
+			var b = qs('.rsu-section-builder[data-vehicle="' + slug + '"]');
+			if (!b) return false;
+			getBuilder(b);
+			return (b._sections || []).length > 0;
 		}
 
-		pdfBtn.addEventListener('click', function () { pdfInput.click(); });
-		pdfInput.addEventListener('change', function () {
-			var file = pdfInput.files && pdfInput.files[0];
-			if (!file) return;
-			pdfBtn.disabled = true;
-			pdfStatus.textContent = 'Parsing ' + file.name + '…';
-			pdfStatus.classList.remove('rsu-import-dialog__pdf-status--error');
+		function setError(msg) {
+			errorEl.textContent = msg || '';
+		}
 
-			Promise.all([loadPdfImporter(), file.arrayBuffer()])
-				.then(function (loaded) {
-					var cfg = window.RSU_ADMIN || {};
-					return loaded[0].extractText(loaded[1], { workerSrc: cfg.pdfWorkerUrl || '' });
-				})
-				.then(function (text) {
-					if (!text.trim()) throw new Error('No text found in this PDF.');
-					textarea.value = text;
-					refreshPreview();
-					pdfStatus.textContent = file.name;
-				})
-				.catch(function (err) {
-					pdfStatus.textContent = (err && err.message) ? err.message : 'Could not parse this PDF.';
-					pdfStatus.classList.add('rsu-import-dialog__pdf-status--error');
-				})
-				.then(function () {
-					pdfBtn.disabled = false;
-					pdfInput.value = '';
-				});
-		});
-
-		function refreshPreview() {
+		// ── Paste mode ──
+		function refreshPasteUI() {
 			var parsed = textarea.value.trim() ? parseTextToSections(textarea.value) : [];
-			renderImportPreview(previewEl, parsed);
+			previewLabel.textContent = 'Preview';
+			renderImportPreview(previewEl, parsed, {});
 			submitBtn.disabled = !parsed.length;
 			submitBtn.textContent = parsed.length
 				? 'Import ' + parsed.length + ' section' + (parsed.length > 1 ? 's' : '')
 				: 'Import';
+			replaceLabel.toggleAttribute('hidden', !builderHasSections(vehicle));
+			setError('');
 		}
+
+		// ── Files mode ──
+		function vehicleOptions(current) {
+			var cat = vehicleCatalog();
+			return Object.keys(cat).map(function (slug) {
+				return '<option value="' + escapeHtml(slug) + '"' + (slug === current ? ' selected' : '') + '>' + escapeHtml(cat[slug].label || slug) + '</option>';
+			}).join('');
+		}
+		function genOptions(vehicleSlug, current) {
+			var gens = vehicleGens(vehicleSlug);
+			var html = '<option value=""' + (current ? '' : ' selected') + '>All generations</option>';
+			genSlugsSorted(vehicleSlug).forEach(function (g) {
+				html += '<option value="' + escapeHtml(g) + '"' + (g === current ? ' selected' : '') + '>' + escapeHtml(gens[g].label || g) + '</option>';
+			});
+			return html;
+		}
+
+		function renderFiles() {
+			var inFilesMode = files.length > 0;
+			textarea.hidden = inFilesMode;
+			filesEl.hidden = !inFilesMode;
+			if (!inFilesMode) { refreshPasteUI(); return; }
+
+			filesEl.innerHTML = files.map(function (f, i) {
+				var status;
+				if (f.error) status = '<span class="rsu-import-file__status rsu-import-file__status--error">' + escapeHtml(f.error) + '</span>';
+				else if (!f.sections) status = '<span class="rsu-import-file__status">Reading…</span>';
+				else {
+					var bits = [];
+					if (f.meta && f.meta.vehicle) bits.push('Detected ' + escapeHtml(f.meta.vehicle) + (f.meta.modelYear ? ' · MY' + f.meta.modelYear : '') + (f.meta.version ? ' · ' + escapeHtml(f.meta.version) : ''));
+					else bits.push('No title line; pick the vehicle');
+					bits.push(f.sections.length + ' section' + (f.sections.length === 1 ? '' : 's'));
+					status = '<span class="rsu-import-file__status">' + bits.join(' · ') + '</span>';
+				}
+				var genSel = genSlugsSorted(f.vehicle).length > 1
+					? '<label class="rsu-import-file__field">Generation <select class="rsu-import-file__gen">' + genOptions(f.vehicle, f.generation) + '</select></label>'
+					: '';
+				return '<div class="rsu-import-file' + (i === selected ? ' rsu-import-file--selected' : '') + (f.error ? ' rsu-import-file--error' : '') + '" data-index="' + i + '">' +
+					'<div class="rsu-import-file__head">' +
+						'<span class="dashicons dashicons-pdf rsu-import-file__icon"></span>' +
+						'<span class="rsu-import-file__name">' + escapeHtml(f.name) + '</span>' +
+						'<button type="button" class="rsu-import-file__remove" title="Remove file" aria-label="Remove ' + escapeHtml(f.name) + '">&times;</button>' +
+					'</div>' +
+					status +
+					(f.sections ? '<div class="rsu-import-file__target">' +
+						'<label class="rsu-import-file__field">Vehicle <select class="rsu-import-file__vehicle">' + vehicleOptions(f.vehicle) + '</select></label>' +
+						genSel +
+						(files.length === 1 ? '<button type="button" class="rsu-import-file__edit">Edit as text</button>' : '') +
+					'</div>' : '') +
+				'</div>';
+			}).join('');
+
+			refreshFilesUI();
+		}
+
+		function refreshFilesUI() {
+			var plan = planImport(files);
+			var vehicles = Object.keys(plan.targets);
+			var pending = files.some(function (f) { return !f.sections && !f.error; });
+
+			// Preview: the selected file's vehicle as it will land (merged if two files).
+			var sel = files[selected];
+			var genLabels = {};
+			if (sel && !sel.error && sel.sections) {
+				var gens = vehicleGens(sel.vehicle);
+				Object.keys(gens).forEach(function (g) { genLabels[g] = gens[g].label || g; });
+				var target = plan.targets[sel.vehicle];
+				if (target) {
+					previewLabel.textContent = 'Preview: ' + target.summary;
+					renderImportPreview(previewEl, target.sections, genLabels);
+				} else {
+					previewLabel.textContent = 'Preview: ' + sel.name;
+					renderImportPreview(previewEl, sel.sections, genLabels);
+				}
+			} else {
+				previewLabel.textContent = 'Preview';
+				renderImportPreview(previewEl, [], {});
+			}
+
+			setError(plan.errors.join(' '));
+			submitBtn.disabled = pending || !!plan.errors.length || !vehicles.length;
+			submitBtn.textContent = vehicles.length
+				? 'Import to ' + vehicles.map(vehicleLabel).join(', ')
+				: 'Import';
+			replaceLabel.toggleAttribute('hidden', !vehicles.some(builderHasSections));
+		}
+
+		pdfBtn.addEventListener('click', function () { pdfInput.click(); });
+		pdfInput.addEventListener('change', function () {
+			var picked = Array.prototype.slice.call(pdfInput.files || []);
+			pdfInput.value = '';
+			if (!picked.length) return;
+			pdfStatus.textContent = '';
+			pdfStatus.classList.remove('rsu-import-dialog__pdf-status--error');
+
+			picked.forEach(function (file) {
+				var entry = { name: file.name, sections: null, text: '', meta: null, vehicle: vehicle, generation: '', error: '' };
+				files.push(entry);
+				if (selected < 0) selected = 0;
+				renderFiles();
+
+				Promise.all([loadPdfImporter(), file.arrayBuffer()])
+					.then(function (loaded) {
+						var cfg = window.RSU_ADMIN || {};
+						var api = loaded[0];
+						var opts = { workerSrc: cfg.pdfWorkerUrl || '' };
+						return api.extract
+							? api.extract(loaded[1], opts)
+							: api.extractText(loaded[1], opts).then(function (t) { return { text: t, meta: null }; });
+					})
+					.then(function (res) {
+						if (!res.text.trim()) throw new Error('No text found in this PDF.');
+						entry.text = res.text;
+						entry.meta = res.meta || null;
+						entry.sections = parseTextToSections(res.text);
+						if (!entry.sections.length) throw new Error('No sections detected in this PDF.');
+						var guess = guessTarget(entry.meta, vehicle);
+						entry.vehicle = guess.vehicle;
+						entry.generation = guess.generation;
+					})
+					.catch(function (err) {
+						entry.sections = null;
+						entry.error = (err && err.message) ? err.message : 'Could not parse this PDF.';
+					})
+					.then(function () {
+						if (files.indexOf(entry) !== -1) renderFiles();
+					});
+			});
+		});
+
+		// File rows: select for preview, retarget, remove, or drop back to text.
+		filesEl.addEventListener('click', function (e) {
+			var row = closest(e.target, '.rsu-import-file');
+			if (!row) return;
+			var idx = parseInt(row.getAttribute('data-index'), 10);
+			if (closest(e.target, '.rsu-import-file__remove')) {
+				files.splice(idx, 1);
+				if (selected >= files.length) selected = files.length - 1;
+				renderFiles();
+				return;
+			}
+			if (closest(e.target, '.rsu-import-file__edit')) {
+				textarea.value = files[idx].text || '';
+				files = [];
+				selected = -1;
+				renderFiles();
+				textarea.focus();
+				return;
+			}
+			if (e.target.tagName !== 'SELECT' && selected !== idx) {
+				selected = idx;
+				renderFiles();
+			}
+		});
+		filesEl.addEventListener('change', function (e) {
+			var row = closest(e.target, '.rsu-import-file');
+			if (!row) return;
+			var f = files[parseInt(row.getAttribute('data-index'), 10)];
+			if (!f) return;
+			if (e.target.classList.contains('rsu-import-file__vehicle')) {
+				f.vehicle = e.target.value;
+				f.generation = guessTarget(f.meta, f.vehicle).vehicle === f.vehicle ? guessTarget(f.meta, f.vehicle).generation : '';
+				renderFiles();
+			} else if (e.target.classList.contains('rsu-import-file__gen')) {
+				f.generation = e.target.value;
+				refreshFilesUI();
+			}
+		});
+
 		if (initialText) {
 			textarea.value = initialText;
 		}
-		refreshPreview();
+		renderFiles();
 		textarea.addEventListener('input', function () {
-			debounce('import-preview', refreshPreview, 150);
+			debounce('import-preview', refreshPasteUI, 150);
 		});
 
 		qs('.rsu-import-dialog__cancel', dialog).addEventListener('click', function () {
@@ -1383,6 +1673,33 @@ var RSUSectionBuilder = (function () {
 		dialog.addEventListener('cancel', function () { dialog.remove(); });
 
 		submitBtn.addEventListener('click', function () {
+			var replace = replaceInput && replaceInput.checked;
+
+			if (files.length) {
+				var plan = planImport(files);
+				if (plan.errors.length) { setError(plan.errors.join(' ')); return; }
+				var vehicles = Object.keys(plan.targets);
+				if (!vehicles.length) return;
+				dialog.close(); dialog.remove();
+
+				var summaries = [];
+				vehicles.forEach(function (v) {
+					ensureVehicleActive(v);
+					var b = qs('.rsu-section-builder[data-vehicle="' + v + '"]');
+					if (!b) return;
+					getBuilder(b);
+					readFromDOM(b);
+					pushUndo(b);
+					b._sections = replace ? plan.targets[v].sections : b._sections.concat(plan.targets[v].sections);
+					renderSections(b);
+					summaries.push(plan.targets[v].summary);
+				});
+				_dirty = true;
+				activateTab(vehicles[0]);
+				showToast((replace ? 'Replaced ' : 'Imported ') + summaries.join(', '));
+				return;
+			}
+
 			var text = textarea.value;
 			dialog.close(); dialog.remove();
 			if (!text.trim()) return;
@@ -1394,7 +1711,6 @@ var RSUSectionBuilder = (function () {
 
 			var parsed = parseTextToSections(text);
 			if (parsed.length) {
-				var replace = replaceInput && replaceInput.checked;
 				pushUndo(builder);
 				builder._sections = replace ? parsed : builder._sections.concat(parsed);
 				renderSections(builder);

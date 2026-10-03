@@ -76,9 +76,28 @@ export function linesFromTextContent(textContent, pageNumber) {
 	}).filter(function (line) { return line.text !== ''; });
 }
 
+// "R2 – Model Year 2027 – Software Version 2026.24", also seen with the
+// trims spelled out ("R1T/R1S"). The leading R-number is the vehicle.
+var TITLE_RE = /^(R\d+)(?:[TS](?:\s*(?:\/|&|and)\s*R\d+[TS])?)?\s*[–—-]\s*Model Year\s*(\d{4})(?:\s*[–—-]\s*Software Version\s*([\d.]+))?/i;
+
+// ── Release metadata from the title line ──
+// Returns { vehicle: "R1", modelYear: 2025, version: "2025.30.00" } or null.
+export function detectReleaseMeta(pages) {
+	var meta = null;
+	pages.some(function (pageLines) {
+		return pageLines.some(function (line) {
+			var m = line.text.match(TITLE_RE);
+			if (!m) return false;
+			meta = { vehicle: m[1].toUpperCase(), modelYear: parseInt(m[2], 10), version: m[3] || '' };
+			return true;
+		});
+	});
+	return meta;
+}
+
 // ── Boilerplate detection ──
 var BOILERPLATE = [
-	/^R\d+\s*[–—-]\s*Model Year/i,   // "R2 – Model Year 2027 – Software Version 2026.24"
+	TITLE_RE,                         // "R2 – Model Year 2027 – Software Version 2026.24"
 	/^Update Details$/i,
 	/^THIS IS DRAFT CONTENT$/i,
 	/^\d{1,3}$/,                      // bare page numbers
@@ -248,4 +267,9 @@ export function buildReleaseNotesText(pages) {
 	});
 
 	return chunks.join('\n\n');
+}
+
+// ── Text plus metadata in one pass ──
+export function buildReleaseNotes(pages) {
+	return { text: buildReleaseNotesText(pages), meta: detectReleaseMeta(pages) };
 }

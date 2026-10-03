@@ -7,9 +7,11 @@
  */
 
 import * as pdfjsLib from 'pdfjs-dist';
-import { linesFromTextContent, buildReleaseNotesText } from './rsu-pdf-extract.mjs';
+import { linesFromTextContent, buildReleaseNotes } from './rsu-pdf-extract.mjs';
 
-async function extractText(data, opts) {
+// Resolves to { text, meta } where meta is the vehicle / model year /
+// software version read off the PDF's title line, or null.
+async function extract(data, opts) {
 	opts = opts || {};
 	if (opts.workerSrc) {
 		pdfjsLib.GlobalWorkerOptions.workerSrc = opts.workerSrc;
@@ -25,10 +27,14 @@ async function extractText(data, opts) {
 			var content = await page.getTextContent();
 			pages.push(linesFromTextContent(content, p));
 		}
-		return buildReleaseNotesText(pages);
+		return buildReleaseNotes(pages);
 	} finally {
 		doc.destroy();
 	}
 }
 
-window.RSUPdfImport = { extractText: extractText };
+async function extractText(data, opts) {
+	return (await extract(data, opts)).text;
+}
+
+window.RSUPdfImport = { extract: extract, extractText: extractText };
