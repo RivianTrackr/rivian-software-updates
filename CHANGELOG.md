@@ -11,7 +11,7 @@ All notable changes to the Rivian Software Updates plugin will be documented in 
 ### Added
 - **Move up and down buttons on blocks and bullets.** Sections had them, blocks and bullets did not. Bullets also take Alt+Up and Alt+Down from the keyboard. Moves happen in place, so focus stays where it was.
 - **Bullets drag by their dot.** The bullet marker is the drag handle on every device.
-- **A phone layout for the builder.** On touch screens the hover-only controls are simply visible, the text fields are 16px so iOS stops zooming into them, the section heading gets a line of its own, and a bullet shows only its dot and its text until you tap it, when its tools (indent, generation, move, remove) appear in a bar underneath. The bar closes on a completed tap elsewhere, never on touch-down, because closing it early shifts the list under a finger that has not lifted yet.
+- **A phone layout for the builder.** On touch screens the hover-only controls are simply visible, the text fields are 16px so iOS stops zooming into them, the section heading gets a line of its own, and every bullet carries its own up and down arrows at its right edge, with indent, generation, and remove appearing in a bar under the bullet you tap. The bar closes on a completed tap elsewhere, never on touch-down, because closing it early shifts the list under a finger that has not lifted yet.
 
 ## [2.34.4] - 2026-10-03
 

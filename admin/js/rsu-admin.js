@@ -617,10 +617,12 @@ var RSUSectionBuilder = (function () {
 					'<span class="dashicons dashicons-editor-indent"></span>' +
 				'</button>' +
 				'<textarea class="rsu-bullet-row__input" placeholder="Bullet point text..." rows="1"></textarea>' +
-				'<span class="rsu-bullet-row__tools">' +
-					genCell +
+				'<span class="rsu-bullet-row__moves">' +
 					'<button type="button" class="rsu-bullet-row__move" title="Move bullet up (Alt+&uarr;)" aria-label="Move bullet up" data-action="move-bullet" data-dir="-1">&#9650;</button>' +
 					'<button type="button" class="rsu-bullet-row__move" title="Move bullet down (Alt+&darr;)" aria-label="Move bullet down" data-action="move-bullet" data-dir="1">&#9660;</button>' +
+				'</span>' +
+				'<span class="rsu-bullet-row__tools">' +
+					genCell +
 					'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet (Ctrl+Backspace)" data-action="remove-bullet">&times;</button>' +
 				'</span>' +
 			'</div>'

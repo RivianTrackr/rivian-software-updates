@@ -1822,7 +1822,8 @@ body.rsu-dragging .rsu-section-builder * {
 	background: var(--rsu-bg-info);
 }
 
-/* Bullet tools: gen select, move up/down, remove. */
+/* Bullet tools: move up/down beside the text, then gen select and remove. */
+.rsu-bullet-row__moves,
 .rsu-bullet-row__tools {
 	display: flex;
 	align-items: stretch;
@@ -1929,11 +1930,36 @@ body.rsu-dragging .rsu-section-builder * {
 		padding-top: 11px;
 	}
 
+	/* Marker (36px) + text + the move column (40px) fill the first line exactly. */
 	.rsu-bullet-row__input {
-		flex: 1 1 calc(100% - 36px);
+		flex: 1 1 calc(100% - 76px);
 		min-width: 0;
 		padding: 10px 12px;
 		min-height: 44px;
+	}
+
+	/* The move arrows stay on every bullet, stacked at its right edge, so a
+	   list can be reordered without tapping into each row first. */
+	.rsu-bullet-row__moves {
+		order: 1;
+		flex-direction: column;
+		width: 40px;
+		box-sizing: border-box;
+		align-self: stretch;
+		border-left: 1px solid var(--rsu-border-light);
+		background: var(--rsu-bg-light);
+	}
+
+	.rsu-bullet-row__moves .rsu-bullet-row__move {
+		flex: 1 1 50%;
+		justify-content: center;
+		border-left: none;
+		padding: 0;
+		min-height: 22px;
+	}
+
+	.rsu-bullet-row__moves .rsu-bullet-row__move + .rsu-bullet-row__move {
+		border-top: 1px solid var(--rsu-border-light);
 	}
 
 	.rsu-bullet-row__indent,
