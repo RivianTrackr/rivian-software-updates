@@ -285,7 +285,7 @@ class RSU_Schema {
 			// Prefer structured JSON — handles all heading levels correctly.
 			$sections_json = get_post_meta( $post_id, '_rsu_sections_' . $slug, true );
 			if ( $sections_json ) {
-				$parsed = json_decode( $sections_json, true );
+				$parsed = json_decode( RSU_Admin::repair_lost_unicode_escapes( $sections_json ), true );
 				if ( is_array( $parsed ) && json_last_error() === JSON_ERROR_NONE ) {
 					foreach ( $parsed as $section ) {
 						$heading = isset( $section['heading'] ) ? trim( $section['heading'] ) : '';

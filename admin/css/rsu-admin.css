@@ -1746,3 +1746,269 @@
 		margin-top: 12px;
 	}
 }
+
+/* ═══════════════════════════════════════
+   Mobile editing (2.35.0)
+   ═══════════════════════════════════════ */
+
+/* Drag handles own their touches, so a phone moves the item, not the page. */
+.rsu-section__drag,
+.rsu-block__drag,
+.rsu-bullet-row__marker {
+	touch-action: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+}
+
+.rsu-bullet-row__marker {
+	cursor: grab;
+}
+
+.rsu-bullet-row__marker:hover {
+	color: var(--rsu-text-secondary);
+}
+
+body.rsu-dragging {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+body.rsu-dragging .rsu-section-builder,
+body.rsu-dragging .rsu-section-builder * {
+	cursor: grabbing !important;
+}
+
+.rsu-blocks-list > .rsu-drag-placeholder,
+.rsu-note-blocks > .rsu-drag-placeholder {
+	margin-bottom: 10px;
+	border-radius: 8px;
+}
+
+.rsu-bullet-list > .rsu-drag-placeholder {
+	margin-bottom: 6px;
+	border-radius: 8px;
+}
+
+/* Block move buttons mirror the section ones and appear with the handle. */
+.rsu-block__moves {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	flex-shrink: 0;
+	opacity: 0;
+	transition: opacity 0.15s;
+}
+
+.rsu-block:hover > .rsu-block__header .rsu-block__moves,
+.rsu-block:focus-within > .rsu-block__header .rsu-block__moves,
+.rsu-block__moves:focus-within {
+	opacity: 1;
+}
+
+.rsu-block__move {
+	background: none;
+	border: none;
+	font-size: 9px;
+	line-height: 1;
+	color: var(--rsu-text-muted);
+	cursor: pointer;
+	padding: 2px 4px;
+	border-radius: 4px;
+}
+
+.rsu-block__move:hover {
+	color: var(--rsu-action);
+	background: var(--rsu-bg-info);
+}
+
+/* Bullet tools: move up/down beside the text, then gen select and remove. */
+.rsu-bullet-row__moves,
+.rsu-bullet-row__tools {
+	display: flex;
+	align-items: stretch;
+	flex-shrink: 0;
+}
+
+.rsu-bullet-row__move {
+	flex-shrink: 0;
+	background: none;
+	border: none;
+	border-left: 1px solid var(--rsu-border-light);
+	font-size: 9px;
+	line-height: 1;
+	color: var(--rsu-text-muted);
+	cursor: pointer;
+	padding: 0 7px;
+	display: flex;
+	align-items: center;
+	opacity: 0;
+	transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.rsu-bullet-row:hover .rsu-bullet-row__move,
+.rsu-bullet-row:focus-within .rsu-bullet-row__move,
+.rsu-bullet-row__move:focus-visible {
+	opacity: 1;
+}
+
+.rsu-bullet-row__move:hover {
+	color: var(--rsu-action);
+	background: var(--rsu-bg-info);
+}
+
+@media (hover: none), (pointer: coarse) {
+	/* No hover on a phone: everything that waited for one is simply there,
+	   at a size a thumb can hit. */
+	.rsu-block__drag,
+	.rsu-block__remove,
+	.rsu-block__moves,
+	.rsu-gen-select {
+		opacity: 1;
+	}
+
+	.rsu-block__header {
+		padding: 6px 10px;
+		gap: 10px;
+	}
+
+	.rsu-section__drag,
+	.rsu-block__drag {
+		font-size: 20px;
+		width: 20px;
+		height: 20px;
+		padding: 8px;
+		box-sizing: content-box;
+		margin: -8px 0;
+	}
+
+	.rsu-section__move,
+	.rsu-block__move {
+		font-size: 12px;
+		padding: 6px 8px;
+	}
+
+	.rsu-section__remove,
+	.rsu-block__remove {
+		font-size: 22px;
+		padding: 4px 10px;
+	}
+
+	/* iOS zooms into any field under 16px. The heading also takes a full
+	   line of its own: squeezed between six controls it showed four letters. */
+	.rsu-section__header {
+		flex-wrap: wrap;
+		row-gap: 8px;
+	}
+
+	.rsu-section__heading {
+		font-size: 16px !important;
+		flex: 1 1 100%;
+		order: 10;
+	}
+
+	.rsu-section__header > .rsu-gen-select {
+		margin-left: auto;
+	}
+
+	.rsu-block__content,
+	.rsu-bullet-row__input {
+		font-size: 16px;
+		line-height: 1.5;
+	}
+
+	/* A bullet is its dot and its text. The tools drop into a bar under the
+	   row being edited, so the text keeps the full width of the screen. */
+	.rsu-bullet-row {
+		flex-wrap: wrap;
+	}
+
+	.rsu-bullet-row__marker {
+		width: 36px;
+		box-sizing: border-box; /* the 1px border must not push the text onto its own line */
+		font-size: 20px;
+		padding-top: 11px;
+	}
+
+	/* Marker (36px) + text + the move column (40px) fill the first line exactly. */
+	.rsu-bullet-row__input {
+		flex: 1 1 calc(100% - 76px);
+		min-width: 0;
+		padding: 10px 12px;
+		min-height: 44px;
+	}
+
+	/* The move arrows stay on every bullet, stacked at its right edge, so a
+	   list can be reordered without tapping into each row first. */
+	.rsu-bullet-row__moves {
+		order: 1;
+		flex-direction: column;
+		width: 40px;
+		box-sizing: border-box;
+		align-self: stretch;
+		border-left: 1px solid var(--rsu-border-light);
+		background: var(--rsu-bg-light);
+	}
+
+	.rsu-bullet-row__moves .rsu-bullet-row__move {
+		flex: 1 1 50%;
+		justify-content: center;
+		border-left: none;
+		padding: 0;
+		min-height: 22px;
+	}
+
+	.rsu-bullet-row__moves .rsu-bullet-row__move + .rsu-bullet-row__move {
+		border-top: 1px solid var(--rsu-border-light);
+	}
+
+	.rsu-bullet-row__indent,
+	.rsu-bullet-row__tools {
+		display: none;
+	}
+
+	.rsu-bullet-row--active .rsu-bullet-row__indent,
+	.rsu-bullet-row--active .rsu-bullet-row__tools {
+		display: flex;
+	}
+
+	.rsu-bullet-row__indent {
+		order: 2;
+		flex: 0 0 auto;
+		min-height: 40px;
+		padding: 0 14px;
+		border-top: 1px solid var(--rsu-border-light);
+		opacity: 1;
+	}
+
+	.rsu-bullet-row__indent .dashicons {
+		font-size: 18px;
+		width: 18px;
+		height: 18px;
+	}
+
+	.rsu-bullet-row__tools {
+		order: 3;
+		flex: 1 1 auto;
+		justify-content: flex-end;
+		min-height: 40px;
+		background: var(--rsu-bg-light);
+		border-top: 1px solid var(--rsu-border-light);
+	}
+
+	.rsu-bullet-row__gen {
+		margin-right: auto;
+		padding: 4px 8px;
+	}
+
+	.rsu-bullet-row__move,
+	.rsu-bullet-row__remove {
+		opacity: 1;
+		font-size: 13px;
+		padding: 0 16px;
+	}
+
+	.rsu-bullet-row__remove {
+		font-size: 22px;
+	}
+}

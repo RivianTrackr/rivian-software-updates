@@ -140,7 +140,7 @@ class RSU_Frontend {
 			return array();
 		}
 
-		$sections = json_decode( $sections_json, true );
+		$sections = json_decode( RSU_Admin::repair_lost_unicode_escapes( $sections_json ), true );
 
 		return ( is_array( $sections ) && ! empty( $sections ) ) ? $sections : array();
 	}

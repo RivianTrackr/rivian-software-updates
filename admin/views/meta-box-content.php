@@ -78,6 +78,10 @@ wp_nonce_field( 'rsu_meta_save', 'rsu_meta_nonce' );
 
 			// Validate JSON — if invalid, discard and fall back to HTML parsing.
 			if ( $sections_json ) {
+				// Posts saved before 2.34.4 stored "vehicleu2019s" for "vehicle’s";
+				// heal that here so the editor shows (and the next save stores)
+				// the real character.
+				$sections_json = RSU_Admin::repair_lost_unicode_escapes( $sections_json );
 				json_decode( $sections_json );
 				if ( json_last_error() !== JSON_ERROR_NONE ) {
 					$sections_json = '';

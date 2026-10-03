@@ -132,13 +132,20 @@ class RSU_Admin {
 					// Sanitize section data.
 					$sections = self::sanitize_sections( $sections, $slug );
 
-					// Store structured JSON.
-					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_json_encode( $sections ) );
+					// Store structured JSON. update_post_meta() runs wp_unslash() on its
+					// input, so a bare wp_json_encode() string loses the backslash on every
+					// escape it contains ("\u2019" became "u2019", a quote's "\"" broke
+					// the JSON outright). Keep non-ASCII literal and slash what remains.
+					$json = wp_json_encode( $sections, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+					if ( false === $json ) {
+						$json = json_encode( $sections, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- wp_json_encode() already failed.
+					}
+					update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_slash( $json ) );
 
 					// Render to HTML for frontend display.
 					$html = self::render_sections_to_html( $sections, $slug );
 					if ( $html ) {
-						update_post_meta( $post_id, $vehicle['meta_key'], wp_kses_post( $html ) );
+						update_post_meta( $post_id, $vehicle['meta_key'], wp_slash( wp_kses_post( $html ) ) );
 					} else {
 						delete_post_meta( $post_id, $vehicle['meta_key'] );
 					}
@@ -259,6 +266,57 @@ class RSU_Admin {
 		$pattern = '/\s*' . preg_quote( $label, '/' ) . '\s+Only\s*$/i';
 		$cleaned = preg_replace( $pattern, '', $text );
 		return null === $cleaned ? $text : rtrim( $cleaned );
+	}
+
+	/**
+	 * Restore "\uXXXX" escapes that lost their backslash in storage.
+	 *
+	 * Before 2.34.4 the save path handed wp_json_encode() output straight to
+	 * update_post_meta(), which unslashes its input, so every non-ASCII
+	 * character in a release note was stored as a bare "u2019"-style token
+	 * ("vehicleu2019s"). The JSON stayed valid, so nothing flagged it. This
+	 * puts the character back at read time for the escapes a release note can
+	 * plausibly carry: Latin-1 and Latin Extended-A letters and symbols,
+	 * general punctuation (curly quotes, dashes, ellipsis, bullet), the euro
+	 * and trade mark signs, arrows, misc symbols and dingbats, the emoji
+	 * variation selector, and surrogate pairs (emoji). Only lowercase hex is
+	 * matched, because that is what PHP emitted, and an escape that still has
+	 * its backslash is left alone. No English word ends in "u" followed by
+	 * four hex digits in those ranges, so real text is untouched.
+	 *
+	 * @param string $json Raw sections JSON from post meta.
+	 * @return string
+	 */
+	public static function repair_lost_unicode_escapes( $json ) {
+		if ( ! is_string( $json ) || false === strpos( $json, 'u' ) ) {
+			return $json;
+		}
+
+		$decode = function ( $escapes ) {
+			$decoded = json_decode( '"' . $escapes . '"' );
+			return is_string( $decoded ) ? $decoded : '';
+		};
+
+		// Surrogate pairs first so the halves are never decoded separately.
+		$repaired = preg_replace_callback(
+			'/(?<!\\\\)u(d[89ab][0-9a-f]{2})u(d[c-f][0-9a-f]{2})/',
+			function ( $m ) use ( $decode ) {
+				$char = $decode( '\\u' . $m[1] . '\\u' . $m[2] );
+				return '' !== $char ? $char : $m[0];
+			},
+			$json
+		);
+
+		$repaired = preg_replace_callback(
+			'/(?<!\\\\)u(00[a-f][0-9a-f]|01[0-7][0-9a-f]|20[12][0-9a-f]|20ac|21[0-9a-f]{2}|2[67][0-9a-f]{2}|fe0f)/',
+			function ( $m ) use ( $decode ) {
+				$char = $decode( '\\u' . $m[1] );
+				return '' !== $char ? $char : $m[0];
+			},
+			$repaired
+		);
+
+		return null === $repaired ? $json : $repaired;
 	}
 
 	/**

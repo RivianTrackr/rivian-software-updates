@@ -2,6 +2,23 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.35.0] - 2026-10-03
+
+### Fixed
+- **Bullets no longer clip to one line on a phone.** The editor measured every textarea the moment the page loaded, while the Meta Boxes panel was still closed, so each one came out one line tall and showed its first few words and nothing else. Browsers with `field-sizing` now size the boxes in CSS alone, everything else is measured only once the panel is on screen and again whenever the builder changes size.
+- **Dragging works by touch.** The old handles used passive touch listeners, so a finger on a handle scrolled the page instead of moving the item. Handles now use pointer events with capture and `touch-action: none`, nudge the scroll container when the pointer nears the top or bottom edge, and the blocks nested inside a Note are draggable for the first time.
+
+### Added
+- **Move up and down buttons on blocks and bullets.** Sections had them, blocks and bullets did not. Bullets also take Alt+Up and Alt+Down from the keyboard. Moves happen in place, so focus stays where it was.
+- **Bullets drag by their dot.** The bullet marker is the drag handle on every device.
+- **A phone layout for the builder.** On touch screens the hover-only controls are simply visible, the text fields are 16px so iOS stops zooming into them, the section heading gets a line of its own, and every bullet carries its own up and down arrows at its right edge, with indent, generation, and remove appearing in a bar under the bullet you tap. The bar closes on a completed tap elsewhere, never on touch-down, because closing it early shifts the list under a finger that has not lifted yet.
+
+## [2.34.4] - 2026-10-03
+
+### Fixed
+- **"vehicle’s" no longer saves as "vehicleu2019s".** The editor's save path handed the sections JSON straight to `update_post_meta()`, which strips one level of slashes from whatever it is given. Every curly quote, dash, ellipsis, or ® in a release note was stored as `\u2019` by the encoder and came back as a bare `u2019` token, and a straight double quote inside a bullet broke the JSON outright. Non-ASCII characters are now stored literally and the string is slashed before it reaches post meta, so the round trip is exact. The migration tool's two writers get the same guard.
+- **Already-affected posts heal themselves.** Posts saved before this release still carry the broken tokens in their JSON. The frontend, the schema markup, and the editor now restore the real character on read for the escapes a release note can plausibly contain (typographic punctuation, Latin letters and symbols, arrows, emoji). Opening and saving such a post stores the repaired text permanently.
+
 ## [2.34.3] - 2026-09-04
 
 ### Changed

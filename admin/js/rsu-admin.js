@@ -282,108 +282,132 @@ var RSUSectionBuilder = (function () {
 
 		syncJSON(builder);
 
-		// Enable drag-and-drop for sections.
-		enableDragAndDrop(list, '.rsu-section', '.rsu-section__drag', function () {
-			readFromDOM(builder);
-		});
-
-		// Enable drag-and-drop for blocks within each section.
-		qsa('.rsu-blocks-list', builder).forEach(function (blocksList) {
-			enableDragAndDrop(blocksList, '.rsu-block', '.rsu-block__drag', function () {
-				readFromDOM(builder);
-			});
-		});
-
 		requestAnimationFrame(autoResize);
 		setTimeout(autoResize, 500);
 	}
 
 	// ── Drag and drop ──
+	// One delegated pointerdown covers sections, blocks (the ones nested in a
+	// note included) and bullet rows, so a row added after render drags too.
+	// Pointer capture plus `touch-action: none` on the handles keeps a phone
+	// from scrolling the page instead of moving the item, and the pointer
+	// nudges the scroll container when it nears an edge, which is how a long
+	// list gets reordered on a small screen at all.
+	var DRAG_HANDLES = [
+		{ handle: '.rsu-section__drag', item: '.rsu-section' },
+		{ handle: '.rsu-block__drag', item: '.rsu-block' },
+		{ handle: '.rsu-bullet-row__marker', item: '.rsu-bullet-row' }
+	];
 	var dragState = { el: null, placeholder: null };
 
-	function enableDragAndDrop(container, itemSel, handleSel, onDrop) {
-		qsa(itemSel, container).forEach(function (item) {
-			var handle = qs(handleSel, item);
-			if (!handle) return;
-
-			handle.addEventListener('mousedown', function (e) {
-				e.preventDefault();
-				startDrag(container, item, itemSel, e.clientY, onDrop);
-			});
-
-			handle.addEventListener('touchstart', function (e) {
-				var touch = e.touches[0];
-				startDrag(container, item, itemSel, touch.clientY, onDrop);
-			}, { passive: true });
-		});
+	function directChildren(container, itemSel) {
+		return Array.prototype.filter.call(container.children, function (c) { return c.matches(itemSel); });
 	}
 
-	function startDrag(container, item, itemSel, startY, onDrop) {
-		var items = qsa(itemSel, container);
-		var index = items.indexOf(item);
-		if (index === -1) return;
+	// Nearest ancestor that actually scrolls (the block editor's content pane
+	// on the post screen), or null for the window.
+	function scrollParentOf(el) {
+		var node = el.parentElement;
+		while (node && node !== document.body) {
+			var style = getComputedStyle(node);
+			if (/(auto|scroll)/.test(style.overflowY) && node.scrollHeight > node.clientHeight) return node;
+			node = node.parentElement;
+		}
+		return null;
+	}
 
-		// Create placeholder.
+	document.addEventListener('pointerdown', function (e) {
+		if (e.pointerType === 'mouse' && e.button !== 0) return;
+		if (!e.target.closest || dragState.el) return;
+		var handle = null, cfg = null;
+		for (var i = 0; i < DRAG_HANDLES.length; i++) {
+			handle = e.target.closest(DRAG_HANDLES[i].handle);
+			if (handle) { cfg = DRAG_HANDLES[i]; break; }
+		}
+		if (!handle || !handle.closest('.rsu-section-builder')) return;
+		var item = handle.closest(cfg.item);
+		if (!item || !item.parentNode) return;
+		e.preventDefault();
+		startDrag(item.parentNode, item, cfg.item, handle, e, function () {
+			var b = getBuilder(item);
+			if (b) readFromDOM(b);
+		});
+	});
+
+	function startDrag(container, item, itemSel, handle, e, onDrop) {
+		if (directChildren(container, itemSel).indexOf(item) === -1) return;
+
 		var placeholder = document.createElement('div');
 		placeholder.className = 'rsu-drag-placeholder';
 		placeholder.style.height = item.offsetHeight + 'px';
 
-		// Style the dragged item.
+		try { handle.setPointerCapture(e.pointerId); } catch (err) { /* older engines */ }
+
 		var rect = item.getBoundingClientRect();
 		item.classList.add('rsu-drag-active');
 		item.style.top = rect.top + 'px';
 		item.style.left = rect.left + 'px';
 		item.style.width = rect.width + 'px';
-
-		// Insert placeholder.
 		item.parentNode.insertBefore(placeholder, item);
+		document.body.classList.add('rsu-dragging');
 
 		dragState.el = item;
 		dragState.placeholder = placeholder;
 
-		var offsetY = startY - rect.top;
-		var cachedRects = null;
+		var offsetY = e.clientY - rect.top;
+		var lastY = e.clientY;
+		var scroller = scrollParentOf(container);
+		var raf = null;
 
-		function cacheRects() {
-			var siblings = qsa(itemSel + ':not(.rsu-drag-active)', container);
-			cachedRects = siblings.map(function (s) {
-				var r = s.getBoundingClientRect();
-				return { el: s, midY: r.top + r.height / 2 };
-			});
-		}
-		cacheRects();
-
-		function onMove(clientY) {
-			item.style.top = (clientY - offsetY) + 'px';
-
-			// Re-cache rects after placeholder moves (layout shifts).
-			cacheRects();
-			for (var i = 0; i < cachedRects.length; i++) {
-				if (clientY < cachedRects[i].midY) {
-					container.insertBefore(placeholder, cachedRects[i].el);
+		function place(clientY) {
+			var siblings = directChildren(container, itemSel).filter(function (s) { return s !== item; });
+			for (var i = 0; i < siblings.length; i++) {
+				var r = siblings[i].getBoundingClientRect();
+				if (clientY < r.top + r.height / 2) {
+					if (placeholder.nextSibling !== siblings[i]) container.insertBefore(placeholder, siblings[i]);
 					return;
 				}
 			}
-			// Past all items — append.
-			container.appendChild(placeholder);
+			if (container.lastElementChild !== placeholder) container.appendChild(placeholder);
 		}
 
-		function onMouseMove(e) { onMove(e.clientY); }
-		function onTouchMove(e) { onMove(e.touches[0].clientY); }
+		function onMove(ev) {
+			lastY = ev.clientY;
+			item.style.top = (lastY - offsetY) + 'px';
+			place(lastY);
+		}
+
+		function tick() {
+			var top = 0, bottom = window.innerHeight;
+			if (scroller) {
+				var sr = scroller.getBoundingClientRect();
+				top = Math.max(0, sr.top);
+				bottom = Math.min(window.innerHeight, sr.bottom);
+			}
+			var edge = 64, dy = 0;
+			if (lastY < top + edge) dy = -Math.ceil((top + edge - lastY) / 4);
+			else if (lastY > bottom - edge) dy = Math.ceil((lastY - (bottom - edge)) / 4);
+			if (dy) {
+				if (scroller) scroller.scrollTop += dy; else window.scrollBy(0, dy);
+				place(lastY);
+			}
+			raf = requestAnimationFrame(tick);
+		}
+		raf = requestAnimationFrame(tick);
 
 		function finish() {
-			document.removeEventListener('mousemove', onMouseMove);
-			document.removeEventListener('mouseup', finish);
-			document.removeEventListener('touchmove', onTouchMove);
-			document.removeEventListener('touchend', finish);
+			cancelAnimationFrame(raf);
+			document.removeEventListener('pointermove', onMove);
+			document.removeEventListener('pointerup', finish);
+			document.removeEventListener('pointercancel', finish);
+			try { handle.releasePointerCapture(e.pointerId); } catch (err) { /* already released */ }
 
-			// Reset styles.
+			document.body.classList.remove('rsu-dragging');
 			item.classList.remove('rsu-drag-active');
 			item.style.top = '';
 			item.style.left = '';
 			item.style.width = '';
 
-			// Insert item where placeholder is.
 			container.insertBefore(item, placeholder);
 			placeholder.remove();
 
@@ -393,10 +417,23 @@ var RSUSectionBuilder = (function () {
 			if (onDrop) onDrop();
 		}
 
-		document.addEventListener('mousemove', onMouseMove);
-		document.addEventListener('mouseup', finish);
-		document.addEventListener('touchmove', onTouchMove, { passive: true });
-		document.addEventListener('touchend', finish);
+		document.addEventListener('pointermove', onMove);
+		document.addEventListener('pointerup', finish);
+		document.addEventListener('pointercancel', finish);
+	}
+
+	// ── Shared block header: handle, move buttons, type label, gen select, remove ──
+	function blockHeaderHTML(label, genHTML) {
+		return '<div class="rsu-block__header">' +
+			'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
+			'<span class="rsu-block__moves">' +
+				'<button type="button" class="rsu-block__move" title="Move block up" aria-label="Move block up" data-action="move-block" data-dir="-1">&#9650;</button>' +
+				'<button type="button" class="rsu-block__move" title="Move block down" aria-label="Move block down" data-action="move-block" data-dir="1">&#9660;</button>' +
+			'</span>' +
+			'<span class="rsu-block__label">' + label + '</span>' +
+			genHTML +
+			'<button type="button" class="rsu-block__remove" title="Remove block" data-action="remove-block">&times;</button>' +
+		'</div>';
 	}
 
 	// ── Build section element ──
@@ -464,12 +501,7 @@ var RSUSectionBuilder = (function () {
 			var items = Array.isArray(block.items) ? block.items : [];
 			var el = createElement(
 				'<div class="rsu-block" data-index="' + bi + '" data-type="list">' +
-					'<div class="rsu-block__header">' +
-						'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
-						'<span class="rsu-block__label">' + label + '</span>' +
-						genOptionsHTML(builder, blockGen) +
-						'<button type="button" class="rsu-block__remove" title="Remove block" data-action="remove-block">&times;</button>' +
-					'</div>' +
+					blockHeaderHTML(label, genOptionsHTML(builder, blockGen)) +
 					'<div class="rsu-bullet-list"></div>' +
 					'<button type="button" class="rsu-bullet-add" data-action="add-bullet" title="Add bullet point">+ Add bullet</button>' +
 				'</div>'
@@ -506,12 +538,7 @@ var RSUSectionBuilder = (function () {
 
 			var noteEl = createElement(
 				'<div class="rsu-block" data-index="' + bi + '" data-type="note">' +
-					'<div class="rsu-block__header">' +
-						'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
-						'<span class="rsu-block__label">' + label + '</span>' +
-						genOptionsHTML(builder, blockGen) +
-						'<button type="button" class="rsu-block__remove" title="Remove block" data-action="remove-block">&times;</button>' +
-					'</div>' +
+					blockHeaderHTML(label, genOptionsHTML(builder, blockGen)) +
 					'<div class="rsu-note-blocks"></div>' +
 					'<div class="rsu-note-add">' +
 						'<button type="button" class="button button-small rsu-add-note-block" data-action="add-note-block" data-type="paragraph">+ Paragraph</button>' +
@@ -542,12 +569,7 @@ var RSUSectionBuilder = (function () {
 
 		var el = createElement(
 			'<div class="rsu-block" data-index="' + bi + '" data-type="' + type + '">' +
-				'<div class="rsu-block__header">' +
-					'<span class="rsu-block__drag dashicons dashicons-move" title="Drag to reorder"></span>' +
-					'<span class="rsu-block__label">' + label + '</span>' +
-					genOptionsHTML(builder, blockGen) +
-					'<button type="button" class="rsu-block__remove" title="Remove block" data-action="remove-block">&times;</button>' +
-				'</div>' +
+				blockHeaderHTML(label, genOptionsHTML(builder, blockGen)) +
 				'<textarea class="rsu-block__content" placeholder="' + placeholder + '" rows="1"></textarea>' +
 			'</div>'
 		);
@@ -590,13 +612,19 @@ var RSUSectionBuilder = (function () {
 
 		var row = createElement(
 			'<div class="rsu-bullet-row' + indentClass + '">' +
-				'<span class="rsu-bullet-row__marker">' + marker + '</span>' +
+				'<span class="rsu-bullet-row__marker" title="Drag to reorder">' + marker + '</span>' +
 				'<button type="button" class="rsu-bullet-row__indent" title="Indent / outdent (Tab / Shift+Tab)" data-action="toggle-bullet-indent" aria-label="Toggle indent">' +
 					'<span class="dashicons dashicons-editor-indent"></span>' +
 				'</button>' +
 				'<textarea class="rsu-bullet-row__input" placeholder="Bullet point text..." rows="1"></textarea>' +
-				genCell +
-				'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet (Ctrl+Backspace)" data-action="remove-bullet">&times;</button>' +
+				'<span class="rsu-bullet-row__moves">' +
+					'<button type="button" class="rsu-bullet-row__move" title="Move bullet up (Alt+&uarr;)" aria-label="Move bullet up" data-action="move-bullet" data-dir="-1">&#9650;</button>' +
+					'<button type="button" class="rsu-bullet-row__move" title="Move bullet down (Alt+&darr;)" aria-label="Move bullet down" data-action="move-bullet" data-dir="1">&#9660;</button>' +
+				'</span>' +
+				'<span class="rsu-bullet-row__tools">' +
+					genCell +
+					'<button type="button" class="rsu-bullet-row__remove" title="Remove bullet (Ctrl+Backspace)" data-action="remove-bullet">&times;</button>' +
+				'</span>' +
 			'</div>'
 		);
 
@@ -614,7 +642,10 @@ var RSUSectionBuilder = (function () {
 		});
 
 		input.addEventListener('keydown', function (e) {
-			if (e.key === 'Tab') {
+			if (e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown') && !e.ctrlKey && !e.metaKey) {
+				e.preventDefault();
+				moveBullet(this, e.key === 'ArrowUp' ? -1 : 1);
+			} else if (e.key === 'Tab') {
 				e.preventDefault();
 				setBulletIndent(row, e.shiftKey ? 0 : 1);
 				readFromDOM(getBuilder(this));
@@ -705,7 +736,18 @@ var RSUSectionBuilder = (function () {
 	}
 
 	// ── Auto-resize a single textarea ──
+	// Where the browser has `field-sizing: content` the stylesheet already
+	// grows the box, and an inline height would only clip it. Elsewhere,
+	// measure, but never while the textarea is hidden (a collapsed meta box
+	// on the phone editor): scrollHeight reads 0 there, the box ends up one
+	// line tall, and every bullet shows its first line and nothing else.
+	var supportsFieldSizing = typeof CSS !== 'undefined' && CSS.supports && CSS.supports('field-sizing', 'content');
 	function autoResizeTextarea(ta) {
+		if (supportsFieldSizing) {
+			ta.style.height = '';
+			return;
+		}
+		if (!ta.getClientRects().length) return;
 		ta.style.height = '0';
 		ta.style.height = Math.max(ta.scrollHeight, 36) + 'px';
 	}
@@ -843,6 +885,83 @@ var RSUSectionBuilder = (function () {
 		if (input) input.focus();
 	}
 
+	// Move an element one step among the siblings that match itemSel. The DOM
+	// is the source of truth here, so there is no re-render and focus stays put.
+	function moveSibling(el, itemSel, dir) {
+		var sib = dir < 0 ? el.previousElementSibling : el.nextElementSibling;
+		while (sib && !sib.matches(itemSel)) {
+			sib = dir < 0 ? sib.previousElementSibling : sib.nextElementSibling;
+		}
+		if (!sib) return false;
+		el.parentNode.insertBefore(el, dir < 0 ? sib : sib.nextSibling);
+		return true;
+	}
+
+	function moveBlock(btn, dir) {
+		var blockEl = closest(btn, '.rsu-block');
+		var builder = getBuilder(btn);
+		if (!blockEl || !builder) return;
+		readFromDOM(builder);
+		if (!moveSibling(blockEl, '.rsu-block', dir)) return;
+		readFromDOM(builder);
+		btn.focus();
+		blockEl.scrollIntoView({ block: 'nearest' });
+	}
+
+	function moveBullet(el, dir) {
+		var row = closest(el, '.rsu-bullet-row');
+		var builder = getBuilder(el);
+		if (!row || !builder) return;
+		readFromDOM(builder);
+		if (!moveSibling(row, '.rsu-bullet-row', dir)) return;
+		// An indented row cannot lead the list.
+		var first = row.parentNode.firstElementChild;
+		if (first && first.classList.contains('rsu-bullet-row--indent')) setBulletIndent(first, 0);
+		readFromDOM(builder);
+		el.focus();
+		row.scrollIntoView({ block: 'nearest' });
+	}
+
+	// On a phone a bullet's tools sit in a bar under the row being edited.
+	// Focus alone cannot drive that bar: iOS blurs the textarea the moment a
+	// toolbar button is tapped, before the tap lands. So the "active" row is
+	// set on focus or pointerdown, and cleared only once focus settles
+	// elsewhere or a click lands elsewhere in the builder. Never on
+	// pointerdown: closing the bar then shifts everything below it up under
+	// a finger that has not lifted yet, and the tap hits the wrong control.
+	function setActiveBulletRow(row) {
+		qsa('.rsu-bullet-row--active').forEach(function (r) {
+			if (r !== row) r.classList.remove('rsu-bullet-row--active');
+		});
+		if (row) row.classList.add('rsu-bullet-row--active');
+	}
+
+	document.addEventListener('focusin', function (e) {
+		if (!e.target.closest) return;
+		var row = e.target.closest('.rsu-bullet-row');
+		if (row) {
+			setActiveBulletRow(row);
+			return;
+		}
+		// A button takes focus on pointerdown (Chrome, Android). Closing the
+		// bar here would move the button before the tap finishes, so the
+		// click handler below handles buttons once the tap has landed.
+		if (e.target.matches('button, select')) return;
+		setActiveBulletRow(null);
+	});
+
+	document.addEventListener('pointerdown', function (e) {
+		if (!e.target.closest) return;
+		var row = e.target.closest('.rsu-bullet-row');
+		if (row && !e.target.closest('.rsu-bullet-row__marker')) setActiveBulletRow(row);
+	});
+
+	document.addEventListener('click', function (e) {
+		if (!e.target.closest) return;
+		if (e.target.closest('.rsu-bullet-row') || !e.target.closest('.rsu-section-builder')) return;
+		setActiveBulletRow(null);
+	});
+
 	function addBullet(btn) {
 		var blockEl = closest(btn, '.rsu-block');
 		if (!blockEl) return;
@@ -895,6 +1014,14 @@ var RSUSectionBuilder = (function () {
 		}
 
 		setTimeout(autoResize, 100);
+
+		// A textarea measured while its panel was hidden is one line tall. Any
+		// size change on a builder (the phone editor's meta box sheet opening,
+		// a rotation, the keyboard) is the cue to measure again.
+		if (!supportsFieldSizing && typeof ResizeObserver !== 'undefined') {
+			var ro = new ResizeObserver(function () { autoResize(); });
+			qsa('.rsu-section-builder').forEach(function (b) { ro.observe(b); });
+		}
 	}
 
 	// Tab switching.
@@ -1498,6 +1625,8 @@ var RSUSectionBuilder = (function () {
 			case 'toggle-section': toggleSection(actionEl); break;
 			case 'toggle-all-sections': toggleAllSections(actionEl); break;
 			case 'move-section': moveSection(actionEl, parseInt(actionEl.getAttribute('data-dir'), 10) || 1); break;
+			case 'move-block': moveBlock(actionEl, parseInt(actionEl.getAttribute('data-dir'), 10) || 1); break;
+			case 'move-bullet': moveBullet(actionEl, parseInt(actionEl.getAttribute('data-dir'), 10) || 1); break;
 			case 'dupe-section': dupeSection(actionEl); break;
 			case 'show-import': showImport(actionEl); break;
 			case 'undo': undoAction(actionEl); break;
