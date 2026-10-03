@@ -1346,10 +1346,28 @@ var RSUSectionBuilder = (function () {
 		if (!vehicle) vehicle = fallbackVehicle;
 		var gen = '';
 		var slugs = genSlugsSorted(vehicle);
-		if (slugs.length > 1 && meta && meta.modelYear) {
-			slugs.forEach(function (g) {
-				if (!gen && genCoversYear(vehicleGens(vehicle)[g], meta.modelYear)) gen = g;
-			});
+		var gens = vehicleGens(vehicle);
+		if (slugs.length > 1 && meta) {
+			// "Gen 2" in the title wins; match it against the generation's slug or label.
+			if (meta.generation) {
+				var n = String(meta.generation);
+				slugs.forEach(function (g) {
+					if (gen) return;
+					var label = String((gens[g] && gens[g].label) || '');
+					if (g.replace(/\D/g, '') === n || label.replace(/\D/g, '') === n) gen = g;
+				});
+			}
+			// Otherwise the model years: a range like 2022-2024 should sit inside one generation.
+			if (!gen && meta.modelYear) {
+				var years = [meta.modelYear];
+				if (meta.modelYearEnd) years.push(meta.modelYearEnd);
+				slugs.forEach(function (g) {
+					if (!gen && years.every(function (y) { return genCoversYear(gens[g], y); })) gen = g;
+				});
+				if (!gen) slugs.forEach(function (g) {
+					if (!gen && genCoversYear(gens[g], meta.modelYear)) gen = g;
+				});
+			}
 		}
 		return { vehicle: vehicle, generation: gen, detected: !!(meta && meta.vehicle) };
 	}
@@ -1519,7 +1537,10 @@ var RSUSectionBuilder = (function () {
 				else if (!f.sections) status = '<span class="rsu-import-file__status">Reading…</span>';
 				else {
 					var bits = [];
-					if (f.meta && f.meta.vehicle) bits.push('Detected ' + escapeHtml(f.meta.vehicle) + (f.meta.modelYear ? ' · MY' + f.meta.modelYear : '') + (f.meta.version ? ' · ' + escapeHtml(f.meta.version) : ''));
+					if (f.meta && f.meta.vehicle) {
+						var my = f.meta.modelYear ? ' · MY' + f.meta.modelYear + (f.meta.modelYearEnd ? '–' + f.meta.modelYearEnd : '') : '';
+						bits.push('Detected ' + escapeHtml(f.meta.vehicle) + (f.meta.generation ? ' Gen ' + f.meta.generation : '') + my + (f.meta.version ? ' · ' + escapeHtml(f.meta.version) : ''));
+					}
 					else bits.push('No title line; pick the vehicle');
 					bits.push(f.sections.length + ' section' + (f.sections.length === 1 ? '' : 's'));
 					status = '<span class="rsu-import-file__status">' + bits.join(' · ') + '</span>';
@@ -1841,7 +1862,13 @@ var RSUSectionBuilder = (function () {
 			// Detect headings: short lines (< 80 chars) that are followed by bullets or blank line,
 			// or lines that look like titles (no trailing punctuation except colon).
 			var isHeading = false;
-			if (trimmed.length < 80 && !trimmed.match(/[.!?,;]$/) && trimmed.length > 1) {
+			// Judge the ending with closing quotes and brackets peeled off, so
+			// “Who ya gonna call?” still counts as ending in a question mark.
+			var ending = trimmed.replace(/[”"’')\]]+$/, '');
+			// "We improved Navigation by adding the following:" introduces the
+			// list under the heading above it; it is a paragraph, not a heading.
+			var leadIn = /:$/.test(ending) && ending.split(/\s+/).length >= 4 && current && current.heading;
+			if (trimmed.length < 80 && !ending.match(/[.!?,;]$/) && trimmed.length > 1 && !leadIn) {
 				// Check next non-empty line for bullets or if this is alone.
 				var nextIdx = i + 1;
 				while (nextIdx < lines.length && !lines[nextIdx].trim()) nextIdx++;

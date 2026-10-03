@@ -66,7 +66,9 @@ export function linesFromTextContent(textContent, pageNumber) {
 			if (it.size > maxSize) maxSize = it.size;
 		});
 		return {
-			text: text.replace(/\s+/g, ' ').trim(),
+			// pdf.js hands "stations" and "." as separate items with a gap, which
+			// the join above turns into "stations ."; close that up.
+			text: text.replace(/\s+/g, ' ').replace(/\s+([.,;:!?])/g, '$1').trim(),
 			x: row.items[0].x,
 			y: row.y,
 			size: maxSize,
@@ -76,19 +78,30 @@ export function linesFromTextContent(textContent, pageNumber) {
 	}).filter(function (line) { return line.text !== ''; });
 }
 
-// "R2 – Model Year 2027 – Software Version 2026.24", also seen with the
-// trims spelled out ("R1T/R1S"). The leading R-number is the vehicle.
-var TITLE_RE = /^(R\d+)(?:[TS](?:\s*(?:\/|&|and)\s*R\d+[TS])?)?\s*[–—-]\s*Model Year\s*(\d{4})(?:\s*[–—-]\s*Software Version\s*([\d.]+))?/i;
+// The title line of an Update Details PDF, as Rivian actually writes it:
+//   "R1T Gen 1 – Model Year 2022-2024 – Software Version 2026.36"
+//   "R1S Gen 2 – Model Year 2025-2026 – Software Version 2026.36"
+//   "R2 – Model Year 2027 – Software Version 2026.24"
+// The leading R-number is the vehicle (the trim letter is dropped), an
+// explicit "Gen N" is the generation, and the model years are a fallback.
+var TITLE_RE = /^(R\d+)[A-Z]?(?:\s*(?:\/|&|and)\s*R\d+[A-Z]?)?(?:\s+Gen(?:eration)?\s*(\d+))?\s*[–—-]\s*Model Year\s*(\d{4})(?:\s*[–—-]\s*(\d{4}))?(?:\s*[–—-]\s*Software Version\s*([\d.]+))?/i;
 
 // ── Release metadata from the title line ──
-// Returns { vehicle: "R1", modelYear: 2025, version: "2025.30.00" } or null.
+// Returns { vehicle: "R1", generation: 1, modelYear: 2022, modelYearEnd: 2024,
+// version: "2026.36" } or null. generation and modelYearEnd are null when absent.
 export function detectReleaseMeta(pages) {
 	var meta = null;
 	pages.some(function (pageLines) {
 		return pageLines.some(function (line) {
 			var m = line.text.match(TITLE_RE);
 			if (!m) return false;
-			meta = { vehicle: m[1].toUpperCase(), modelYear: parseInt(m[2], 10), version: m[3] || '' };
+			meta = {
+				vehicle: m[1].toUpperCase(),
+				generation: m[2] ? parseInt(m[2], 10) : null,
+				modelYear: parseInt(m[3], 10),
+				modelYearEnd: m[4] ? parseInt(m[4], 10) : null,
+				version: m[5] || ''
+			};
 			return true;
 		});
 	});
@@ -227,11 +240,13 @@ export function buildReleaseNotesText(pages) {
 		if (para) {
 			// Same paragraph if directly below the previous line and roughly
 			// left-aligned with the block — allow a rightward shift of up to
-			// 20 units for lines that start with an inline icon.
+			// 20 units for lines that start with an inline icon. Rivian's
+			// paragraph leading runs to 2.1× the body size (a blank line
+			// between paragraphs is 2.6× or more), so 2.25× is the cut.
 			var xShift = line.x - para.x;
 			var sameBlock = line.page === para.lastPage
 				&& xShift >= -2 && xShift <= 20
-				&& (para.lastY - line.y) < bodySize * 1.9;
+				&& (para.lastY - line.y) < bodySize * 2.25;
 			var pageBreak = line.page === para.lastPage + 1;
 			if (sameBlock || pageBreak) {
 				para.text = joinWrapped(para.text, line.text);
