@@ -82,7 +82,7 @@ class RSU_Migrate {
 				// Fallback: try with invalid UTF-8 substitution.
 				$json = json_encode( $merged, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE );
 			}
-			update_post_meta( $post_id, '_rsu_sections_r1', $json );
+			update_post_meta( $post_id, '_rsu_sections_r1', wp_slash( $json ) ); // update_post_meta() unslashes; protect the JSON's own escapes.
 
 			// Render and save HTML fallback.
 			$html = RSU_Admin::render_sections_to_html( $merged, 'r1' );
@@ -775,7 +775,7 @@ class RSU_Migrate {
 
 			// Save the same sections for each target vehicle.
 			foreach ( $vehicles as $slug ) {
-				update_post_meta( $post_id, '_rsu_sections_' . $slug, $json );
+				update_post_meta( $post_id, '_rsu_sections_' . $slug, wp_slash( $json ) ); // update_post_meta() unslashes; protect the JSON's own escapes.
 
 				$html = RSU_Admin::render_sections_to_html( $sections, $slug );
 				$meta_key = isset( $all_vehicles[ $slug ]['meta_key'] ) ? $all_vehicles[ $slug ]['meta_key'] : '_rsu_content_' . $slug;

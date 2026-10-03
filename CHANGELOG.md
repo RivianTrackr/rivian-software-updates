@@ -2,6 +2,12 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.34.4] - 2026-10-03
+
+### Fixed
+- **"vehicle’s" no longer saves as "vehicleu2019s".** The editor's save path handed the sections JSON straight to `update_post_meta()`, which strips one level of slashes from whatever it is given. Every curly quote, dash, ellipsis, or ® in a release note was stored as `\u2019` by the encoder and came back as a bare `u2019` token, and a straight double quote inside a bullet broke the JSON outright. Non-ASCII characters are now stored literally and the string is slashed before it reaches post meta, so the round trip is exact. The migration tool's two writers get the same guard.
+- **Already-affected posts heal themselves.** Posts saved before this release still carry the broken tokens in their JSON. The frontend, the schema markup, and the editor now restore the real character on read for the escapes a release note can plausibly contain (typographic punctuation, Latin letters and symbols, arrows, emoji). Opening and saving such a post stores the repaired text permanently.
+
 ## [2.34.3] - 2026-09-04
 
 ### Changed
