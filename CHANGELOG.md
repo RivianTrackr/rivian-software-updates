@@ -2,6 +2,17 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.35.0] - 2026-10-03
+
+### Fixed
+- **Bullets no longer clip to one line on a phone.** The editor measured every textarea the moment the page loaded, while the Meta Boxes panel was still closed, so each one came out one line tall and showed its first few words and nothing else. Browsers with `field-sizing` now size the boxes in CSS alone, everything else is measured only once the panel is on screen and again whenever the builder changes size.
+- **Dragging works by touch.** The old handles used passive touch listeners, so a finger on a handle scrolled the page instead of moving the item. Handles now use pointer events with capture and `touch-action: none`, nudge the scroll container when the pointer nears the top or bottom edge, and the blocks nested inside a Note are draggable for the first time.
+
+### Added
+- **Move up and down buttons on blocks and bullets.** Sections had them, blocks and bullets did not. Bullets also take Alt+Up and Alt+Down from the keyboard. Moves happen in place, so focus stays where it was.
+- **Bullets drag by their dot.** The bullet marker is the drag handle on every device.
+- **A phone layout for the builder.** On touch screens the hover-only controls are simply visible, the text fields are 16px so iOS stops zooming into them, the section heading gets a line of its own, and a bullet shows only its dot and its text until you tap it, when its tools (indent, generation, move, remove) appear in a bar underneath. The bar closes on a completed tap elsewhere, never on touch-down, because closing it early shifts the list under a finger that has not lifted yet.
+
 ## [2.34.4] - 2026-10-03
 
 ### Fixed
