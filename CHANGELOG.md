@@ -2,6 +2,15 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.37.0] - 2026-10-04
+
+### Changed
+- **The release notes editor is redrawn as one system.** Three generations of patches had left boxed inputs inside boxed rows inside boxed blocks inside cards, grey side columns, three button styles, and text glyphs for arrows. The builder's styling is replaced wholesale: a section is a quiet card whose heading reads as a bold title and only shows a field when hovered or focused; a block is its text with a small type label, and its handle, move pair and close fade in on hover; a bullet is a dot and its text, with indent, move pair, generation and remove appearing at the end of the line when you point at it; a note is a soft amber sheet. Every control is the same 28px icon button drawn from inline SVG, so nothing depends on the Dashicons font, and the generation selector is a pill that stays invisible until it is set or the row is hovered. The quiet "+ Paragraph", "+ Bullet List", "+ Note" and "+ Add bullet" buttons are plain text links.
+
+### Fixed
+- **Bullet move arrows on desktop.** They rendered 9px tall at the top edge of the row with nothing stretching them, so they were close to impossible to hit. They are now proper buttons in the control cluster.
+- **Touch layout follows the same system.** Controls are always visible at thumb size, bullets keep their up and down column at the right edge, and the tapped bullet's bar underneath carries indent, generation and remove.
+
 ## [2.36.0] - 2026-10-03
 
 ### Added
