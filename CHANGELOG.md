@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.37.1] - 2026-10-04
+
+### Fixed
+- **Generation scope pills were drawn as 40px WordPress selects.** WordPress styles every `select` in the admin as a tall button, and that rule outranked the pill's own single-class styling, so the generation selector came out oversized at the right edge of every section, block and bullet row, overlapping its neighbours and clipping the open list. The pill is now scoped under the editor wrapper and resets what WordPress sets, so it is the compact 22px pill the redesign intended, on the same baseline as the close button beside it. On phones the block header's label, handle, move pair, pill and close now fit on one line.
+
 ## [2.37.0] - 2026-10-04
 
 ### Changed
