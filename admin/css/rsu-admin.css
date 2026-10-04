@@ -71,26 +71,6 @@
 	transform: scale(0.99);
 }
 
-/* ═══════════════════════════════════════
-   Section Card
-   ═══════════════════════════════════════ */
-
-.rsu-section:hover {
-	box-shadow: var(--rsu-shadow-hover);
-}
-
-/* ═══════════════════════════════════════
-   Content Blocks
-   ═══════════════════════════════════════ */
-
-.rsu-block__drag:hover {
-	color: var(--rsu-text-secondary);
-}
-
-.rsu-block[data-type="paragraph"] .rsu-block__label {
-	color: var(--rsu-text-muted);
-}
-
 /* Textarea */
 
 /* List block accent */
@@ -366,24 +346,6 @@
    ═══════════════════════════════════════ */
 
 /* ═══════════════════════════════════════
-   Responsive
-   ═══════════════════════════════════════ */
-
-@media (max-width: 1024px) {
-	.rsu-section__header {
-		flex-wrap: wrap;
-	}
-
-	.rsu-section__heading {
-		min-width: 0;
-	}
-
-	.rsu-bullet-row {
-		flex-wrap: wrap;
-	}
-}
-
-/* ═══════════════════════════════════════
    Reduced Motion
    ═══════════════════════════════════════ */
 
@@ -422,23 +384,13 @@
 		padding: 14px;
 	}
 
-	.rsu-add-block-group {
-		flex-wrap: wrap;
-	}
+	
 
-	.rsu-section__heading {
-		font-size: 13px;
-		padding: 6px 10px;
-	}
+	
 
-	.rsu-gen-select {
-		font-size: 10px;
-		padding: 2px 16px 2px 6px;
-	}
+	
 
-	.rsu-blocks-list {
-		padding: 8px 10px 4px;
-	}
+	
 }
 
 /* ═══════════════════════════════════════
@@ -636,421 +588,6 @@
 	background: var(--rsu-bg-info) !important;
 }
 
-.rsu-section {
-	border: 1px solid var(--rsu-border);
-	border-radius: 12px;
-	margin-bottom: 16px;
-	background: var(--rsu-white);
-	box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
-
-.rsu-section__header {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	padding: 10px 14px;
-	background: var(--rsu-bg-light);
-	border-bottom: 1px solid var(--rsu-border);
-	border-radius: 12px 12px 0 0;
-}
-
-.rsu-section__drag {
-	cursor: grab;
-	color: var(--rsu-border);
-	font-size: 16px;
-	flex-shrink: 0;
-}
-
-.rsu-section__drag:hover {
-	color: var(--rsu-text-secondary);
-}
-
-.rsu-section__heading {
-	flex: 1;
-	font-size: 14px !important;
-	font-weight: 600;
-	padding: 8px 12px !important;
-	border: 1px solid var(--rsu-border) !important;
-	border-radius: 8px !important;
-	background: var(--rsu-white) !important;
-	color: var(--rsu-text);
-	box-shadow: none !important;
-}
-
-.rsu-section__heading:focus {
-	border-color: var(--rsu-action) !important;
-	box-shadow: 0 0 0 2px rgba(0,113,227,0.15) !important;
-	outline: none;
-}
-
-.rsu-section__heading::placeholder {
-	font-weight: 400;
-	color: var(--rsu-placeholder);
-	font-size: 13px;
-}
-
-.rsu-section__remove {
-	background: none;
-	border: none;
-	font-size: 18px;
-	line-height: 1;
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 4px 8px;
-	border-radius: 4px;
-	flex-shrink: 0;
-}
-
-.rsu-section__remove:hover {
-	color: var(--rsu-error);
-	background: var(--rsu-error-light);
-}
-
-.rsu-blocks-list {
-	padding: 12px 14px 4px;
-}
-
-.rsu-block {
-	border: 1px solid var(--rsu-border-light);
-	border-radius: 8px;
-	margin-bottom: 10px;
-	background: var(--rsu-white);
-	overflow: visible;
-}
-
-.rsu-block:focus-within {
-	border-color: var(--rsu-action);
-}
-
-.rsu-block[data-type="list"] {
-	border-left: 3px solid var(--rsu-action);
-}
-
-.rsu-block[data-type="note"] {
-	border-left: 3px solid var(--rsu-accent);
-}
-
-.rsu-block__header {
-	display: flex;
-	align-items: center;
-	gap: 6px;
-	padding: 5px 10px;
-	background: var(--rsu-bg-light);
-	border-bottom: 1px solid var(--rsu-border-light);
-}
-
-.rsu-block__drag {
-	cursor: grab;
-	color: var(--rsu-border);
-	font-size: 13px;
-	flex-shrink: 0;
-}
-
-.rsu-block__label {
-	flex: 1;
-	font-size: 10px;
-	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
-	color: var(--rsu-text-muted);
-}
-
-.rsu-block[data-type="list"] .rsu-block__label {
-	color: var(--rsu-action);
-}
-
-.rsu-block[data-type="note"] .rsu-block__label {
-	color: var(--rsu-accent);
-}
-
-.rsu-block__remove {
-	background: none;
-	border: none;
-	font-size: 15px;
-	line-height: 1;
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 2px 6px;
-	border-radius: 4px;
-}
-
-.rsu-block__remove:hover {
-	color: var(--rsu-error);
-	background: var(--rsu-error-light);
-}
-
-.rsu-block__content {
-	display: block;
-	width: 100%;
-	padding: 10px 12px;
-	border: none !important;
-	resize: none;
-	font-size: 13px;
-	line-height: 1.65;
-	font-family: inherit;
-	color: var(--rsu-text);
-	overflow: hidden;
-	min-height: 56px;
-	height: auto;
-	box-sizing: border-box;
-	background: var(--rsu-white);
-	box-shadow: none !important;
-	outline: none !important;
-	field-sizing: content;
-}
-
-.rsu-block__content:focus {
-	background: var(--rsu-bg-light);
-}
-
-.rsu-block__content::placeholder {
-	color: var(--rsu-placeholder);
-}
-
-.rsu-block[data-type="note"] .rsu-block__content {
-	background: var(--rsu-note-bg);
-}
-
-.rsu-block[data-type="note"] .rsu-block__content:focus {
-	background: var(--rsu-note-bg-focus);
-}
-
-.rsu-bullet-list {
-	padding: 8px 12px 4px;
-}
-
-.rsu-bullet-row {
-	display: flex;
-	align-items: flex-start;
-	gap: 0;
-	margin-bottom: 6px;
-	background: var(--rsu-white);
-	border: 1px solid var(--rsu-border-light);
-	border-radius: 8px;
-	padding: 0;
-	overflow: hidden;
-}
-
-.rsu-bullet-row:focus-within {
-	border-color: var(--rsu-action);
-}
-
-.rsu-bullet-row--indent {
-	margin-inline-start: 28px;
-}
-
-.rsu-bullet-row__indent {
-	flex-shrink: 0;
-	background: var(--rsu-bg-light);
-	border: none;
-	border-right: 1px solid var(--rsu-border-light);
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 0 6px;
-	align-self: stretch;
-	display: flex;
-	align-items: center;
-	opacity: 0.55;
-	transition: opacity 0.15s, color 0.15s, background 0.15s;
-}
-
-.rsu-bullet-row:hover .rsu-bullet-row__indent,
-.rsu-bullet-row:focus-within .rsu-bullet-row__indent {
-	opacity: 1;
-}
-
-.rsu-bullet-row__indent:hover {
-	color: var(--rsu-action);
-	background: var(--rsu-bg-info);
-}
-
-.rsu-bullet-row__indent .dashicons {
-	font-size: 14px;
-	width: 14px;
-	height: 14px;
-}
-
-.rsu-bullet-row--indent .rsu-bullet-row__indent {
-	color: var(--rsu-action);
-	opacity: 1;
-}
-
-.rsu-bullet-row__marker {
-	flex-shrink: 0;
-	width: 32px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	color: var(--rsu-action);
-	font-size: 18px;
-	line-height: 1;
-	padding-top: 8px;
-	user-select: none;
-	background: var(--rsu-bg-light);
-	align-self: stretch;
-	border-right: 1px solid var(--rsu-border-light);
-}
-
-.rsu-bullet-row__input {
-	flex: 1;
-	border: none !important;
-	background: var(--rsu-white);
-	font-size: 13px;
-	line-height: 1.65;
-	font-family: inherit;
-	color: var(--rsu-text);
-	padding: 8px 10px;
-	resize: none;
-	overflow: hidden;
-	overflow-wrap: break-word;
-	word-break: break-word;
-	min-height: 36px;
-	height: auto;
-	box-sizing: border-box;
-	box-shadow: none !important;
-	outline: none !important;
-	field-sizing: content;
-}
-
-.rsu-bullet-row__input:focus {
-	background: var(--rsu-bg-light);
-}
-
-.rsu-bullet-row__input::placeholder {
-	color: var(--rsu-placeholder);
-}
-
-.rsu-bullet-row__remove {
-	flex-shrink: 0;
-	background: none;
-	border: none;
-	border-left: 1px solid var(--rsu-border-light);
-	font-size: 15px;
-	line-height: 1;
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 0 8px;
-	align-self: stretch;
-	display: flex;
-	align-items: center;
-	opacity: 0;
-	transition: opacity 0.15s;
-}
-
-.rsu-bullet-row:hover .rsu-bullet-row__remove,
-.rsu-bullet-row:focus-within .rsu-bullet-row__remove,
-.rsu-bullet-row__remove:focus-visible {
-	opacity: 1;
-}
-
-.rsu-bullet-row__remove:hover {
-	color: var(--rsu-error);
-	background: var(--rsu-error-light);
-}
-
-.rsu-bullet-add {
-	display: flex;
-	align-items: center;
-	gap: 4px;
-	width: 100%;
-	padding: 7px 12px;
-	margin: 0;
-	background: var(--rsu-bg-light);
-	border: none;
-	border-top: 1px solid var(--rsu-border-light);
-	color: var(--rsu-text-muted);
-	font-size: 11px;
-	font-weight: 600;
-	cursor: pointer;
-	text-align: left;
-}
-
-.rsu-bullet-add:hover {
-	background: var(--rsu-bg-info);
-	color: var(--rsu-action);
-}
-
-/* Note inner blocks (paragraphs / bullet lists nested inside a Note) */
-
-.rsu-note-blocks {
-	padding: 8px 12px 4px;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-
-.rsu-note-blocks .rsu-block {
-	border: 1px solid var(--rsu-border-light);
-	border-left-width: 1px;
-	background: var(--rsu-white);
-	margin-bottom: 0;
-}
-
-.rsu-note-blocks .rsu-block[data-type="list"] {
-	border-left: 3px solid var(--rsu-accent);
-}
-
-.rsu-note-blocks .rsu-block__header {
-	padding: 4px 8px;
-}
-
-.rsu-note-blocks .rsu-block__label {
-	color: var(--rsu-accent);
-	font-size: 9px;
-}
-
-.rsu-note-add {
-	display: flex;
-	gap: 8px;
-	padding: 8px 12px 12px;
-	border-top: 1px solid var(--rsu-border-light);
-}
-
-.rsu-note-add .button {
-	font-size: 11px !important;
-	font-weight: 600;
-	color: var(--rsu-text-secondary) !important;
-	padding: 4px 12px !important;
-	border: 1px solid var(--rsu-border) !important;
-	border-radius: 6px !important;
-	background: var(--rsu-white) !important;
-	cursor: pointer;
-	box-shadow: none !important;
-	line-height: 1.5;
-}
-
-.rsu-note-add .button:hover {
-	color: var(--rsu-accent) !important;
-	border-color: var(--rsu-accent) !important;
-	background: var(--rsu-note-bg-focus) !important;
-}
-
-.rsu-block[data-type="note"] > .rsu-note-blocks {
-	background: var(--rsu-note-bg);
-}
-
-.rsu-block[data-type="note"] > .rsu-note-add {
-	background: var(--rsu-note-bg);
-}
-
-/* Drag and drop */
-
-.rsu-drag-placeholder {
-	border: 2px dashed var(--rsu-border);
-	border-radius: 12px;
-	margin-bottom: 16px;
-	background: var(--rsu-bg-light);
-}
-
-.rsu-drag-active {
-	position: fixed;
-	z-index: 10000;
-	opacity: 0.9;
-	box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-	pointer-events: none;
-	transition: none;
-}
-
 /* Confirm dialog */
 
 .rsu-confirm-dialog {
@@ -1115,50 +652,6 @@
 
 .rsu-confirm-dialog__ok:hover {
 	background: #e0352b !important;
-}
-
-/* Collapse / expand */
-
-.rsu-section--collapsed .rsu-blocks-list,
-.rsu-section--collapsed .rsu-section__footer {
-	display: none;
-}
-
-.rsu-section__toggle {
-	background: none;
-	border: none;
-	font-size: 16px;
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 2px 4px;
-	flex-shrink: 0;
-	transition: transform 0.2s ease;
-}
-
-.rsu-section__toggle:hover {
-	color: var(--rsu-text);
-}
-
-.rsu-section--collapsed .rsu-section__toggle {
-	transform: rotate(-90deg);
-}
-
-/* Duplicate button */
-
-.rsu-section__dupe {
-	background: none;
-	border: none;
-	font-size: 14px;
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 4px 6px;
-	border-radius: 4px;
-	flex-shrink: 0;
-}
-
-.rsu-section__dupe:hover {
-	color: var(--rsu-action);
-	background: var(--rsu-bg-info);
 }
 
 /* Paste import */
@@ -1459,100 +952,6 @@
 	opacity: 1;
 }
 
-/* Generation selector */
-
-.rsu-gen-select {
-	font-size: 10px;
-	font-weight: 500;
-	padding: 2px 18px 2px 6px;
-	border: 1px solid var(--rsu-border);
-	border-radius: 4px;
-	background: var(--rsu-bg-light);
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	transition: all 0.15s;
-	line-height: 1.5;
-	flex-shrink: 0;
-	appearance: none;
-	-webkit-appearance: none;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%2386868b' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-	background-repeat: no-repeat;
-	background-position: right 5px center;
-}
-
-.rsu-gen-select:hover {
-	border-color: var(--rsu-action);
-	background-color: var(--rsu-bg-info);
-	color: var(--rsu-text);
-}
-
-.rsu-gen-select:focus {
-	outline: none;
-	border-color: var(--rsu-action);
-	box-shadow: 0 0 0 2px rgba(0,113,227,0.15);
-	color: var(--rsu-text);
-}
-
-.rsu-gen-select--active {
-	background-color: var(--rsu-bg-info);
-	border-color: var(--rsu-action);
-	color: var(--rsu-action);
-	font-weight: 600;
-	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%230071e3' stroke-width='1.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-}
-
-.rsu-bullet-row__gen {
-	flex-shrink: 0;
-	display: flex;
-	align-items: center;
-	padding: 4px 10px;
-}
-
-/* Unset selectors hide until the row is hovered or focused; set ones always show. */
-
-.rsu-gen-select:not(.rsu-gen-select--active) {
-	opacity: 0;
-}
-
-.rsu-section__header:hover .rsu-gen-select,
-.rsu-section__header:focus-within .rsu-gen-select,
-.rsu-block__header:hover .rsu-gen-select,
-.rsu-block__header:focus-within .rsu-gen-select,
-.rsu-bullet-row:hover .rsu-gen-select,
-.rsu-bullet-row:focus-within .rsu-gen-select,
-.rsu-gen-select:focus {
-	opacity: 1;
-}
-
-.rsu-section__footer {
-	padding: 8px 14px 12px;
-	border-top: 1px solid var(--rsu-border-light);
-}
-
-.rsu-add-block-group {
-	display: flex;
-	gap: 8px;
-}
-
-.rsu-add-block-group .button {
-	font-size: 11px !important;
-	font-weight: 600;
-	color: var(--rsu-text-secondary) !important;
-	padding: 4px 12px !important;
-	border: 1px solid var(--rsu-border) !important;
-	border-radius: 6px !important;
-	background: var(--rsu-bg-light) !important;
-	cursor: pointer;
-	box-shadow: none !important;
-	line-height: 1.5;
-}
-
-.rsu-add-block-group .button:hover {
-	color: var(--rsu-action) !important;
-	border-color: var(--rsu-action) !important;
-	background: var(--rsu-bg-info) !important;
-}
-
 @media (max-width: 782px) {
 	.rsu-vehicle-checks {
 		flex-direction: column;
@@ -1573,71 +972,14 @@
 		padding: 14px;
 	}
 
-	.rsu-add-block-group {
-		flex-wrap: wrap;
-	}
+	
 
-	.rsu-gen-select {
-		font-size: 10px;
-		padding: 2px 16px 2px 6px;
-	}
+	
 }
 
 /* ═══════════════════════════════════════
    2.32.0 editor refinements
    ═══════════════════════════════════════ */
-
-/* Block chrome: the type label stays, the handle and close button appear on
-   hover or focus so a paragraph is mostly its text. */
-.rsu-block__header {
-	padding: 3px 10px;
-}
-
-.rsu-block__drag,
-.rsu-block__remove {
-	opacity: 0;
-	transition: opacity 0.15s;
-}
-
-.rsu-block:hover > .rsu-block__header .rsu-block__drag,
-.rsu-block:focus-within > .rsu-block__header .rsu-block__drag,
-.rsu-block:hover > .rsu-block__header .rsu-block__remove,
-.rsu-block:focus-within > .rsu-block__header .rsu-block__remove,
-.rsu-block__remove:focus-visible {
-	opacity: 1;
-}
-
-/* Section move buttons: keyboard-friendly reorder next to the drag handle. */
-.rsu-section__move {
-	background: none;
-	border: none;
-	font-size: 10px;
-	line-height: 1;
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 3px 4px;
-	border-radius: 4px;
-	flex-shrink: 0;
-}
-
-.rsu-section__move:hover {
-	color: var(--rsu-action);
-	background: var(--rsu-bg-info);
-}
-
-.rsu-section__move:disabled {
-	opacity: 0.3;
-	cursor: default;
-	background: none;
-	color: var(--rsu-text-muted);
-}
-
-.rsu-section__moves {
-	display: flex;
-	flex-direction: column;
-	gap: 1px;
-	flex-shrink: 0;
-}
 
 /* Toolbar: collapse-all sits with copy-from on the right. */
 .rsu-editor-toolbar__right {
@@ -1750,268 +1092,6 @@
 /* ═══════════════════════════════════════
    Mobile editing (2.35.0)
    ═══════════════════════════════════════ */
-
-/* Drag handles own their touches, so a phone moves the item, not the page. */
-.rsu-section__drag,
-.rsu-block__drag,
-.rsu-bullet-row__marker {
-	touch-action: none;
-	-webkit-user-select: none;
-	user-select: none;
-	-webkit-touch-callout: none;
-}
-
-.rsu-bullet-row__marker {
-	cursor: grab;
-}
-
-.rsu-bullet-row__marker:hover {
-	color: var(--rsu-text-secondary);
-}
-
-body.rsu-dragging {
-	-webkit-user-select: none;
-	user-select: none;
-}
-
-body.rsu-dragging .rsu-section-builder,
-body.rsu-dragging .rsu-section-builder * {
-	cursor: grabbing !important;
-}
-
-.rsu-blocks-list > .rsu-drag-placeholder,
-.rsu-note-blocks > .rsu-drag-placeholder {
-	margin-bottom: 10px;
-	border-radius: 8px;
-}
-
-.rsu-bullet-list > .rsu-drag-placeholder {
-	margin-bottom: 6px;
-	border-radius: 8px;
-}
-
-/* Block move buttons mirror the section ones and appear with the handle. */
-.rsu-block__moves {
-	display: flex;
-	flex-direction: column;
-	gap: 0;
-	flex-shrink: 0;
-	opacity: 0;
-	transition: opacity 0.15s;
-}
-
-.rsu-block:hover > .rsu-block__header .rsu-block__moves,
-.rsu-block:focus-within > .rsu-block__header .rsu-block__moves,
-.rsu-block__moves:focus-within {
-	opacity: 1;
-}
-
-.rsu-block__move {
-	background: none;
-	border: none;
-	font-size: 9px;
-	line-height: 1;
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 2px 4px;
-	border-radius: 4px;
-}
-
-.rsu-block__move:hover {
-	color: var(--rsu-action);
-	background: var(--rsu-bg-info);
-}
-
-/* Bullet tools: move up/down beside the text, then gen select and remove. */
-.rsu-bullet-row__moves,
-.rsu-bullet-row__tools {
-	display: flex;
-	align-items: stretch;
-	flex-shrink: 0;
-}
-
-.rsu-bullet-row__move {
-	flex-shrink: 0;
-	background: none;
-	border: none;
-	border-left: 1px solid var(--rsu-border-light);
-	font-size: 9px;
-	line-height: 1;
-	color: var(--rsu-text-muted);
-	cursor: pointer;
-	padding: 0 7px;
-	display: flex;
-	align-items: center;
-	opacity: 0;
-	transition: opacity 0.15s, color 0.15s, background 0.15s;
-}
-
-.rsu-bullet-row:hover .rsu-bullet-row__move,
-.rsu-bullet-row:focus-within .rsu-bullet-row__move,
-.rsu-bullet-row__move:focus-visible {
-	opacity: 1;
-}
-
-.rsu-bullet-row__move:hover {
-	color: var(--rsu-action);
-	background: var(--rsu-bg-info);
-}
-
-@media (hover: none), (pointer: coarse) {
-	/* No hover on a phone: everything that waited for one is simply there,
-	   at a size a thumb can hit. */
-	.rsu-block__drag,
-	.rsu-block__remove,
-	.rsu-block__moves,
-	.rsu-gen-select {
-		opacity: 1;
-	}
-
-	.rsu-block__header {
-		padding: 6px 10px;
-		gap: 10px;
-	}
-
-	.rsu-section__drag,
-	.rsu-block__drag {
-		font-size: 20px;
-		width: 20px;
-		height: 20px;
-		padding: 8px;
-		box-sizing: content-box;
-		margin: -8px 0;
-	}
-
-	.rsu-section__move,
-	.rsu-block__move {
-		font-size: 12px;
-		padding: 6px 8px;
-	}
-
-	.rsu-section__remove,
-	.rsu-block__remove {
-		font-size: 22px;
-		padding: 4px 10px;
-	}
-
-	/* iOS zooms into any field under 16px. The heading also takes a full
-	   line of its own: squeezed between six controls it showed four letters. */
-	.rsu-section__header {
-		flex-wrap: wrap;
-		row-gap: 8px;
-	}
-
-	.rsu-section__heading {
-		font-size: 16px !important;
-		flex: 1 1 100%;
-		order: 10;
-	}
-
-	.rsu-section__header > .rsu-gen-select {
-		margin-left: auto;
-	}
-
-	.rsu-block__content,
-	.rsu-bullet-row__input {
-		font-size: 16px;
-		line-height: 1.5;
-	}
-
-	/* A bullet is its dot and its text. The tools drop into a bar under the
-	   row being edited, so the text keeps the full width of the screen. */
-	.rsu-bullet-row {
-		flex-wrap: wrap;
-	}
-
-	.rsu-bullet-row__marker {
-		width: 36px;
-		box-sizing: border-box; /* the 1px border must not push the text onto its own line */
-		font-size: 20px;
-		padding-top: 11px;
-	}
-
-	/* Marker (36px) + text + the move column (40px) fill the first line exactly. */
-	.rsu-bullet-row__input {
-		flex: 1 1 calc(100% - 76px);
-		min-width: 0;
-		padding: 10px 12px;
-		min-height: 44px;
-	}
-
-	/* The move arrows stay on every bullet, stacked at its right edge, so a
-	   list can be reordered without tapping into each row first. */
-	.rsu-bullet-row__moves {
-		order: 1;
-		flex-direction: column;
-		width: 40px;
-		box-sizing: border-box;
-		align-self: stretch;
-		border-left: 1px solid var(--rsu-border-light);
-		background: var(--rsu-bg-light);
-	}
-
-	.rsu-bullet-row__moves .rsu-bullet-row__move {
-		flex: 1 1 50%;
-		justify-content: center;
-		border-left: none;
-		padding: 0;
-		min-height: 22px;
-	}
-
-	.rsu-bullet-row__moves .rsu-bullet-row__move + .rsu-bullet-row__move {
-		border-top: 1px solid var(--rsu-border-light);
-	}
-
-	.rsu-bullet-row__indent,
-	.rsu-bullet-row__tools {
-		display: none;
-	}
-
-	.rsu-bullet-row--active .rsu-bullet-row__indent,
-	.rsu-bullet-row--active .rsu-bullet-row__tools {
-		display: flex;
-	}
-
-	.rsu-bullet-row__indent {
-		order: 2;
-		flex: 0 0 auto;
-		min-height: 40px;
-		padding: 0 14px;
-		border-top: 1px solid var(--rsu-border-light);
-		opacity: 1;
-	}
-
-	.rsu-bullet-row__indent .dashicons {
-		font-size: 18px;
-		width: 18px;
-		height: 18px;
-	}
-
-	.rsu-bullet-row__tools {
-		order: 3;
-		flex: 1 1 auto;
-		justify-content: flex-end;
-		min-height: 40px;
-		background: var(--rsu-bg-light);
-		border-top: 1px solid var(--rsu-border-light);
-	}
-
-	.rsu-bullet-row__gen {
-		margin-right: auto;
-		padding: 4px 8px;
-	}
-
-	.rsu-bullet-row__move,
-	.rsu-bullet-row__remove {
-		opacity: 1;
-		font-size: 13px;
-		padding: 0 16px;
-	}
-
-	.rsu-bullet-row__remove {
-		font-size: 22px;
-	}
-}
 
 /* ═══════════════════════════════════════
    PDF import: one row per file (2.36.0)
@@ -2171,5 +1251,860 @@ body.rsu-dragging .rsu-section-builder * {
 	.rsu-import-file__remove {
 		font-size: 22px;
 		padding: 4px 10px;
+	}
+}
+
+/* ═══════════════════════════════════════
+   Section builder (2.37.0)
+   One quiet surface. Sections are cards; blocks and bullets are their text,
+   with one family of icon controls that appear on hover (always, on touch).
+   Icons are inline SVG masks painted in currentColor, so every control is
+   the same square and nothing depends on the Dashicons font.
+   ═══════════════════════════════════════ */
+
+.rsu-admin-wrap {
+	--rsu-icon-grip: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='5.5' cy='3.5' r='1.5'/%3E%3Ccircle cx='10.5' cy='3.5' r='1.5'/%3E%3Ccircle cx='5.5' cy='8' r='1.5'/%3E%3Ccircle cx='10.5' cy='8' r='1.5'/%3E%3Ccircle cx='5.5' cy='12.5' r='1.5'/%3E%3Ccircle cx='10.5' cy='12.5' r='1.5'/%3E%3C/svg%3E");
+	--rsu-icon-up: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 10.5 8 6l4.5 4.5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	--rsu-icon-down: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 5.5 8 10l4.5-4.5' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	--rsu-icon-close: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E");
+	--rsu-icon-indent: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 3h12M7 8h7M2 13h12' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3Cpath d='M2 5.5 5 8l-3 2.5z'/%3E%3C/svg%3E");
+	--rsu-icon-dupe: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='5.5' y='5.5' width='8' height='8' rx='1.5' fill='none' stroke='%23000' stroke-width='1.6'/%3E%3Cpath d='M3 10.5V4a1 1 0 0 1 1-1h6.5' fill='none' stroke='%23000' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+	--rsu-ring: 0 0 0 3px rgba(0, 113, 227, 0.12);
+	--rsu-note-border: #f0ddb0;
+	--rsu-note-text: #9a6700;
+}
+
+/* ── Icon controls ──
+   Every button in the builder: 28px square, no chrome until hovered. The
+   button's own text (the old ▲ ▼ × glyphs) is kept for assistive tech but
+   sized to nothing; the icon is drawn on ::before. */
+
+.rsu-admin-wrap .rsu-section__toggle,
+.rsu-admin-wrap .rsu-section__move,
+.rsu-admin-wrap .rsu-section__dupe,
+.rsu-admin-wrap .rsu-section__remove,
+.rsu-admin-wrap .rsu-block__move,
+.rsu-admin-wrap .rsu-block__remove,
+.rsu-admin-wrap .rsu-bullet-row__indent,
+.rsu-admin-wrap .rsu-bullet-row__move,
+.rsu-admin-wrap .rsu-bullet-row__remove {
+	appearance: none;
+	-webkit-appearance: none;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	margin: 0;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--rsu-text-muted);
+	cursor: pointer;
+	font-size: 0;
+	line-height: 0;
+	flex-shrink: 0;
+	box-shadow: none;
+	transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.rsu-admin-wrap .rsu-section__toggle::before,
+.rsu-admin-wrap .rsu-section__move::before,
+.rsu-admin-wrap .rsu-section__dupe::before,
+.rsu-admin-wrap .rsu-section__remove::before,
+.rsu-admin-wrap .rsu-block__move::before,
+.rsu-admin-wrap .rsu-block__remove::before,
+.rsu-admin-wrap .rsu-bullet-row__indent::before,
+.rsu-admin-wrap .rsu-bullet-row__move::before,
+.rsu-admin-wrap .rsu-bullet-row__remove::before,
+.rsu-admin-wrap .rsu-section__drag::before,
+.rsu-admin-wrap .rsu-block__drag::before {
+	content: "";
+	display: block;
+	width: 16px;
+	height: 16px;
+	background-color: currentColor;
+	-webkit-mask: var(--rsu-icon) center / contain no-repeat;
+	mask: var(--rsu-icon) center / contain no-repeat;
+}
+
+/* The Dashicons glyph spans inside two buttons are replaced by the mask. */
+.rsu-admin-wrap .rsu-section__dupe .dashicons,
+.rsu-admin-wrap .rsu-bullet-row__indent .dashicons {
+	display: none;
+}
+
+.rsu-admin-wrap .rsu-section__toggle { --rsu-icon: var(--rsu-icon-down); }
+.rsu-admin-wrap .rsu-section__dupe { --rsu-icon: var(--rsu-icon-dupe); }
+.rsu-admin-wrap .rsu-bullet-row__indent { --rsu-icon: var(--rsu-icon-indent); }
+.rsu-admin-wrap .rsu-section__remove,
+.rsu-admin-wrap .rsu-block__remove,
+.rsu-admin-wrap .rsu-bullet-row__remove { --rsu-icon: var(--rsu-icon-close); }
+.rsu-admin-wrap [data-dir="-1"] { --rsu-icon: var(--rsu-icon-up); }
+.rsu-admin-wrap [data-dir="1"] { --rsu-icon: var(--rsu-icon-down); }
+.rsu-admin-wrap .rsu-section__drag,
+.rsu-admin-wrap .rsu-block__drag { --rsu-icon: var(--rsu-icon-grip); }
+
+.rsu-admin-wrap .rsu-section__toggle:hover,
+.rsu-admin-wrap .rsu-section__move:hover,
+.rsu-admin-wrap .rsu-section__dupe:hover,
+.rsu-admin-wrap .rsu-block__move:hover,
+.rsu-admin-wrap .rsu-bullet-row__indent:hover,
+.rsu-admin-wrap .rsu-bullet-row__move:hover {
+	background: var(--rsu-bg-hover);
+	color: var(--rsu-text);
+}
+
+.rsu-admin-wrap .rsu-section__remove:hover,
+.rsu-admin-wrap .rsu-block__remove:hover,
+.rsu-admin-wrap .rsu-bullet-row__remove:hover {
+	background: var(--rsu-error-light);
+	color: var(--rsu-error);
+}
+
+.rsu-admin-wrap .rsu-section__toggle:focus-visible,
+.rsu-admin-wrap .rsu-section__move:focus-visible,
+.rsu-admin-wrap .rsu-section__dupe:focus-visible,
+.rsu-admin-wrap .rsu-section__remove:focus-visible,
+.rsu-admin-wrap .rsu-block__move:focus-visible,
+.rsu-admin-wrap .rsu-block__remove:focus-visible,
+.rsu-admin-wrap .rsu-bullet-row__indent:focus-visible,
+.rsu-admin-wrap .rsu-bullet-row__move:focus-visible,
+.rsu-admin-wrap .rsu-bullet-row__remove:focus-visible {
+	outline: 2px solid var(--rsu-action);
+	outline-offset: 1px;
+	opacity: 1;
+}
+
+/* Stacked up/down pairs. */
+.rsu-section__moves,
+.rsu-block__moves,
+.rsu-bullet-row__moves {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.rsu-admin-wrap .rsu-section__move,
+.rsu-admin-wrap .rsu-block__move,
+.rsu-admin-wrap .rsu-bullet-row__move {
+	width: 24px;
+	height: 15px;
+	border-radius: 4px;
+}
+
+.rsu-admin-wrap .rsu-section__move::before,
+.rsu-admin-wrap .rsu-block__move::before,
+.rsu-admin-wrap .rsu-bullet-row__move::before {
+	width: 12px;
+	height: 12px;
+}
+
+.rsu-admin-wrap .rsu-section__move:disabled {
+	opacity: 0.25;
+	cursor: default;
+	background: none;
+	color: var(--rsu-text-muted);
+}
+
+/* Drag handles. */
+.rsu-admin-wrap .rsu-section__drag,
+.rsu-admin-wrap .rsu-block__drag {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	font-size: 0;
+	line-height: 0;
+	border-radius: 6px;
+	color: var(--rsu-border);
+	cursor: grab;
+	flex-shrink: 0;
+	touch-action: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+	transition: color 0.15s ease, background 0.15s ease, opacity 0.15s ease;
+}
+
+.rsu-admin-wrap .rsu-section__drag:hover,
+.rsu-admin-wrap .rsu-block__drag:hover {
+	color: var(--rsu-text-secondary);
+	background: var(--rsu-bg-hover);
+}
+
+body.rsu-dragging {
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+body.rsu-dragging .rsu-section-builder,
+body.rsu-dragging .rsu-section-builder * {
+	cursor: grabbing !important;
+}
+
+/* ── Generation pills ──
+   An unset pill reads "All" and is noise on every row, so it stays invisible
+   until its row is hovered or focused; a set one always shows. */
+
+.rsu-gen-select {
+	appearance: none;
+	-webkit-appearance: none;
+	height: 22px;
+	padding: 0 20px 0 9px;
+	border: 1px solid var(--rsu-border);
+	border-radius: 11px;
+	background-color: var(--rsu-white);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%2386868b' stroke-width='1.3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	background-repeat: no-repeat;
+	background-position: right 7px center;
+	font-size: 11px;
+	font-weight: 600;
+	line-height: 20px;
+	color: var(--rsu-text-secondary);
+	cursor: pointer;
+	flex-shrink: 0;
+	max-width: 140px;
+	transition: opacity 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.rsu-gen-select:hover {
+	border-color: var(--rsu-action);
+	color: var(--rsu-action);
+}
+
+.rsu-gen-select:focus {
+	outline: none;
+	border-color: var(--rsu-action);
+	box-shadow: var(--rsu-ring);
+}
+
+.rsu-gen-select--active {
+	background-color: var(--rsu-bg-info);
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5' viewBox='0 0 8 5'%3E%3Cpath d='M1 1l3 3 3-3' stroke='%231e40af' stroke-width='1.3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+	border-color: transparent;
+	color: #1e40af;
+}
+
+.rsu-gen-select:not(.rsu-gen-select--active) {
+	opacity: 0;
+}
+
+.rsu-section__header:hover .rsu-gen-select,
+.rsu-section__header:focus-within .rsu-gen-select,
+.rsu-block:hover > .rsu-block__header .rsu-gen-select,
+.rsu-block:focus-within > .rsu-block__header .rsu-gen-select,
+.rsu-bullet-row:hover .rsu-gen-select,
+.rsu-bullet-row:focus-within .rsu-gen-select,
+.rsu-gen-select:focus {
+	opacity: 1;
+}
+
+/* ── Section card ── */
+
+.rsu-section {
+	border: 1px solid var(--rsu-border);
+	border-radius: 12px;
+	margin-bottom: 14px;
+	background: var(--rsu-white);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rsu-section:focus-within {
+	border-color: color-mix(in srgb, var(--rsu-action) 45%, var(--rsu-border));
+}
+
+.rsu-section__header {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 8px 10px 8px 8px;
+	border-bottom: 1px solid var(--rsu-border-light);
+}
+
+.rsu-section--collapsed .rsu-section__header {
+	border-bottom-color: transparent;
+}
+
+.rsu-section--collapsed .rsu-blocks-list,
+.rsu-section--collapsed .rsu-section__footer {
+	display: none;
+}
+
+.rsu-admin-wrap .rsu-section__toggle {
+	transition: transform 0.2s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.rsu-section--collapsed .rsu-section__toggle {
+	transform: rotate(-90deg);
+}
+
+.rsu-admin-wrap .rsu-section__heading {
+	flex: 1;
+	min-width: 0;
+	margin: 0 6px 0 4px;
+	padding: 5px 8px !important;
+	min-height: 32px;
+	font-size: 15px !important;
+	font-weight: 700;
+	letter-spacing: -0.2px;
+	line-height: 1.3;
+	color: var(--rsu-text);
+	background: transparent !important;
+	border: 1px solid transparent !important;
+	border-radius: 8px !important;
+	box-shadow: none !important;
+	transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rsu-admin-wrap .rsu-section__heading:hover {
+	border-color: var(--rsu-border-light) !important;
+}
+
+.rsu-admin-wrap .rsu-section__heading:focus {
+	background: var(--rsu-white) !important;
+	border-color: var(--rsu-action) !important;
+	box-shadow: var(--rsu-ring) !important;
+	outline: none;
+}
+
+.rsu-admin-wrap .rsu-section__heading::placeholder {
+	font-weight: 500;
+	font-size: 14px;
+	color: var(--rsu-placeholder);
+}
+
+.rsu-section__header > .rsu-gen-select {
+	margin-right: 4px;
+}
+
+.rsu-section__footer {
+	padding: 2px 10px 10px;
+}
+
+/* ── Blocks ── */
+
+.rsu-blocks-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 8px 10px 4px;
+}
+
+.rsu-block {
+	position: relative;
+	border: 1px solid transparent;
+	border-radius: 8px;
+	background: var(--rsu-white);
+	transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.rsu-block:hover {
+	border-color: var(--rsu-border-light);
+}
+
+.rsu-block:focus-within {
+	border-color: color-mix(in srgb, var(--rsu-action) 50%, var(--rsu-border));
+}
+
+/* The label leads the row; the handle and move pair fade in after it, so
+   nothing floats mid-row while the controls are hidden. */
+.rsu-block__header {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	height: 28px;
+	padding: 0 4px 0 2px;
+}
+
+.rsu-block__label {
+	order: -1;
+	flex: 0 0 auto;
+	padding: 0 6px 0 8px;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--rsu-text-muted);
+	white-space: nowrap;
+}
+
+.rsu-block__moves {
+	margin-right: auto;
+}
+
+.rsu-block[data-type="list"] > .rsu-block__header .rsu-block__label {
+	color: var(--rsu-action);
+}
+
+.rsu-block[data-type="note"] > .rsu-block__header .rsu-block__label {
+	color: var(--rsu-note-text);
+}
+
+.rsu-admin-wrap .rsu-block__drag {
+	width: 24px;
+	height: 24px;
+}
+
+.rsu-admin-wrap .rsu-block__remove {
+	width: 24px;
+	height: 24px;
+}
+
+/* Handle, move pair and close appear with the block; the label stays. */
+.rsu-admin-wrap .rsu-block__drag,
+.rsu-block__moves,
+.rsu-admin-wrap .rsu-block__remove {
+	opacity: 0;
+}
+
+.rsu-block:hover > .rsu-block__header .rsu-block__drag,
+.rsu-block:hover > .rsu-block__header .rsu-block__moves,
+.rsu-block:hover > .rsu-block__header .rsu-block__remove,
+.rsu-block:focus-within > .rsu-block__header .rsu-block__drag,
+.rsu-block:focus-within > .rsu-block__header .rsu-block__moves,
+.rsu-block:focus-within > .rsu-block__header .rsu-block__remove {
+	opacity: 1;
+}
+
+.rsu-admin-wrap .rsu-block__content {
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 2px 10px 10px;
+	border: none !important;
+	border-radius: 0;
+	resize: none;
+	font-size: 14px;
+	line-height: 1.6;
+	font-family: inherit;
+	color: var(--rsu-text);
+	overflow: hidden;
+	min-height: 36px;
+	height: auto;
+	box-sizing: border-box;
+	background: transparent !important;
+	box-shadow: none !important;
+	outline: none !important;
+	field-sizing: content;
+}
+
+.rsu-admin-wrap .rsu-block__content::placeholder {
+	color: var(--rsu-placeholder);
+}
+
+/* Notes: a soft amber sheet with the inner blocks sitting directly on it. */
+.rsu-block[data-type="note"] {
+	background: var(--rsu-note-bg);
+	border-color: var(--rsu-note-border);
+	border-left-width: 3px;
+	border-left-color: var(--rsu-accent);
+}
+
+.rsu-block[data-type="note"]:hover {
+	border-color: var(--rsu-note-border);
+	border-left-color: var(--rsu-accent);
+}
+
+.rsu-block[data-type="note"]:focus-within {
+	border-color: color-mix(in srgb, var(--rsu-accent) 60%, var(--rsu-note-border));
+	border-left-color: var(--rsu-accent);
+}
+
+.rsu-note-blocks {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 0 6px 2px;
+}
+
+.rsu-note-blocks .rsu-block {
+	background: transparent;
+}
+
+.rsu-note-blocks .rsu-block:hover {
+	border-color: var(--rsu-note-border);
+}
+
+.rsu-note-blocks .rsu-block[data-type="list"] > .rsu-block__header .rsu-block__label {
+	color: var(--rsu-note-text);
+}
+
+.rsu-note-add {
+	display: flex;
+	gap: 2px;
+	padding: 0 6px 6px;
+}
+
+/* ── Bullets ── */
+
+.rsu-bullet-list {
+	display: flex;
+	flex-direction: column;
+	gap: 1px;
+	padding: 0 6px 2px;
+}
+
+.rsu-bullet-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 0;
+	border: 1px solid transparent;
+	border-radius: 6px;
+	transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.rsu-bullet-row:hover {
+	background: var(--rsu-bg-light);
+}
+
+.rsu-bullet-row:focus-within {
+	background: var(--rsu-white);
+	border-color: var(--rsu-action);
+	box-shadow: var(--rsu-ring);
+}
+
+.rsu-bullet-row--indent {
+	margin-inline-start: 26px;
+}
+
+.rsu-bullet-row__marker {
+	order: 0;
+	flex-shrink: 0;
+	width: 26px;
+	height: 34px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 16px;
+	line-height: 1;
+	color: var(--rsu-action);
+	border-radius: 6px;
+	cursor: grab;
+	touch-action: none;
+	-webkit-user-select: none;
+	user-select: none;
+	-webkit-touch-callout: none;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.rsu-bullet-row__marker:hover {
+	background: var(--rsu-bg-hover);
+}
+
+.rsu-bullet-row--indent .rsu-bullet-row__marker {
+	font-size: 13px;
+	color: var(--rsu-text-muted);
+}
+
+.rsu-admin-wrap .rsu-bullet-row__input {
+	order: 1;
+	flex: 1 1 0;
+	min-width: 0;
+	margin: 0;
+	padding: 7px 8px;
+	min-height: 34px;
+	height: auto;
+	border: none !important;
+	border-radius: 0;
+	background: transparent !important;
+	font-size: 14px;
+	line-height: 1.45;
+	font-family: inherit;
+	color: var(--rsu-text);
+	resize: none;
+	overflow: hidden;
+	overflow-wrap: break-word;
+	word-break: break-word;
+	box-sizing: border-box;
+	box-shadow: none !important;
+	outline: none !important;
+	field-sizing: content;
+}
+
+.rsu-admin-wrap .rsu-bullet-row__input::placeholder {
+	color: var(--rsu-placeholder);
+}
+
+/* The control cluster sits at the end of the first line, in DOM order
+   indent → move pair → generation → remove. */
+.rsu-admin-wrap .rsu-bullet-row__indent { order: 2; height: 34px; }
+.rsu-bullet-row__moves { order: 3; height: 34px; }
+.rsu-bullet-row__tools { order: 4; display: flex; align-items: center; gap: 2px; height: 34px; padding-right: 3px; flex-shrink: 0; }
+
+.rsu-bullet-row__gen {
+	display: flex;
+	align-items: center;
+	padding: 0 2px;
+}
+
+.rsu-admin-wrap .rsu-bullet-row__indent,
+.rsu-bullet-row__moves,
+.rsu-admin-wrap .rsu-bullet-row__remove {
+	opacity: 0;
+}
+
+.rsu-bullet-row:hover .rsu-bullet-row__indent,
+.rsu-bullet-row:hover .rsu-bullet-row__moves,
+.rsu-bullet-row:hover .rsu-bullet-row__remove,
+.rsu-bullet-row:focus-within .rsu-bullet-row__indent,
+.rsu-bullet-row:focus-within .rsu-bullet-row__moves,
+.rsu-bullet-row:focus-within .rsu-bullet-row__remove {
+	opacity: 1;
+}
+
+.rsu-bullet-row--indent .rsu-bullet-row__indent {
+	color: var(--rsu-action);
+}
+
+/* ── Quiet "add" buttons ── */
+
+.rsu-admin-wrap .rsu-bullet-add,
+.rsu-admin-wrap .rsu-add-block-group .button,
+.rsu-admin-wrap .rsu-note-add .button {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	width: auto;
+	margin: 0;
+	padding: 4px 8px !important;
+	min-height: 0;
+	border: none !important;
+	border-radius: 6px !important;
+	background: transparent !important;
+	color: var(--rsu-text-muted) !important;
+	font-size: 12px !important;
+	font-weight: 600;
+	line-height: 1.5 !important;
+	cursor: pointer;
+	box-shadow: none !important;
+	text-align: left;
+	transition: background 0.15s ease, color 0.15s ease;
+}
+
+.rsu-admin-wrap .rsu-bullet-add {
+	margin: 1px 0 4px 4px;
+}
+
+.rsu-admin-wrap .rsu-bullet-add:hover,
+.rsu-admin-wrap .rsu-add-block-group .button:hover,
+.rsu-admin-wrap .rsu-note-add .button:hover {
+	background: var(--rsu-bg-info) !important;
+	color: var(--rsu-action) !important;
+}
+
+.rsu-admin-wrap .rsu-note-add .button:hover {
+	background: var(--rsu-note-bg-focus) !important;
+	color: var(--rsu-note-text) !important;
+}
+
+.rsu-add-block-group {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 2px;
+}
+
+/* ── Drag feedback ── */
+
+.rsu-drag-placeholder {
+	border: 2px dashed color-mix(in srgb, var(--rsu-action) 45%, var(--rsu-border));
+	border-radius: 8px;
+	background: color-mix(in srgb, var(--rsu-action) 6%, var(--rsu-white));
+}
+
+.rsu-sections-list > .rsu-drag-placeholder {
+	border-radius: 12px;
+	margin-bottom: 14px;
+}
+
+.rsu-drag-active {
+	position: fixed;
+	z-index: 10000;
+	opacity: 0.95;
+	background: var(--rsu-white);
+	box-shadow: 0 8px 25px rgba(0, 0, 0, 0.18);
+	pointer-events: none;
+	transition: none;
+}
+
+/* ── Touch screens ──
+   No hover, so the controls are simply there, at thumb size. A bullet keeps
+   its dot, text and move pair on one line; indent, generation and remove
+   drop into a bar under the row being edited. */
+
+@media (hover: none), (pointer: coarse) {
+	.rsu-admin-wrap .rsu-section__toggle,
+	.rsu-admin-wrap .rsu-section__dupe,
+	.rsu-admin-wrap .rsu-section__remove,
+	.rsu-admin-wrap .rsu-section__drag,
+	.rsu-admin-wrap .rsu-block__drag,
+	.rsu-admin-wrap .rsu-block__remove,
+	.rsu-admin-wrap .rsu-bullet-row__indent,
+	.rsu-admin-wrap .rsu-bullet-row__remove {
+		width: 36px;
+		height: 36px;
+	}
+
+	.rsu-admin-wrap .rsu-section__move,
+	.rsu-admin-wrap .rsu-block__move {
+		width: 28px;
+		height: 18px;
+	}
+
+	.rsu-admin-wrap .rsu-block__drag,
+	.rsu-block__moves,
+	.rsu-admin-wrap .rsu-block__remove,
+	.rsu-bullet-row__moves,
+	.rsu-gen-select {
+		opacity: 1;
+	}
+
+	.rsu-admin-wrap .rsu-section__drag,
+	.rsu-admin-wrap .rsu-block__drag {
+		color: var(--rsu-text-muted);
+	}
+
+	.rsu-block__header {
+		height: 36px;
+		gap: 6px;
+	}
+
+	.rsu-gen-select {
+		height: 28px;
+		line-height: 26px;
+		font-size: 12px;
+		padding: 0 24px 0 11px;
+		border-radius: 14px;
+		background-position: right 9px center;
+	}
+
+	/* iOS zooms into any field under 16px. The heading takes a full line
+	   of its own under the controls. */
+	.rsu-section__header {
+		flex-wrap: wrap;
+		gap: 4px;
+	}
+
+	.rsu-admin-wrap .rsu-section__heading {
+		flex: 1 1 100%;
+		order: 10;
+		margin: 2px 0 0;
+		font-size: 17px !important;
+	}
+
+	.rsu-section__header > .rsu-gen-select {
+		margin-left: auto;
+	}
+
+	.rsu-admin-wrap .rsu-block__content {
+		font-size: 16px;
+		line-height: 1.5;
+	}
+
+	.rsu-bullet-list {
+		gap: 4px;
+	}
+
+	.rsu-bullet-row {
+		flex-wrap: wrap;
+		border-color: var(--rsu-border-light);
+		border-radius: 10px;
+	}
+
+	.rsu-bullet-row--active {
+		background: var(--rsu-white);
+		border-color: var(--rsu-action);
+		box-shadow: var(--rsu-ring);
+	}
+
+	.rsu-bullet-row__marker {
+		width: 36px;
+		height: 44px;
+		font-size: 18px;
+	}
+
+	.rsu-admin-wrap .rsu-bullet-row__input {
+		flex: 1 1 calc(100% - 80px);
+		min-height: 44px;
+		padding: 11px 8px;
+		font-size: 16px;
+		line-height: 1.4;
+	}
+
+	.rsu-bullet-row__moves {
+		order: 1;
+		width: 44px;
+		box-sizing: border-box;
+		height: auto;
+		align-self: stretch;
+		border-left: 1px solid var(--rsu-border-light);
+	}
+
+	.rsu-admin-wrap .rsu-bullet-row__move {
+		flex: 1 1 50%;
+		width: 100%;
+		height: auto;
+		min-height: 22px;
+		border-radius: 0;
+	}
+
+	.rsu-admin-wrap .rsu-bullet-row__move::before {
+		width: 14px;
+		height: 14px;
+	}
+
+	.rsu-admin-wrap .rsu-bullet-row__move + .rsu-bullet-row__move {
+		border-top: 1px solid var(--rsu-border-light);
+	}
+
+	.rsu-admin-wrap .rsu-bullet-row__indent,
+	.rsu-bullet-row__tools {
+		display: none;
+	}
+
+	.rsu-bullet-row--active .rsu-bullet-row__indent,
+	.rsu-bullet-row--active .rsu-bullet-row__tools {
+		display: flex;
+	}
+
+	.rsu-admin-wrap .rsu-bullet-row__indent {
+		order: 2;
+		width: 48px;
+		height: 40px;
+		border-radius: 0;
+		border-top: 1px solid var(--rsu-border-light);
+		opacity: 1;
+	}
+
+	.rsu-bullet-row__tools {
+		order: 3;
+		flex: 1 1 auto;
+		justify-content: flex-end;
+		gap: 6px;
+		height: 40px;
+		padding-right: 2px;
+		border-top: 1px solid var(--rsu-border-light);
+	}
+
+	.rsu-bullet-row__gen {
+		margin-right: auto;
+		padding-left: 4px;
+	}
+
+	.rsu-admin-wrap .rsu-bullet-row__remove {
+		opacity: 1;
+		width: 44px;
+		height: 40px;
+		border-radius: 0;
+	}
+
+	.rsu-admin-wrap .rsu-bullet-add,
+	.rsu-admin-wrap .rsu-add-block-group .button,
+	.rsu-admin-wrap .rsu-note-add .button {
+		padding: 8px 10px !important;
+		font-size: 13px !important;
 	}
 }
