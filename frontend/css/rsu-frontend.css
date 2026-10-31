@@ -16,13 +16,13 @@
 	--rsu-text: #ece9e4;
 	--rsu-text-secondary: #a6a39c;
 	--rsu-text-heading: #f6f4f0;
-	--rsu-text-muted: #79766f;
+	--rsu-text-muted: #8f8c85;
 	--rsu-text-on-accent: #15130e;
 	--rsu-border: #3a3e45;
 	--rsu-divider: #24272d;
 	--rsu-radius: 12px;
 	--rsu-transition: 0.2s ease;
-	--rsu-mono: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+	--rsu-mono: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
 
 	/* Height of anything fixed above the page (a sticky site header). Themes
 	   set this so the sticky tab bar and section anchors clear it. */
@@ -172,6 +172,8 @@
 }
 
 .rsu-hotfix-banner__link {
+	margin-block: -10px;
+	padding-block: 10px;
 	margin-inline-start: auto;
 	display: inline-flex;
 	align-items: center;
@@ -271,7 +273,7 @@
 .rsu-patch__build-label {
 	color: var(--rsu-text-muted);
 	text-transform: uppercase;
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.04em;
 }
@@ -790,7 +792,7 @@
 .rsu-panel__content h2 > .rsu-gen-pill,
 .rsu-panel__content h3 > .rsu-gen-pill,
 .rsu-panel__content h4 > .rsu-gen-pill {
-	font-size: 10px;
+	font-size: 11px;
 	padding: 2px 9px;
 	margin-inline-start: 10px;
 	vertical-align: middle;
@@ -828,6 +830,7 @@
 }
 
 .rsu-history__filter-btn {
+	min-height: 40px;
 	appearance: none;
 	border: none;
 	background: transparent;
@@ -896,10 +899,18 @@
 }
 
 .rsu-history__version a {
+	position: relative;
 	color: var(--rsu-accent);
 	text-decoration: none;
 	font-weight: 600;
 	transition: color var(--rsu-transition);
+}
+
+/* 40px tap area without changing the row's layout */
+.rsu-history__version a::before {
+	content: "";
+	position: absolute;
+	inset: -9px 0;
 }
 
 .rsu-history__version a:hover {
@@ -916,7 +927,7 @@
 .rsu-history__hotfix-badge {
 	display: inline-block;
 	padding: 1px 8px;
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
@@ -965,7 +976,7 @@
 .rsu-history__build-label {
 	color: var(--rsu-text-muted);
 	text-transform: uppercase;
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.04em;
 }
@@ -1197,7 +1208,7 @@
 /* Status, not identity: outlined tinted like every other Hotfix badge. */
 .rsu-widget-entry__tag {
 	padding: 2px 9px;
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 700;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
