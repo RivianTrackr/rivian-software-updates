@@ -2,6 +2,14 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.37.2] - 2026-10-31
+
+### Changed
+- **Muted text passes contrast.** `--rsu-text-muted` moves from `#79766f` (3.9:1 on cards) to `#8f8c85` (at least 4.75:1 on every surface).
+- **Mono type on iOS.** `--rsu-mono` now starts with `ui-monospace` and includes `Menlo`. iOS has none of the old named fonts and fell back to Courier New.
+- **Nothing under 11px.** Hotfix badges, build labels and generation pills move from 10px to 11px.
+- **40px tap targets.** Applies to the history filter buttons, history version links and the hotfix banner link.
+
 ## [2.37.1] - 2026-10-04
 
 ### Fixed
