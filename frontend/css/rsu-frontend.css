@@ -18,8 +18,11 @@
 	--rsu-text-heading: #f6f4f0;
 	--rsu-text-muted: #8f8c85;
 	--rsu-text-on-accent: #15130e;
+	--rsu-accent-text: var(--rsu-accent);
+	--rsu-accent-text-hover: var(--rsu-accent-hover);
 	--rsu-border: #3a3e45;
 	--rsu-divider: #24272d;
+	--rsu-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 	--rsu-radius: 12px;
 	--rsu-transition: 0.2s ease;
 	--rsu-mono: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
@@ -27,6 +30,28 @@
 	/* Height of anything fixed above the page (a sticky site header). Themes
 	   set this so the sticky tab bar and section anchors clear it. */
 	--rsu-sticky-offset: 0px;
+}
+
+/* === Light mode ===
+   RivianTrackr's color modes set data-rt-theme="light" on <html>. Same zero
+   specificity as the block above, so it wins by source order and the
+   accent-color setting still overrides it. Gold stays the fill for buttons,
+   tabs and pills, and a darker brass carries it wherever it is text. */
+
+:where(html[data-rt-theme="light"]) :where(.rsu-update, .rsu-history, .rsu-widget-latest) {
+	--rsu-bg: #eeece7;
+	--rsu-bg-card: #ffffff;
+	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #ffffff);
+	--rsu-accent-tint-15: color-mix(in srgb, #fba919 16%, #ffffff);
+	--rsu-accent-text: #8a5800;
+	--rsu-accent-text-hover: #6f4700;
+	--rsu-text: #1a1c20;
+	--rsu-text-secondary: #53565c;
+	--rsu-text-heading: #121316;
+	--rsu-text-muted: #686b71;
+	--rsu-border: #e3e0d9;
+	--rsu-divider: #ebe8e2;
+	--rsu-shadow: 0 4px 12px rgba(20, 18, 12, 0.08);
 }
 
 .rsu-update {
@@ -71,7 +96,7 @@
 }
 
 .rsu-intro a {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 }
 
 
@@ -149,7 +174,7 @@
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-15);
 	border: 1px solid color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
 	padding: 2px 10px;
@@ -161,13 +186,13 @@
 }
 
 .rsu-hotfix-banner__text a {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	font-weight: 600;
 	text-decoration: none;
 }
 
 .rsu-hotfix-banner__text a:hover {
-	color: var(--rsu-accent-hover);
+	color: var(--rsu-accent-text-hover);
 	text-decoration: underline;
 }
 
@@ -180,14 +205,14 @@
 	gap: 6px;
 	font-size: 13px;
 	font-weight: 600;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	text-decoration: none;
 	white-space: nowrap;
 	transition: color var(--rsu-transition);
 }
 
 .rsu-hotfix-banner__link:hover {
-	color: var(--rsu-accent-hover);
+	color: var(--rsu-accent-text-hover);
 	text-decoration: underline;
 }
 
@@ -219,7 +244,7 @@
 	font-weight: 700;
 	text-transform: uppercase;
 	letter-spacing: 0.06em;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-15);
 	border: 1px solid color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
 	padding: 2px 10px;
@@ -253,7 +278,7 @@
 
 .rsu-patch__title {
 	font-weight: 600;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 }
 
 .rsu-patch__builds {
@@ -297,7 +322,7 @@
 }
 
 .rsu-patch:hover .rsu-patch__arrow {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	transform: translateX(2px);
 }
 
@@ -333,7 +358,7 @@
 }
 
 .rsu-build__value {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	font-weight: 600;
 }
 
@@ -366,7 +391,7 @@
    (nothing is left to round against) and a shadow over the notes below. */
 .rsu-tabs--stuck {
 	border-radius: 0;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+	box-shadow: var(--rsu-shadow);
 }
 
 /* Tabs size to their labels (with a floor) so the active tab is a control,
@@ -519,7 +544,7 @@
 }
 
 .rsu-toc__link:hover {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	border-color: color-mix(in srgb, var(--rsu-accent) 45%, var(--rsu-border));
 	background: var(--rsu-accent-tint-8);
 	text-decoration: none;
@@ -582,7 +607,7 @@
 	font-family: var(--rsu-mono);
 	font-size: 16px;
 	font-weight: 600;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 }
 
 .rsu-adjacent__date {
@@ -661,7 +686,7 @@
 }
 
 .rsu-panel__content li::marker {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 }
 
 .rsu-panel__content strong {
@@ -670,13 +695,13 @@
 }
 
 .rsu-panel__content a {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	text-decoration: none;
 	word-break: break-word;
 }
 
 .rsu-panel__content a:hover {
-	color: var(--rsu-accent-hover);
+	color: var(--rsu-accent-text-hover);
 	text-decoration: underline;
 }
 
@@ -764,7 +789,7 @@
 	font-weight: 600;
 	letter-spacing: 0.03em;
 	line-height: 1.6;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-8);
 	border: 1px solid var(--rsu-accent-tint-15);
 	border-radius: 9999px;
@@ -900,7 +925,7 @@
 
 .rsu-history__version a {
 	position: relative;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	text-decoration: none;
 	font-weight: 600;
 	transition: color var(--rsu-transition);
@@ -914,7 +939,7 @@
 }
 
 .rsu-history__version a:hover {
-	color: var(--rsu-accent-hover);
+	color: var(--rsu-accent-text-hover);
 	text-decoration: underline;
 }
 
@@ -932,7 +957,7 @@
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
 	line-height: 1.7;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-8);
 	border: 1px solid var(--rsu-accent-tint-15);
 	border-radius: 9999px;
@@ -954,7 +979,7 @@
 }
 
 .rsu-history__parent a:hover {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	text-decoration: underline;
 }
 
@@ -982,7 +1007,7 @@
 }
 
 .rsu-history__build-value {
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	font-weight: 600;
 	font-family: var(--rsu-mono);
 }
@@ -1011,7 +1036,7 @@
 	font-weight: 600;
 	letter-spacing: 0.03em;
 	line-height: 1.6;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-8);
 	border: 1px solid var(--rsu-accent-tint-15);
 	border-radius: 9999px;
@@ -1145,7 +1170,7 @@
 	flex-shrink: 0;
 	font-size: 16px;
 	line-height: 1;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 }
 
 .rsu-widget-latest__title {
@@ -1212,7 +1237,7 @@
 	font-weight: 700;
 	letter-spacing: 0.4px;
 	text-transform: uppercase;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-8);
 	border: 1px solid var(--rsu-accent-tint-15);
 	border-radius: 6px;
@@ -1298,7 +1323,7 @@
 	margin-top: 2px;
 	font-size: 15px;
 	font-weight: 600;
-	color: var(--rsu-accent);
+	color: var(--rsu-accent-text);
 }
 
 .rsu-widget-entry__cta-arrow {

@@ -2,6 +2,13 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.38.0] - 2026-11-16
+
+### Added
+- **Light mode.** When the site sets `data-rt-theme="light"` on `<html>` (RivianTrackr's color modes), the update page, history table and sidebar widget switch to light surfaces and ink text. Without the attribute nothing changes.
+- **`--rsu-accent-text` and `--rsu-accent-text-hover`.** Gold used as text now goes through these, so light mode can swap it for brass (`#8a5800`, 6:1 on white) while buttons, tabs and pills keep the gold fill. In dark mode they equal `--rsu-accent` and `--rsu-accent-hover`.
+- **`--rsu-shadow`** for the dropdown shadow, softer in light mode.
+
 ## [2.37.2] - 2026-10-31
 
 ### Changed
