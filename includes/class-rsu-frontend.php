@@ -259,7 +259,6 @@ class RSU_Frontend {
 							<?php if ( '' !== $patch['date'] ) : ?>
 								<span class="rsu-patch__date"><?php echo esc_html( $patch['date'] ); ?></span>
 							<?php endif; ?>
-							<span class="rsu-patch__arrow" aria-hidden="true">&rarr;</span>
 						</a>
 					<?php endforeach; ?>
 				</div>

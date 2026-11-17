@@ -200,8 +200,7 @@ class RSU_Widget extends WP_Widget {
 			</span>
 
 			<span class="rsu-widget-entry__cta">
-				Read Release Notes
-				<span class="rsu-widget-entry__cta-arrow" aria-hidden="true">→</span>
+				Read release notes
 			</span>
 		</a>
 		<?php
