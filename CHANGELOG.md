@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.38.2] - 2026-11-17
+
+### Changed
+- The widget link reads "Read release notes" (sentence case) without the trailing arrow, and the hotfix patch links drop their arrow too. The `.rsu-widget-entry__cta-arrow` and `.rsu-patch__arrow` styles are left in place, unused.
+
 ## [2.38.1] - 2026-11-17
 
 ### Changed
