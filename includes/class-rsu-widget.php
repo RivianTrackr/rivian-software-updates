@@ -114,8 +114,7 @@ class RSU_Widget extends WP_Widget {
 		?>
 		<div class="rsu-widget-latest">
 			<span class="rsu-widget-latest__header">
-				<i class="fa-solid fa-cloud-arrow-down rsu-widget-latest__icon" aria-hidden="true"></i>
-				<span class="rsu-widget-latest__title">Latest Software Updates</span>
+				<span class="rsu-widget-latest__title">Latest software updates</span>
 			</span>
 			<div class="rsu-widget-latest__entries">
 				<?php echo $entries; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Built from escaped parts in render_entry(). ?>
@@ -190,12 +189,12 @@ class RSU_Widget extends WP_Widget {
 			<span class="rsu-widget-latest__dates">
 				<?php if ( '' !== $noticed_display ) : ?>
 					<span class="rsu-widget-latest__meta">
-						<span class="rsu-widget-latest__meta-label">First Noticed</span>
+						<span class="rsu-widget-latest__meta-label">First noticed</span>
 						<span class="rsu-widget-latest__meta-value"><?php echo esc_html( $noticed_display ); ?></span>
 					</span>
 				<?php endif; ?>
 				<span class="rsu-widget-latest__meta">
-					<span class="rsu-widget-latest__meta-label">Public Release</span>
+					<span class="rsu-widget-latest__meta-label">Public release</span>
 					<span class="rsu-widget-latest__meta-value"><?php echo esc_html( $released_display ); ?></span>
 				</span>
 			</span>

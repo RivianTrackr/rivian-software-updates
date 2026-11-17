@@ -284,14 +284,14 @@ class RSU_Frontend {
 				<div class="rsu-dates">
 					<?php if ( $single_vehicle ) : ?>
 						<span class="rsu-date rsu-date--vehicle">
-							<span class="rsu-date__label">Available For</span>
+							<span class="rsu-date__label">Available for</span>
 							<span class="rsu-date__vehicle"><?php echo esc_html( $solo_label ); ?></span>
 						</span>
 					<?php endif; ?>
 
 					<?php if ( $date_noticed ) : ?>
 						<span class="rsu-date rsu-date--noticed">
-							<span class="rsu-date__label">First Noticed</span>
+							<span class="rsu-date__label">First noticed</span>
 							<time datetime="<?php echo esc_attr( $date_noticed ); ?>">
 								<?php echo esc_html( RSU_Dates::format( $date_noticed ) ); ?>
 							</time>
@@ -299,7 +299,7 @@ class RSU_Frontend {
 					<?php endif; ?>
 
 					<span class="rsu-date rsu-date--released">
-						<span class="rsu-date__label">Public Release</span>
+						<span class="rsu-date__label">Public release</span>
 						<?php if ( $date_released ) : ?>
 							<time datetime="<?php echo esc_attr( $date_released ); ?>">
 								<?php echo esc_html( RSU_Dates::format( $date_released ) ); ?>
