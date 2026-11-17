@@ -122,10 +122,8 @@
 }
 
 .rsu-date__label {
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
 	color: var(--rsu-text-muted);
 }
 
@@ -170,10 +168,8 @@
 }
 
 .rsu-hotfix-banner__badge {
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
 	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-15);
 	border: 1px solid color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
@@ -240,10 +236,8 @@
 }
 
 .rsu-patches__badge {
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.06em;
 	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-15);
 	border: 1px solid color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
@@ -297,10 +291,8 @@
 
 .rsu-patch__build-label {
 	color: var(--rsu-text-muted);
-	text-transform: uppercase;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 600;
-	letter-spacing: 0.04em;
 }
 
 .rsu-patch__build-value {
@@ -350,10 +342,8 @@
 
 .rsu-build__label {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 600;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
 	color: var(--rsu-text-secondary);
 }
 
@@ -509,10 +499,8 @@
 .rsu-toc__label {
 	display: block;
 	margin-bottom: 8px;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
 	color: var(--rsu-text-muted);
 }
 
@@ -596,10 +584,8 @@
 }
 
 .rsu-adjacent__label {
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.5px;
 	color: var(--rsu-text-muted);
 }
 
@@ -952,10 +938,8 @@
 .rsu-history__hotfix-badge {
 	display: inline-block;
 	padding: 1px 8px;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
 	line-height: 1.7;
 	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-8);
@@ -1000,10 +984,8 @@
 
 .rsu-history__build-label {
 	color: var(--rsu-text-muted);
-	text-transform: uppercase;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 600;
-	letter-spacing: 0.04em;
 }
 
 .rsu-history__build-value {
@@ -1174,11 +1156,9 @@
 }
 
 .rsu-widget-latest__title {
-	font-size: 13px;
+	font-size: 15px;
 	font-weight: 600;
-	letter-spacing: 0.8px;
-	text-transform: uppercase;
-	color: var(--rsu-text-secondary);
+	color: var(--rsu-text-heading);
 }
 
 .rsu-widget-latest__entries {
@@ -1220,10 +1200,8 @@
 /* Solid gold vehicle tag: identity, matching the update page's chip. */
 .rsu-widget-latest__vehicle {
 	padding: 3px 9px;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	letter-spacing: 0.4px;
-	text-transform: uppercase;
 	color: var(--rsu-text-on-accent);
 	background: var(--rsu-accent);
 	border-radius: 6px;
@@ -1233,10 +1211,8 @@
 /* Status, not identity: outlined tinted like every other Hotfix badge. */
 .rsu-widget-entry__tag {
 	padding: 2px 9px;
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	letter-spacing: 0.4px;
-	text-transform: uppercase;
 	color: var(--rsu-accent-text);
 	background: var(--rsu-accent-tint-8);
 	border: 1px solid var(--rsu-accent-tint-15);
@@ -1274,10 +1250,8 @@
 }
 
 .rsu-widget-latest__build-label {
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 600;
-	letter-spacing: 0.4px;
-	text-transform: uppercase;
 	color: var(--rsu-text-secondary);
 }
 
@@ -1301,10 +1275,8 @@
 }
 
 .rsu-widget-latest__meta-label {
-	font-size: 11px;
+	font-size: 12px;
 	font-weight: 700;
-	letter-spacing: 0.5px;
-	text-transform: uppercase;
 	color: var(--rsu-text-muted);
 }
 

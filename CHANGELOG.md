@@ -2,6 +2,13 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.38.1] - 2026-11-17
+
+### Changed
+- **Labels in sentence case.** Small labels no longer use uppercase with wide letter spacing (widget title, vehicle and build tags, date labels, hotfix badges, "On this page", previous and next labels). Anything under 12px moves up to 12px. Table column headers keep their uppercase style.
+- **Widget heading** reads "Latest software updates" at 15px in heading color, like the site's other sidebar headings, without the cloud icon.
+- Label text in the templates is sentence case too: "First noticed", "Public release", "Available for", "All vehicles".
+
 ## [2.38.0] - 2026-11-16
 
 ### Added

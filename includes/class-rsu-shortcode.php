@@ -151,7 +151,7 @@ class RSU_Shortcode {
 		<div class="rsu-history">
 			<?php if ( $show_filter ) : ?>
 				<div class="rsu-history__filter" role="group" aria-label="Filter updates by vehicle">
-					<button type="button" class="rsu-history__filter-btn rsu-history__filter-btn--active" data-vehicle="all" aria-pressed="true">All Vehicles</button>
+					<button type="button" class="rsu-history__filter-btn rsu-history__filter-btn--active" data-vehicle="all" aria-pressed="true">All vehicles</button>
 					<?php foreach ( $filter_vehicles as $slug => $label ) : ?>
 						<button type="button" class="rsu-history__filter-btn" data-vehicle="<?php echo esc_attr( $slug ); ?>" aria-pressed="false"><?php echo esc_html( $label ); ?></button>
 					<?php endforeach; ?>
@@ -169,9 +169,9 @@ class RSU_Shortcode {
 						<thead>
 							<tr>
 								<th>OTA Version</th>
-								<th>First Noticed</th>
-								<th>Public Release</th>
-								<th>Available For</th>
+								<th>First noticed</th>
+								<th>Public release</th>
+								<th>Available for</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -202,7 +202,7 @@ class RSU_Shortcode {
 											</span>
 										<?php endif; ?>
 									</td>
-									<td class="rsu-history__date" data-label="First Noticed">
+									<td class="rsu-history__date" data-label="First noticed">
 										<?php if ( $post_data['date_noticed'] ) : ?>
 											<time datetime="<?php echo esc_attr( $post_data['date_noticed'] ); ?>">
 												<?php echo esc_html( RSU_Dates::format( $post_data['date_noticed'] ) ); ?>
@@ -211,7 +211,7 @@ class RSU_Shortcode {
 											<span class="rsu-history__na">&mdash;</span>
 										<?php endif; ?>
 									</td>
-									<td class="rsu-history__date" data-label="Public Release">
+									<td class="rsu-history__date" data-label="Public release">
 										<?php if ( $post_data['date_released'] ) : ?>
 											<time datetime="<?php echo esc_attr( $post_data['date_released'] ); ?>">
 												<?php echo esc_html( RSU_Dates::format( $post_data['date_released'] ) ); ?>
