@@ -1,11 +1,18 @@
 <?php
 /**
- * Shortcode: [rsu_history] — Displays a table of all software update posts.
+ * Shortcode: [rsu_history] — The software update timeline.
+ *
+ * A card for the newest release, then one line per release grouped by year.
+ * Hotfixes are folded into the release they patch ("2 hotfixes") instead of
+ * getting rows of their own; per-platform build numbers live on each post.
  *
  * Attributes:
- *   limit  — Max rows to show (default: all, -1).
+ *   limit  — Max update posts to read (default: all, -1).
  *   order  — "desc" (newest first, default) or "asc". Applies to the years
  *            and to the rows within each year, by public release date.
+ *   years  — How many years show before a "Show … and earlier" button
+ *            (default 2; 0 shows every year). Without JavaScript every year
+ *            shows.
  *
  * @package Rivian_Software_Updates
  */
@@ -28,14 +35,16 @@ class RSU_Shortcode {
 		$atts = shortcode_atts( array(
 			'limit' => -1,
 			'order' => 'DESC',
+			'years' => 2,
 		), $atts, 'rsu_history' );
 
 		$all_vehicles = RSU_Platforms::get_all();
+		$ascending    = ( 'ASC' === strtoupper( $atts['order'] ) );
 
 		$query = new WP_Query( array(
 			'post_type'      => 'post',
 			'posts_per_page' => intval( $atts['limit'] ),
-			'order'          => strtoupper( $atts['order'] ) === 'ASC' ? 'ASC' : 'DESC',
+			'order'          => $ascending ? 'ASC' : 'DESC',
 			'orderby'        => 'date',
 			'meta_query'     => array(
 				array(
@@ -49,78 +58,64 @@ class RSU_Shortcode {
 			return '<p class="rsu-history__empty">No software updates found.</p>';
 		}
 
-		// Enqueue styles and the filter script.
 		$this->enqueue_css();
 		$this->enqueue_js();
 
 		// Every row's place on the timeline is its public release date, falling
-		// back to the first-noticed date, then the post date. The same date
-		// drives both the year grouping and the order within a year, so a
-		// release never files under one year and sorts by another.
+		// back to the first-noticed date, then the post date.
 		$rows = array();
-		$present_vehicles = array();
 		while ( $query->have_posts() ) {
 			$query->the_post();
 			$post_id       = get_the_ID();
 			$date_noticed  = get_post_meta( $post_id, '_rsu_date_noticed', true );
 			$date_released = get_post_meta( $post_id, '_rsu_date_released', true );
 
-			$when = RSU_Dates::timestamp( $date_released );
-			if ( ! $when ) {
-				$when = RSU_Dates::timestamp( $date_noticed );
-			}
+			$released = RSU_Dates::timestamp( $date_released );
+			$when     = $released ? $released : RSU_Dates::timestamp( $date_noticed );
 			if ( ! $when ) {
 				$when = (int) get_post_time( 'U', false, $post_id );
 			}
 
-			$vehicles       = RSU_Platforms::get_active( $post_id );
 			$vehicle_labels = array();
-			$vehicle_slugs  = array();
-			foreach ( $vehicles as $slug ) {
+			foreach ( RSU_Platforms::get_active( $post_id ) as $slug ) {
 				if ( isset( $all_vehicles[ $slug ] ) ) {
-					$vehicle_labels[]            = $all_vehicles[ $slug ]['label'];
-					$vehicle_slugs[]             = $slug;
-					$present_vehicles[ $slug ]   = true;
+					$vehicle_labels[] = $all_vehicles[ $slug ]['label'];
 				}
 			}
 
-			// Hotfix flag, the base release it patches, and the exact build
-			// each generation received.
 			$is_hotfix = (bool) get_post_meta( $post_id, '_rsu_is_hotfix', true );
-			$parent    = null;
-			if ( $is_hotfix ) {
-				$parent_id = (int) get_post_meta( $post_id, '_rsu_parent_release', true );
-				if ( $parent_id && 'publish' === get_post_status( $parent_id ) ) {
-					$parent = array(
-						'title' => get_the_title( $parent_id ),
-						'url'   => get_permalink( $parent_id ),
-					);
-				}
-			}
-			$builds = RSU_Builds::describe( RSU_Builds::get( $post_id ) );
 
-			$rows[] = array(
+			$rows[ $post_id ] = array(
 				'when'           => $when,
 				'post_time'      => (int) get_post_time( 'U', false, $post_id ),
-				'year'           => date_i18n( 'Y', $when ),
 				'version'        => get_the_title(),
 				'permalink'      => get_permalink(),
-				'date_noticed'   => $date_noticed,
-				'date_released'  => $date_released,
+				'released'       => (bool) $released,
 				'vehicle_labels' => $vehicle_labels,
-				'vehicle_slugs'  => $vehicle_slugs,
-				'is_hotfix'      => $is_hotfix,
-				'parent'         => $parent,
-				'builds'         => $builds,
+				'parent_id'      => $is_hotfix ? (int) get_post_meta( $post_id, '_rsu_parent_release', true ) : 0,
+				'fixes'          => 0,
 			);
 		}
 		wp_reset_postdata();
 
-		// The `order` attribute applies to the whole timeline: years and the
-		// rows within them. Ties fall back to post date so a base release and
-		// its same-day hotfix keep their publish order.
-		$ascending = ( 'ASC' === strtoupper( $atts['order'] ) );
-		usort( $rows, function ( $a, $b ) use ( $ascending ) {
+		// Fold each hotfix into the release it patches. A hotfix whose base
+		// release is not on the timeline keeps a row of its own.
+		$releases = array();
+		foreach ( $rows as $post_id => $row ) {
+			if ( $row['parent_id'] && isset( $rows[ $row['parent_id'] ] ) ) {
+				continue;
+			}
+			$releases[ $post_id ] = $row;
+		}
+		foreach ( $rows as $row ) {
+			if ( $row['parent_id'] && isset( $releases[ $row['parent_id'] ] ) ) {
+				$releases[ $row['parent_id'] ]['fixes']++;
+			}
+		}
+
+		// Ties fall back to post date so same-day releases keep publish order.
+		$releases = array_values( $releases );
+		usort( $releases, function ( $a, $b ) use ( $ascending ) {
 			$cmp = $a['when'] <=> $b['when'];
 			if ( 0 === $cmp ) {
 				$cmp = $a['post_time'] <=> $b['post_time'];
@@ -128,116 +123,82 @@ class RSU_Shortcode {
 			return $ascending ? $cmp : -$cmp;
 		} );
 
+		$latest = $ascending ? $releases[ count( $releases ) - 1 ] : $releases[0];
+
 		$grouped = array();
-		foreach ( $rows as $row ) {
-			$grouped[ $row['year'] ][] = $row;
+		foreach ( $releases as $release ) {
+			$grouped[ date_i18n( 'Y', $release['when'] ) ][] = $release;
 		}
 
-		$is_first = true;
-
-		// Filter chips appear only when more than one vehicle is present across
-		// the timeline — a lone vehicle needs no filter. Ordered by the platform
-		// registry sort so it matches the tabs and widget.
-		$filter_vehicles = array();
-		foreach ( $all_vehicles as $slug => $vehicle ) {
-			if ( isset( $present_vehicles[ $slug ] ) ) {
-				$filter_vehicles[ $slug ] = $vehicle['label'];
-			}
-		}
-		$show_filter = count( $filter_vehicles ) > 1;
+		// Years past the first few are folded behind a button by the script.
+		$years_shown = max( 0, intval( $atts['years'] ) );
+		$year_keys   = array_map( 'strval', array_keys( $grouped ) );
+		$older       = ( $years_shown && count( $year_keys ) > $years_shown ) ? array_slice( $year_keys, $years_shown ) : array();
+		$uid         = wp_unique_id( 'rsu-history-' );
 
 		ob_start();
 		?>
-		<div class="rsu-history">
-			<?php if ( $show_filter ) : ?>
-				<div class="rsu-history__filter" role="group" aria-label="Filter updates by vehicle">
-					<button type="button" class="rsu-history__filter-btn rsu-history__filter-btn--active" data-vehicle="all" aria-pressed="true">All vehicles</button>
-					<?php foreach ( $filter_vehicles as $slug => $label ) : ?>
-						<button type="button" class="rsu-history__filter-btn" data-vehicle="<?php echo esc_attr( $slug ); ?>" aria-pressed="false"><?php echo esc_html( $label ); ?></button>
-					<?php endforeach; ?>
+		<div class="rsu-history" id="<?php echo esc_attr( $uid ); ?>">
+			<div class="rsu-history__latest">
+				<div class="rsu-history__latest-text">
+					<p class="rsu-history__latest-label">Latest update</p>
+					<p class="rsu-history__latest-version"><?php echo esc_html( $latest['version'] ); ?></p>
+					<p class="rsu-history__latest-meta">
+						<?php
+						echo esc_html( ( $latest['released'] ? 'Released ' : 'First noticed ' ) . date_i18n( 'F j, Y', $latest['when'] ) );
+						if ( $latest['vehicle_labels'] ) {
+							echo ' &middot; ' . esc_html( $this->join_and( $latest['vehicle_labels'] ) );
+						}
+						?>
+					</p>
+				</div>
+				<a class="rsu-history__latest-btn" href="<?php echo esc_url( $latest['permalink'] ); ?>">Read the release notes</a>
+			</div>
+
+			<?php foreach ( $grouped as $year => $year_releases ) : ?>
+				<?php
+				$year     = (string) $year;
+				$is_older = in_array( $year, $older, true );
+				$head_id  = $uid . '-' . $year;
+				$count    = count( $year_releases );
+				?>
+				<section class="rsu-history__year<?php echo $is_older ? ' rsu-history__year--older' : ''; ?>" aria-labelledby="<?php echo esc_attr( $head_id ); ?>">
+					<div class="rsu-history__year-head">
+						<h2 class="rsu-history__year-label" id="<?php echo esc_attr( $head_id ); ?>" tabindex="-1"><?php echo esc_html( $year ); ?></h2>
+						<span class="rsu-history__year-count"><?php echo esc_html( sprintf( '%d release%s', $count, 1 === $count ? '' : 's' ) ); ?></span>
+					</div>
+					<ul class="rsu-history__list">
+						<?php foreach ( $year_releases as $release ) : ?>
+							<li class="rsu-history__row">
+								<a class="rsu-history__version" href="<?php echo esc_url( $release['permalink'] ); ?>"><?php echo esc_html( $release['version'] ); ?></a>
+								<span class="rsu-history__fixes"><?php echo $release['fixes'] ? esc_html( sprintf( '%d hotfix%s', $release['fixes'], 1 === $release['fixes'] ? '' : 'es' ) ) : ''; ?></span>
+								<span class="rsu-history__vehicles"><?php echo esc_html( implode( ', ', $release['vehicle_labels'] ) ); ?></span>
+								<time class="rsu-history__date" datetime="<?php echo esc_attr( gmdate( 'Y-m-d', $release['when'] ) ); ?>"<?php echo $release['released'] ? '' : ' title="First noticed"'; ?>><?php echo esc_html( date_i18n( 'M j', $release['when'] ) ); ?></time>
+							</li>
+						<?php endforeach; ?>
+					</ul>
+				</section>
+			<?php endforeach; ?>
+
+			<?php if ( $older ) : ?>
+				<div class="rsu-history__more" hidden>
+					<button type="button" class="rsu-history__more-btn" aria-expanded="false"><?php echo esc_html( sprintf( 'Show %s and earlier', $older[0] ) ); ?></button>
 				</div>
 			<?php endif; ?>
-			<?php foreach ( $grouped as $year => $posts ) : ?>
-				<details class="rsu-history__year" <?php echo $is_first ? 'open' : ''; ?>>
-					<summary class="rsu-history__year-header">
-						<span class="rsu-history__year-label"><?php echo esc_html( $year ); ?></span>
-						<span class="rsu-history__year-count"><?php echo count( $posts ); ?> update<?php echo count( $posts ) !== 1 ? 's' : ''; ?></span>
-						<i class="fa-solid fa-chevron-down rsu-history__year-chevron"></i>
-					</summary>
-					<table class="rsu-history__table">
-						<caption class="rsu-sr-only"><?php echo esc_html( sprintf( 'Rivian software updates in %s', $year ) ); ?></caption>
-						<thead>
-							<tr>
-								<th>OTA Version</th>
-								<th>First noticed</th>
-								<th>Public release</th>
-								<th>Available for</th>
-							</tr>
-						</thead>
-						<tbody>
-							<?php foreach ( $posts as $post_data ) : ?>
-								<tr data-vehicles="<?php echo esc_attr( implode( ' ', $post_data['vehicle_slugs'] ) ); ?>">
-									<td class="rsu-history__version">
-										<span class="rsu-history__version-row">
-											<a href="<?php echo esc_url( $post_data['permalink'] ); ?>"><?php echo esc_html( $post_data['version'] ); ?></a>
-											<?php if ( $post_data['is_hotfix'] ) : ?>
-												<span class="rsu-history__hotfix-badge">Hotfix</span>
-											<?php endif; ?>
-										</span>
-										<?php if ( $post_data['parent'] ) : ?>
-											<span class="rsu-history__parent">
-												Patch for <a href="<?php echo esc_url( $post_data['parent']['url'] ); ?>"><?php echo esc_html( $post_data['parent']['title'] ); ?></a>
-											</span>
-										<?php endif; ?>
-										<?php if ( ! empty( $post_data['builds'] ) ) : ?>
-											<span class="rsu-history__builds">
-												<?php foreach ( $post_data['builds'] as $build ) : ?>
-													<span class="rsu-history__build">
-														<?php if ( '' !== $build['label'] ) : ?>
-															<span class="rsu-history__build-label"><?php echo esc_html( $build['label'] ); ?></span>
-														<?php endif; ?>
-														<span class="rsu-history__build-value"><?php echo esc_html( $build['value'] ); ?></span>
-													</span>
-												<?php endforeach; ?>
-											</span>
-										<?php endif; ?>
-									</td>
-									<td class="rsu-history__date" data-label="First noticed">
-										<?php if ( $post_data['date_noticed'] ) : ?>
-											<time datetime="<?php echo esc_attr( $post_data['date_noticed'] ); ?>">
-												<?php echo esc_html( RSU_Dates::format( $post_data['date_noticed'] ) ); ?>
-											</time>
-										<?php else : ?>
-											<span class="rsu-history__na">&mdash;</span>
-										<?php endif; ?>
-									</td>
-									<td class="rsu-history__date" data-label="Public release">
-										<?php if ( $post_data['date_released'] ) : ?>
-											<time datetime="<?php echo esc_attr( $post_data['date_released'] ); ?>">
-												<?php echo esc_html( RSU_Dates::format( $post_data['date_released'] ) ); ?>
-											</time>
-										<?php else : ?>
-											<span class="rsu-history__na">&mdash;</span>
-										<?php endif; ?>
-									</td>
-									<td class="rsu-history__vehicles">
-										<?php foreach ( $post_data['vehicle_labels'] as $label ) : ?>
-											<span class="rsu-history__vehicle-badge"><?php echo esc_html( $label ); ?></span>
-										<?php endforeach; ?>
-										<?php if ( empty( $post_data['vehicle_labels'] ) ) : ?>
-											<span class="rsu-history__na">&mdash;</span>
-										<?php endif; ?>
-									</td>
-								</tr>
-							<?php endforeach; ?>
-						</tbody>
-					</table>
-				</details>
-				<?php $is_first = false; ?>
-			<?php endforeach; ?>
 		</div>
 		<?php
 		return ob_get_clean();
+	}
+
+	/**
+	 * "A", "A and B", "A, B and C".
+	 *
+	 * @param string[] $items Labels.
+	 * @return string
+	 */
+	private function join_and( array $items ) {
+		$last = array_pop( $items );
+		return $items ? implode( ', ', $items ) . ' and ' . $last : (string) $last;
 	}
 
 	/**
@@ -248,7 +209,7 @@ class RSU_Shortcode {
 	}
 
 	/**
-	 * Enqueue the vehicle-filter script for the history timeline.
+	 * Enqueue the script behind the "Show … and earlier" button.
 	 */
 	private function enqueue_js() {
 		$suffix = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG ? '' : '.min';
