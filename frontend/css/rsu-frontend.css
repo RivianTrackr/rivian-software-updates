@@ -9,6 +9,7 @@
 :where(.rsu-update, .rsu-history, .rsu-widget-latest) {
 	--rsu-bg: #121418;
 	--rsu-bg-card: #16191e;
+	--rsu-page: #0e1014;
 	--rsu-accent: #fba919;
 	--rsu-accent-hover: #ffbe4a;
 	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #121418);
@@ -41,6 +42,7 @@
 :where(html[data-rt-theme="light"]) :where(.rsu-update, .rsu-history, .rsu-widget-latest) {
 	--rsu-bg: #eeece7;
 	--rsu-bg-card: #ffffff;
+	--rsu-page: #f6f5f2;
 	--rsu-accent-tint-8: color-mix(in srgb, #fba919 8%, #ffffff);
 	--rsu-accent-tint-15: color-mix(in srgb, #fba919 16%, #ffffff);
 	--rsu-accent-text: #8a5800;
@@ -100,81 +102,86 @@
 }
 
 
-/* === Release meta (First Noticed / Public Release) === */
+/* === Release meta (Released · First noticed · Available for) === */
 
-/* Dates are metadata, not actions, so they use the same quiet pattern as
-   the widget: an uppercase muted label over a monospace value, no fill.
-   Gold at the top of the page is reserved for identity (the vehicle chip
-   on single-vehicle posts) and for the active tab. */
+/* One quiet line of metadata: muted labels, mono values, dot separators. */
 .rsu-dates {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
-	gap: 12px 28px;
-	margin-bottom: 24px;
+	align-items: baseline;
+	gap: 4px 0;
+	margin-bottom: 20px;
+	font-size: 14px;
+	line-height: 1.5;
 }
 
 .rsu-date {
 	display: inline-flex;
-	flex-direction: column;
-	gap: 3px;
-	line-height: 1.3;
+	align-items: baseline;
+	gap: 5px;
 }
 
-.rsu-date__label {
-	font-size: 12px;
-	font-weight: 700;
+.rsu-date + .rsu-date::before {
+	content: "\00B7";
+	margin: 0 10px;
 	color: var(--rsu-text-muted);
 }
 
-.rsu-date time {
+.rsu-date__label {
+	font-size: 14px;
+	font-weight: 400;
+	color: var(--rsu-text-muted);
+}
+
+.rsu-date time,
+.rsu-date__tbd {
 	font-family: var(--rsu-mono);
-	font-size: 15px;
-	font-weight: 600;
+	font-size: 14px;
+	font-weight: 500;
 	color: var(--rsu-text);
 }
 
-/* An unknown release date is the least important fact on the page. */
 .rsu-date__tbd {
-	font-family: var(--rsu-mono);
-	font-size: 15px;
-	font-weight: 600;
 	color: var(--rsu-text-secondary);
 }
 
-/* "Available For" — shown only when a single vehicle is active (multi-vehicle
-   posts identify the vehicle via the tabs). Same quiet label-over-value
-   pattern as the dates; the vehicle name stays in the sans stack. */
+/* "Available for" — shown only when a single vehicle is active (multi-vehicle
+   posts identify the vehicle via the tabs). */
 .rsu-date__vehicle {
-	font-size: 15px;
-	font-weight: 600;
+	font-size: 14px;
+	font-weight: 500;
 	color: var(--rsu-text);
 }
 
 
-/* === Hotfix Banner === */
+/* === Hotfix line === */
 
+/* "Hotfix · Patch for 2026.36" in a plain outlined box. The parent link
+   carries the article link style; the separate "Full release notes" link
+   would repeat it, so it is hidden. */
 .rsu-hotfix-banner {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
-	gap: 10px;
-	margin-bottom: 24px;
-	padding: 10px 16px;
+	align-items: baseline;
+	gap: 6px;
+	margin-bottom: 20px;
+	padding: 12px 16px;
 	border-radius: 10px;
-	background: var(--rsu-accent-tint-8);
-	border: 1px solid var(--rsu-accent-tint-15);
+	background: transparent;
+	border: 1px solid var(--rsu-border);
 	font-size: 14px;
 }
 
 .rsu-hotfix-banner__badge {
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--rsu-accent-text);
-	background: var(--rsu-accent-tint-15);
-	border: 1px solid color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
-	padding: 2px 10px;
-	border-radius: 9999px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--rsu-text-heading);
+}
+
+.rsu-hotfix-banner__badge::after {
+	content: " \00B7";
+	font-weight: 400;
+	color: var(--rsu-text-muted);
 }
 
 .rsu-hotfix-banner__text {
@@ -182,34 +189,20 @@
 }
 
 .rsu-hotfix-banner__text a {
-	color: var(--rsu-accent-text);
-	font-weight: 600;
-	text-decoration: none;
+	color: var(--rsu-text-heading);
+	font-weight: 500;
+	text-decoration: underline;
+	text-decoration-color: var(--rsu-accent);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 3px;
 }
 
 .rsu-hotfix-banner__text a:hover {
-	color: var(--rsu-accent-text-hover);
-	text-decoration: underline;
+	color: var(--rsu-accent-text);
 }
 
 .rsu-hotfix-banner__link {
-	margin-block: -10px;
-	padding-block: 10px;
-	margin-inline-start: auto;
-	display: inline-flex;
-	align-items: center;
-	gap: 6px;
-	font-size: 13px;
-	font-weight: 600;
-	color: var(--rsu-accent-text);
-	text-decoration: none;
-	white-space: nowrap;
-	transition: color var(--rsu-transition);
-}
-
-.rsu-hotfix-banner__link:hover {
-	color: var(--rsu-accent-text-hover);
-	text-decoration: underline;
+	display: none;
 }
 
 
@@ -219,49 +212,48 @@
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
-	margin-bottom: 24px;
+	margin-bottom: 20px;
 	padding: 12px 16px;
 	border-radius: 10px;
-	background: var(--rsu-accent-tint-8);
-	border: 1px solid var(--rsu-accent-tint-15);
+	background: transparent;
+	border: 1px solid var(--rsu-border);
 }
 
 .rsu-patches__label {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
-	gap: 10px;
+	align-items: baseline;
+	gap: 6px;
 	font-size: 14px;
 	color: var(--rsu-text-secondary);
 }
 
 .rsu-patches__badge {
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--rsu-accent-text);
-	background: var(--rsu-accent-tint-15);
-	border: 1px solid color-mix(in srgb, var(--rsu-accent) 35%, var(--rsu-border));
-	padding: 2px 10px;
-	border-radius: 9999px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--rsu-text-heading);
 	white-space: nowrap;
+}
+
+.rsu-patches__badge::after {
+	content: " \00B7";
+	font-weight: 400;
+	color: var(--rsu-text-muted);
 }
 
 .rsu-patch {
 	display: flex;
 	flex-wrap: wrap;
-	align-items: center;
-	gap: 6px 14px;
-	padding: 10px 14px;
-	border-radius: 8px;
-	background: var(--rsu-bg);
-	border: 1px solid var(--rsu-border);
+	align-items: baseline;
+	gap: 4px 14px;
+	min-height: 40px;
+	padding: 8px 0;
+	border-top: 1px solid var(--rsu-divider);
 	color: var(--rsu-text);
 	text-decoration: none;
-	transition: border-color var(--rsu-transition);
 }
 
 .rsu-patch:hover {
-	border-color: color-mix(in srgb, var(--rsu-accent) 45%, var(--rsu-border));
 	text-decoration: none;
 }
 
@@ -271,8 +263,16 @@
 }
 
 .rsu-patch__title {
+	font-family: var(--rsu-mono);
 	font-weight: 600;
-	color: var(--rsu-accent-text);
+	color: var(--rsu-text-heading);
+}
+
+.rsu-patch:hover .rsu-patch__title {
+	text-decoration: underline;
+	text-decoration-color: var(--rsu-accent);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 3px;
 }
 
 .rsu-patch__builds {
@@ -286,23 +286,22 @@
 	display: inline-flex;
 	align-items: baseline;
 	gap: 5px;
-	font-size: 12px;
+	font-size: 13px;
 }
 
 .rsu-patch__build-label {
 	color: var(--rsu-text-muted);
-	font-size: 12px;
-	font-weight: 600;
+	font-size: 13px;
 }
 
 .rsu-patch__build-value {
 	color: var(--rsu-text);
-	font-weight: 600;
+	font-weight: 500;
 	font-family: var(--rsu-mono);
 }
 
 .rsu-patch__date {
-	font-size: 12px;
+	font-size: 13px;
 	color: var(--rsu-text-muted);
 	white-space: nowrap;
 }
@@ -310,64 +309,52 @@
 .rsu-patch__arrow {
 	margin-inline-start: auto;
 	color: var(--rsu-text-muted);
-	transition: color var(--rsu-transition), transform var(--rsu-transition);
-}
-
-.rsu-patch:hover .rsu-patch__arrow {
-	color: var(--rsu-accent-text);
-	transform: translateX(2px);
 }
 
 
 /* === Per-generation build numbers === */
 
+/* Plain text: "Gen 1 2026.36.02   Gen 2 2026.36.02". */
 .rsu-builds {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
-	margin-bottom: 18px;
+	gap: 4px 18px;
+	margin-bottom: 20px;
 }
 
 .rsu-build {
 	display: inline-flex;
-	align-items: center;
+	align-items: baseline;
 	gap: 6px;
-	padding: 6px 12px;
-	border-radius: 9999px;
-	background: var(--rsu-bg);
-	border: 1px solid var(--rsu-border);
-	font-size: 13px;
+	font-size: 14px;
 	font-family: var(--rsu-mono);
 }
 
 .rsu-build__label {
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-	font-size: 12px;
-	font-weight: 600;
-	color: var(--rsu-text-secondary);
+	font-size: 14px;
+	color: var(--rsu-text-muted);
 }
 
 .rsu-build__value {
-	color: var(--rsu-accent-text);
-	font-weight: 600;
+	color: var(--rsu-text);
+	font-weight: 500;
 }
 
 
 /* === Platform Tabs === */
 
+/* Text tabs with a gold underline on the active vehicle, sticky on the page
+   color so they stay reachable through a long set of notes. */
 .rsu-tabs {
 	display: flex;
-	gap: 0;
-	background: var(--rsu-bg);
-	padding: 4px;
+	gap: 24px;
 	margin-bottom: 0;
-	border: 1px solid var(--rsu-border);
-	border-bottom: none;
-	border-radius: var(--rsu-radius) var(--rsu-radius) 0 0;
+	background: var(--rsu-page);
+	border-bottom: 1px solid var(--rsu-border);
 	overflow-x: auto;
 	-webkit-overflow-scrolling: touch;
 	scrollbar-width: none;
-	/* Stay reachable while scrolling a long set of notes. */
 	position: sticky;
 	top: var(--rsu-sticky-offset);
 	z-index: 5;
@@ -377,79 +364,56 @@
 	display: none;
 }
 
-/* Once the bar is actually pinned it reads as a toolbar: square top corners
-   (nothing is left to round against) and a shadow over the notes below. */
-.rsu-tabs--stuck {
-	border-radius: 0;
-	box-shadow: var(--rsu-shadow);
-}
-
-/* Tabs size to their labels (with a floor) so the active tab is a control,
-   not a banner across the full width. Phones split the bar evenly. */
 .rsu-tab {
-	flex: 0 1 auto;
-	min-width: 160px;
-	padding: 14px 28px;
+	flex: 0 0 auto;
+	min-height: 44px;
+	padding: 12px 0;
+	margin-bottom: -1px;
 	border: none;
-	border-radius: calc(var(--rsu-radius) - 4px);
+	border-bottom: 2px solid transparent;
+	border-radius: 0;
 	background: transparent;
-	color: var(--rsu-text-muted);
-	font-size: 14px;
+	color: var(--rsu-text-secondary);
+	font-size: 15px;
 	font-weight: 500;
-	cursor: pointer;
-	transition: background var(--rsu-transition), color var(--rsu-transition);
-	text-align: center;
 	line-height: 1.2;
 	white-space: nowrap;
+	cursor: pointer;
+	transition: color var(--rsu-transition), border-color var(--rsu-transition);
 	-webkit-tap-highlight-color: transparent;
 }
 
 .rsu-tab:hover {
-	color: var(--rsu-text);
-	background: var(--rsu-accent-tint-8);
+	color: var(--rsu-text-heading);
+	background: transparent;
 }
 
-.rsu-tab--active {
-	background: var(--rsu-accent);
-	color: var(--rsu-text-on-accent);
-	font-weight: 600;
-}
-
+.rsu-tab--active,
 .rsu-tab--active:hover {
-	background: var(--rsu-accent-hover);
-	color: var(--rsu-text-on-accent);
+	color: var(--rsu-text-heading);
+	font-weight: 600;
+	border-bottom-color: var(--rsu-accent);
 }
 
 .rsu-tab:focus-visible {
-	outline: none;
-	box-shadow: 0 0 0 2px var(--rsu-accent);
-}
-
-.rsu-tab:active {
-	transform: scale(0.97);
+	outline: 2px solid var(--rsu-accent);
+	outline-offset: 2px;
 }
 
 
 /* === Tab Panels === */
 
-.rsu-panel {
-	background: var(--rsu-bg-card);
-	border: 1px solid var(--rsu-border);
-	border-top: none;
-	border-radius: 0 0 var(--rsu-radius) var(--rsu-radius);
-}
-
-.rsu-panel--solo {
-	border-top: 1px solid var(--rsu-border);
-	border-radius: var(--rsu-radius);
-}
-
+/* The notes sit on the page like an article, with no card around them. */
 .rsu-panel[hidden] {
 	display: none;
 }
 
 .rsu-panel__content {
-	padding: 28px 32px 32px;
+	padding: 24px 0 0;
+}
+
+.rsu-panel--solo .rsu-panel__content {
+	padding-top: 0;
 }
 
 
@@ -487,54 +451,52 @@
 
 /* === "On this page" jump list === */
 
-/* No box of its own: label, chips, and a hairline under them, so the jump
-   list reads as part of the notes rather than a card inside the panel. */
+/* Plain links in a wrapping row under a small heading, no chips. */
 .rsu-toc {
-	margin-bottom: 24px;
-	padding-bottom: 20px;
+	margin-bottom: 28px;
+	padding-bottom: 16px;
 	border-bottom: 1px solid var(--rsu-divider);
 }
 
 .rsu-toc__label {
 	display: block;
-	margin-bottom: 8px;
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--rsu-text-muted);
+	margin-bottom: 4px;
+	font-size: 14px;
+	font-weight: 600;
+	color: var(--rsu-text-heading);
 }
 
-.rsu-toc__list {
+.rsu-panel__content .rsu-toc__list {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 6px 8px;
+	gap: 0 20px;
 	margin: 0;
 	padding: 0;
 	list-style: none;
 }
 
-.rsu-toc__item {
+.rsu-panel__content .rsu-toc__item {
 	margin: 0;
+	font-size: 14px;
 }
 
-.rsu-toc__link {
-	display: inline-block;
-	padding: 4px 10px;
-	font-size: 13px;
-	font-weight: 500;
-	line-height: 1.4;
+.rsu-panel__content .rsu-toc__link {
+	display: inline-flex;
+	align-items: center;
+	min-height: 40px;
+	font-size: 14px;
+	font-weight: 400;
 	color: var(--rsu-text-secondary);
-	background: var(--rsu-bg);
-	border: 1px solid var(--rsu-border);
-	border-radius: 20px;
 	text-decoration: none;
-	transition: color var(--rsu-transition), border-color var(--rsu-transition), background var(--rsu-transition);
+	transition: color var(--rsu-transition);
 }
 
-.rsu-toc__link:hover {
-	color: var(--rsu-accent-text);
-	border-color: color-mix(in srgb, var(--rsu-accent) 45%, var(--rsu-border));
-	background: var(--rsu-accent-tint-8);
-	text-decoration: none;
+.rsu-panel__content .rsu-toc__link:hover {
+	color: var(--rsu-text-heading);
+	text-decoration: underline;
+	text-decoration-color: var(--rsu-accent);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 3px;
 }
 
 .rsu-toc__link:focus-visible {
@@ -548,27 +510,19 @@
 .rsu-adjacent {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
-	gap: 12px;
+	gap: 24px;
 	margin-top: 32px;
 	padding-top: 20px;
 	border-top: 1px solid var(--rsu-divider);
 }
 
-.rsu-adjacent__link {
+.rsu-panel__content .rsu-adjacent__link {
 	display: flex;
 	flex-direction: column;
-	gap: 4px;
-	padding: 12px 16px;
-	border-radius: 10px;
-	background: var(--rsu-bg);
-	border: 1px solid var(--rsu-border);
+	gap: 2px;
+	padding: 4px 0;
 	color: var(--rsu-text);
-	text-decoration: none;
-	transition: border-color var(--rsu-transition);
-}
-
-.rsu-adjacent__link:hover {
-	border-color: color-mix(in srgb, var(--rsu-accent) 45%, var(--rsu-border));
+	font-weight: 400;
 	text-decoration: none;
 }
 
@@ -583,8 +537,8 @@
 }
 
 .rsu-adjacent__label {
-	font-size: 12px;
-	font-weight: 700;
+	font-size: 13px;
+	font-weight: 500;
 	color: var(--rsu-text-muted);
 }
 
@@ -592,12 +546,19 @@
 	font-family: var(--rsu-mono);
 	font-size: 16px;
 	font-weight: 600;
-	color: var(--rsu-accent-text);
+	color: var(--rsu-text-heading);
+}
+
+.rsu-adjacent__link:hover .rsu-adjacent__title {
+	text-decoration: underline;
+	text-decoration-color: var(--rsu-accent);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 3px;
 }
 
 .rsu-adjacent__date {
-	font-size: 12px;
-	color: var(--rsu-text-secondary);
+	font-size: 13px;
+	color: var(--rsu-text-muted);
 }
 
 
@@ -619,11 +580,12 @@
 }
 
 .rsu-panel__content h3 {
-	font-size: 24px;
-	font-weight: 600;
-	line-height: 1.25;
+	font-size: 20px;
+	font-weight: 700;
+	letter-spacing: -0.2px;
+	line-height: 1.3;
 	color: var(--rsu-text-heading);
-	margin: 28px 0 12px;
+	margin: 28px 0 10px;
 }
 
 .rsu-panel__content h3:first-child {
@@ -667,11 +629,25 @@
 	font-size: 16px;
 	line-height: 1.6;
 	color: var(--rsu-text);
-	margin-bottom: 8px;
+	margin-bottom: 6px;
 }
 
 .rsu-panel__content li::marker {
-	color: var(--rsu-accent-text);
+	color: var(--rsu-text-muted);
+}
+
+/* A plain line right before a list ("See what's ahead") is a sub-heading. */
+.rsu-section > p:has(+ ul),
+.rsu-section > p:has(+ ol) {
+	margin: 16px 0 6px;
+	font-weight: 600;
+	color: var(--rsu-text-heading);
+}
+
+.rsu-section > h2 + p:has(+ ul),
+.rsu-section > h3 + p:has(+ ul),
+.rsu-section > h4 + p:has(+ ul) {
+	margin-top: 0;
 }
 
 .rsu-panel__content strong {
@@ -680,23 +656,36 @@
 }
 
 .rsu-panel__content a {
-	color: var(--rsu-accent-text);
-	text-decoration: none;
+	color: var(--rsu-text-heading);
+	font-weight: 500;
+	text-decoration: underline;
+	text-decoration-color: var(--rsu-accent);
+	text-decoration-thickness: 2px;
+	text-underline-offset: 3px;
 	word-break: break-word;
 }
 
 .rsu-panel__content a:hover {
-	color: var(--rsu-accent-text-hover);
-	text-decoration: underline;
+	color: var(--rsu-accent-text);
 }
 
 /* Blockquotes / Notes */
 .rsu-panel__content blockquote {
 	margin: 20px 0;
 	padding: 16px 20px;
-	background: var(--rsu-accent-tint-8);
-	border-inline-start: 3px solid var(--rsu-accent);
+	background: color-mix(in srgb, var(--rsu-text) 4%, var(--rsu-page));
+	border-inline-start: 3px solid color-mix(in srgb, var(--rsu-text) 22%, var(--rsu-page));
 	border-radius: 0 8px 8px 0;
+}
+
+/* Rivian writes "NOTE"; show it as "Note". */
+.rsu-panel__content blockquote > p:first-child > strong:only-child {
+	display: inline-block;
+	text-transform: lowercase;
+}
+
+.rsu-panel__content blockquote > p:first-child > strong:only-child::first-letter {
+	text-transform: uppercase;
 }
 
 .rsu-panel__content blockquote p {
@@ -764,28 +753,25 @@
 
 /* === Generation Pills === */
 
+/* Small outlined tag, "Gen 1 only". */
 .rsu-gen-pill {
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	padding: 2px 10px;
+	display: inline-block;
+	padding: 0 7px;
 	margin-inline-start: 8px;
-	font-size: 11px;
-	font-weight: 600;
-	letter-spacing: 0.03em;
-	line-height: 1.6;
-	color: var(--rsu-accent-text);
-	background: var(--rsu-accent-tint-8);
-	border: 1px solid var(--rsu-accent-tint-15);
-	border-radius: 9999px;
+	font-size: 12px;
+	font-weight: 500;
+	line-height: 1.5;
+	color: var(--rsu-text-secondary);
+	background: transparent;
+	border: 1px solid var(--rsu-border);
+	border-radius: 6px;
 	white-space: nowrap;
-	vertical-align: middle;
-	transition: background var(--rsu-transition), border-color var(--rsu-transition);
+	vertical-align: 1px;
+	text-transform: lowercase;
 }
 
-.rsu-gen-pill:hover {
-	background: var(--rsu-accent-tint-15);
-	border-color: var(--rsu-accent);
+.rsu-gen-pill::first-letter {
+	text-transform: uppercase;
 }
 
 .rsu-panel__content p > .rsu-gen-pill,
@@ -802,8 +788,8 @@
 .rsu-panel__content h2 > .rsu-gen-pill,
 .rsu-panel__content h3 > .rsu-gen-pill,
 .rsu-panel__content h4 > .rsu-gen-pill {
-	font-size: 11px;
-	padding: 2px 9px;
+	font-size: 12px;
+	padding: 0 7px;
 	margin-inline-start: 10px;
 	vertical-align: middle;
 	position: relative;
@@ -1319,9 +1305,6 @@
 		animation: none;
 	}
 
-	.rsu-tab:active {
-		transform: none;
-	}
 
 	.rsu-widget-latest,
 	.rsu-widget-entry__cta-arrow,
@@ -1336,55 +1319,18 @@
 /* === Update Page: Mobile === */
 
 @media (max-width: 600px) {
-	/* The jump list becomes a single horizontally scrolling rail of chips
-	   instead of a tall wrapped block, so a 20-section release does not push
-	   the notes below the fold. A fade on the trailing edge hints at more. */
-	.rsu-toc {
-		padding-bottom: 16px;
+	/* Meta stacks one fact per line instead of wrapping mid-line. */
+	.rsu-dates {
+		flex-direction: column;
+		align-items: flex-start;
 	}
 
-	.rsu-toc__list {
-		flex-wrap: nowrap;
-		gap: 8px;
-		overflow-x: auto;
-		padding-inline-end: 32px;
-		scroll-padding-inline-start: 0;
-		-webkit-overflow-scrolling: touch;
-		scrollbar-width: none;
-		-webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
-		mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+	.rsu-date + .rsu-date::before {
+		content: none;
 	}
 
-	.rsu-toc__list::-webkit-scrollbar {
-		display: none;
-	}
-
-	.rsu-toc__item {
-		flex: 0 0 auto;
-	}
-
-	/* Tap targets: chips, tabs, and filter buttons meet the 40–44px minimum. */
-	.rsu-toc__link {
-		display: inline-flex;
-		align-items: center;
-		min-height: 40px;
-		padding: 6px 14px;
-		white-space: nowrap;
-	}
-
-	.rsu-tab {
-		flex: 1;
-		min-width: 0;
-		padding-inline: 16px;
-		min-height: 44px;
-	}
-
-	/* The hotfix banner's "Full release notes" link takes its own line
-	   rather than squeezing beside the patch text. */
-	.rsu-hotfix-banner__link {
-		flex-basis: 100%;
-		margin-inline-start: 0;
-		white-space: normal;
+	.rsu-panel__content .rsu-toc__list {
+		gap: 0 16px;
 	}
 }
 
@@ -1392,15 +1338,6 @@
 /* === Small Mobile === */
 
 @media (max-width: 480px) {
-	.rsu-dates {
-		gap: 10px 20px;
-	}
-
-	.rsu-tab {
-		padding: 10px 14px;
-		font-size: 13px;
-	}
-
 	.rsu-adjacent {
 		grid-template-columns: 1fr;
 	}
@@ -1410,7 +1347,7 @@
 	}
 
 	.rsu-panel__content {
-		padding: 20px 16px;
+		padding-top: 20px;
 	}
 
 	.rsu-panel__content h2 {

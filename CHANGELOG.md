@@ -2,6 +2,18 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.40.0] - 2026-11-25
+
+### Changed
+- **Simpler release page.** The notes sit on the page like an article instead of inside a card. Gold is left on the active vehicle tab's underline and on link underlines only.
+- **One meta line:** "Released November 23, 2026 · First noticed November 13, 2026" (hotfixes add "Available for R1T & R1S"). The label reads "Released" once there is a date and stays "Public release TBD" until then.
+- **Vehicle tabs** are text tabs with a gold underline instead of a gold segmented bar. They stay sticky.
+- **"On this page"** is a wrapping row of plain links instead of chips, with 40px tap targets. Phones no longer get a sideways-scrolling rail.
+- **Notes:** gray bullets, the line before a list ("See what's ahead") reads as a bold sub-heading, section headings are 20px, body links use the site's article link style, the "NOTE" callout is a neutral gray box reading "Note", and generation tags are small outlines reading "Gen 1 only".
+- **Hotfix and patch boxes** are neutral outlines; build numbers are plain mono text instead of pills. The hotfix line's separate "Full release notes" link is hidden because the parent version is already a link.
+- **Previous / next** are plain links under a hairline instead of boxes.
+- New `--rsu-page` token (page color in both modes) for the sticky tab bar.
+
 ## [2.39.0] - 2026-11-25
 
 ### Changed
