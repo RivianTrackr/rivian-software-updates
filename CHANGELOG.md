@@ -2,6 +2,14 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.40.1] - 2026-11-25
+
+### Changed
+- The sidebar widget and the feed/plain-text meta line say "Released" once there is a release date, matching the update page ("Public release TBD" until then).
+
+### Removed
+- Leftovers from the old design: the sticky tab bar's pinned-state observer (no styles use it since 2.40.0), the unused `.rsu-patch__arrow`, `.rsu-widget-entry__cta-arrow` and `.rsu-widget-latest__icon` styles, and comments that still described the history vehicle filter.
+
 ## [2.40.0] - 2026-11-25
 
 ### Changed
