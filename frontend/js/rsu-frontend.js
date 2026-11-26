@@ -48,7 +48,9 @@
   function init() {
     var containers = document.querySelectorAll('.rsu-update');
     containers.forEach(function (container) {
+      setupOffset(container);
       setupTabs(container);
+      setupJump(container);
       setupAnchors(container);
     });
   }
@@ -108,7 +110,15 @@
     }
 
     function choose(platform) {
-      activateTab(container, platform, true);
+      // With the bar pinned, a switch lands at the top of the new notes
+      // instead of somewhere in the middle of them.
+      var y;
+      var bar = container.querySelector('.rsu-bar');
+      if (bar && isPinned(container, bar)) {
+        var firstPanel = container.querySelector('.rsu-panel');
+        y = firstPanel.getBoundingClientRect().top + window.scrollY - stickyOffset(container) - bar.offsetHeight;
+      }
+      activateTab(container, platform, true, y);
       setPreferredVehicle(platform);
       history.replaceState(null, '', '#' + platform);
     }
@@ -154,7 +164,17 @@
     });
   }
 
-  function activateTab(container, platform, animate) {
+  // Instant, even where the theme sets scroll-behavior: smooth, so keeping
+  // or resetting the reader's place never animates across the page.
+  function jumpTo(y) {
+    try {
+      window.scrollTo({ top: y, left: 0, behavior: 'instant' });
+    } catch (e) {
+      window.scrollTo(0, y);
+    }
+  }
+
+  function activateTab(container, platform, animate, y) {
     var tabs = container.querySelectorAll('.rsu-tab');
     var panels = container.querySelectorAll('.rsu-panel');
 
@@ -186,13 +206,14 @@
       targetTab.removeAttribute('tabindex');
     }
     if (targetPanel) {
-      // Preserve scroll position across panel height changes.
-      var scrollY = window.scrollY;
+      // Preserve scroll position across panel height changes, unless the
+      // caller asked for a specific position.
+      var scrollY = typeof y === 'number' ? Math.max(0, y) : window.scrollY;
 
       targetPanel.classList.add('rsu-panel--active');
       targetPanel.hidden = false;
 
-      window.scrollTo(0, scrollY);
+      jumpTo(scrollY);
 
       if (animate) {
         targetPanel.classList.add('rsu-panel--enter');
@@ -202,12 +223,110 @@
           targetPanel.classList.remove('rsu-panel--enter');
           targetPanel.removeEventListener('animationend', handler);
           targetPanel._rsuAnimHandler = null;
-          window.scrollTo(0, scrollY);
+          jumpTo(scrollY);
         };
         targetPanel._rsuAnimHandler = handler;
         targetPanel.addEventListener('animationend', handler);
       }
     }
+
+    refreshJump(container);
+  }
+
+  /**
+   * Height of whatever the theme pins to the top of the viewport (a sticky
+   * header, the admin bar), so the bar can sit just below it. A value the
+   * theme sets for --rsu-sticky-offset wins; otherwise it is measured, and
+   * re-measured on scroll because headers often only become fixed then.
+   */
+  function stickyOffset(container) {
+    return parseFloat(getComputedStyle(container).getPropertyValue('--rsu-sticky-offset')) || 0;
+  }
+
+  function isPinned(container, bar) {
+    return bar.getBoundingClientRect().top <= stickyOffset(container) + 1;
+  }
+
+  function setupOffset(container) {
+    if (stickyOffset(container) > 0) return;
+
+    function pinnedBottom() {
+      var x = Math.round(window.innerWidth / 2);
+      var y = 0;
+      for (var i = 0; i < 4; i++) {
+        var stack = document.elementsFromPoint(x, y + 1);
+        var found = 0;
+        for (var j = 0; j < stack.length && !found; j++) {
+          var el = stack[j];
+          if (container.contains(el)) continue;
+          for (var node = el; node && node !== document.body; node = node.parentElement) {
+            var pos = getComputedStyle(node).position;
+            if (pos === 'fixed' || pos === 'sticky') {
+              var rect = node.getBoundingClientRect();
+              if (rect.top <= y + 1 && rect.bottom > y + 1 && rect.height < window.innerHeight / 3) {
+                found = rect.bottom;
+              }
+              break;
+            }
+          }
+        }
+        if (!found) break;
+        y = Math.ceil(found);
+      }
+      return y;
+    }
+
+    var queued = false;
+    function update() {
+      queued = false;
+      container.style.setProperty('--rsu-sticky-offset', pinnedBottom() + 'px');
+    }
+    function queue() {
+      if (!queued) {
+        queued = true;
+        window.requestAnimationFrame(update);
+      }
+    }
+    update();
+    window.addEventListener('scroll', queue, { passive: true });
+    window.addEventListener('resize', queue);
+  }
+
+  /**
+   * The "Sections" dropdown in the bar lists the visible vehicle's sections
+   * (read from that panel's hidden jump list) and scrolls to the one picked.
+   */
+  function refreshJump(container) {
+    var select = container.querySelector('.rsu-jump');
+    if (!select) return;
+    var panel = container.querySelector('.rsu-panel:not([hidden])') || container.querySelector('.rsu-panel');
+    var links = panel ? panel.querySelectorAll('.rsu-toc__link') : [];
+    var wrap = select.closest('.rsu-jump-wrap');
+
+    while (select.options.length > 1) select.remove(1);
+    Array.prototype.forEach.call(links, function (link) {
+      var option = document.createElement('option');
+      option.value = link.getAttribute('href');
+      option.textContent = link.textContent;
+      select.appendChild(option);
+    });
+    select.selectedIndex = 0;
+    if (wrap) wrap.hidden = links.length < 3;
+  }
+
+  function setupJump(container) {
+    var select = container.querySelector('.rsu-jump');
+    if (!select) return;
+    refreshJump(container);
+    select.addEventListener('change', function () {
+      var hash = select.value.replace('#', '');
+      select.selectedIndex = 0;
+      if (!isSlug(hash)) return;
+      var target = container.querySelector('#' + hash);
+      if (!target) return;
+      target.scrollIntoView({ block: 'start' });
+      history.replaceState(null, '', '#' + hash);
+    });
   }
 
   /**
