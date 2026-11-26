@@ -18,7 +18,9 @@ async function extract(data, opts) {
 	}
 
 	var bytes = data instanceof ArrayBuffer ? new Uint8Array(data) : data;
-	var doc = await pdfjsLib.getDocument({ data: bytes }).promise;
+	// pdf.js 6 dropped PDFDocumentProxy#destroy; the loading task cleans up.
+	var task = pdfjsLib.getDocument({ data: bytes });
+	var doc = await task.promise;
 
 	try {
 		var pages = [];
@@ -29,7 +31,7 @@ async function extract(data, opts) {
 		}
 		return buildReleaseNotes(pages);
 	} finally {
-		doc.destroy();
+		await task.destroy();
 	}
 }
 

@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.40.2] - 2026-11-25
+
+### Security
+- **pdf.js 6.5.438** (was 5.x) in the admin PDF importer, fixing a high-severity advisory: arbitrary JavaScript execution when opening a malicious PDF. The importer now cleans up through the loading task, since pdf.js 6 removed `PDFDocumentProxy#destroy()`. Extracted text is byte-identical to the old build on the PDFs tested.
+
 ## [2.40.1] - 2026-11-25
 
 ### Changed

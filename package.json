@@ -1,6 +1,6 @@
 {
   "name": "rivian-software-updates",
-  "version": "2.40.1",
+  "version": "2.40.2",
   "private": true,
   "scripts": {
     "build": "node esbuild.config.mjs",
@@ -8,6 +8,6 @@
   },
   "devDependencies": {
     "esbuild": "^0.28.1",
-    "pdfjs-dist": "^5.6.205"
+    "pdfjs-dist": "^6.5.438"
   }
 }
