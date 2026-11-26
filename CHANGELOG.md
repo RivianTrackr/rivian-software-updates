@@ -2,6 +2,15 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.41.0] - 2026-11-26
+
+### Changed
+- **Vehicle bar on release pages.** The vehicle switch and a new "Sections" dropdown sit together in one bar that stays pinned below the site header while reading. The switch is a segmented control (raised active vehicle, 40px tall). The dropdown lists the visible vehicle's sections and opens the native picker on phones. It replaces the "On this page" link list, whose markup stays (hidden) as the dropdown's source.
+- **Pinned in the right place.** `--rsu-sticky-offset` is now measured from whatever the theme pins to the top (Blocksy's 52px sticky header, the admin bar) and updated on scroll, so the bar no longer slides under the header. A value a theme sets itself still wins.
+- **Switching vehicles mid-page** lands at the top of the other vehicle's notes when the bar is pinned, instead of somewhere in the middle. Scroll resets are instant even where the theme sets smooth scrolling.
+- Single-vehicle posts with 3+ sections get the bar with just the dropdown; short hotfix posts get no bar.
+- The note callout's neutral border now beats the site theme's gold blockquote border.
+
 ## [2.40.2] - 2026-11-25
 
 ### Security

@@ -316,22 +316,57 @@ class RSU_Frontend {
 				</div>
 			<?php endif; ?>
 
-			<?php if ( count( $active_vehicles ) > 1 ) : ?>
-				<div class="rsu-tabs" role="tablist" aria-label="Vehicle model" aria-orientation="horizontal">
-					<?php foreach ( $active_vehicles as $slug ) :
-						$vehicle    = $all_vehicles[ $slug ];
-						$is_default = ( $slug === $default );
-						?>
-						<button class="rsu-tab <?php echo $is_default ? 'rsu-tab--active' : ''; ?>"
-							role="tab"
-							type="button"
-							aria-selected="<?php echo $is_default ? 'true' : 'false'; ?>"
-							aria-controls="rsu-panel-<?php echo esc_attr( $slug ); ?>"
-							id="rsu-tab-<?php echo esc_attr( $slug ); ?>"
-							data-platform="<?php echo esc_attr( $slug ); ?>">
-							<?php echo esc_html( $vehicle['label'] ); ?>
-						</button>
-					<?php endforeach; ?>
+			<?php
+			// Section jump targets per vehicle, read up front so the bar can
+			// offer the default vehicle's sections before any script runs.
+			$panel_anchors = array();
+			foreach ( $active_vehicles as $slug ) {
+				$slug_sections          = self::vehicle_sections( $post_id, $slug );
+				$panel_anchors[ $slug ] = ! empty( $slug_sections ) ? RSU_Admin::section_anchors( $slug_sections, $slug ) : array();
+			}
+			$multi_vehicle   = count( $active_vehicles ) > 1;
+			$default_anchors = isset( $panel_anchors[ $default ] ) ? $panel_anchors[ $default ] : array();
+			$has_jump        = false;
+			foreach ( $panel_anchors as $slug_anchors ) {
+				if ( count( $slug_anchors ) >= 3 ) {
+					$has_jump = true;
+				}
+			}
+			?>
+
+			<?php if ( $multi_vehicle || $has_jump ) : ?>
+				<?php // One bar pinned below the site header: the vehicle switch and a section jump. ?>
+				<div class="rsu-bar">
+					<?php if ( $multi_vehicle ) : ?>
+					<div class="rsu-tabs" role="tablist" aria-label="Vehicle model" aria-orientation="horizontal">
+						<?php foreach ( $active_vehicles as $slug ) :
+							$vehicle    = $all_vehicles[ $slug ];
+							$is_default = ( $slug === $default );
+							?>
+							<button class="rsu-tab <?php echo $is_default ? 'rsu-tab--active' : ''; ?>"
+								role="tab"
+								type="button"
+								aria-selected="<?php echo $is_default ? 'true' : 'false'; ?>"
+								aria-controls="rsu-panel-<?php echo esc_attr( $slug ); ?>"
+								id="rsu-tab-<?php echo esc_attr( $slug ); ?>"
+								data-platform="<?php echo esc_attr( $slug ); ?>">
+								<?php echo esc_html( $vehicle['label'] ); ?>
+							</button>
+						<?php endforeach; ?>
+					</div>
+					<?php endif; ?>
+
+					<?php if ( $has_jump ) : ?>
+						<label class="rsu-jump-wrap"<?php echo count( $default_anchors ) >= 3 ? '' : ' hidden'; ?>>
+							<span class="rsu-sr-only">Jump to a section</span>
+							<select class="rsu-jump">
+								<option value="">Sections</option>
+								<?php foreach ( $default_anchors as $anchor ) : ?>
+									<option value="#<?php echo esc_attr( $anchor['id'] ); ?>"><?php echo esc_html( $anchor['label'] ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</label>
+					<?php endif; ?>
 				</div>
 			<?php endif; ?>
 
@@ -342,7 +377,7 @@ class RSU_Frontend {
 
 				$sections        = self::vehicle_sections( $post_id, $slug );
 				$vehicle_content = self::vehicle_html( $post_id, $slug );
-				$anchors         = ! empty( $sections ) ? RSU_Admin::section_anchors( $sections, $slug ) : array();
+				$anchors         = $panel_anchors[ $slug ];
 				$gen_labels      = RSU_Platforms::get_generations( $slug );
 				$multi_gen       = count( $gen_labels ) > 1;
 
@@ -373,7 +408,7 @@ class RSU_Frontend {
 						<?php endif; ?>
 
 						<?php if ( count( $anchors ) >= 3 ) : ?>
-							<nav class="rsu-toc" aria-label="<?php echo esc_attr( $vehicle['label'] ); ?> release note sections">
+							<nav class="rsu-toc" aria-label="<?php echo esc_attr( $vehicle['label'] ); ?> release note sections" hidden>
 								<span class="rsu-toc__label">On this page</span>
 								<ul class="rsu-toc__list">
 									<?php foreach ( $anchors as $anchor ) : ?>
