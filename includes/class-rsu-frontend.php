@@ -279,14 +279,19 @@ class RSU_Frontend {
 			}
 			?>
 
-			<?php // Public Release always renders (TBD when unset), so the row always shows. ?>
+			<?php // The release date always renders (TBD when unset), so the row always shows. ?>
 				<div class="rsu-dates">
-					<?php if ( $single_vehicle ) : ?>
-						<span class="rsu-date rsu-date--vehicle">
-							<span class="rsu-date__label">Available for</span>
-							<span class="rsu-date__vehicle"><?php echo esc_html( $solo_label ); ?></span>
-						</span>
-					<?php endif; ?>
+					<span class="rsu-date rsu-date--released">
+						<?php if ( $date_released ) : ?>
+							<span class="rsu-date__label">Released</span>
+							<time datetime="<?php echo esc_attr( $date_released ); ?>">
+								<?php echo esc_html( RSU_Dates::format( $date_released ) ); ?>
+							</time>
+						<?php else : ?>
+							<span class="rsu-date__label">Public release</span>
+							<span class="rsu-date__tbd">TBD</span>
+						<?php endif; ?>
+					</span>
 
 					<?php if ( $date_noticed ) : ?>
 						<span class="rsu-date rsu-date--noticed">
@@ -297,16 +302,12 @@ class RSU_Frontend {
 						</span>
 					<?php endif; ?>
 
-					<span class="rsu-date rsu-date--released">
-						<span class="rsu-date__label">Public release</span>
-						<?php if ( $date_released ) : ?>
-							<time datetime="<?php echo esc_attr( $date_released ); ?>">
-								<?php echo esc_html( RSU_Dates::format( $date_released ) ); ?>
-							</time>
-						<?php else : ?>
-							<span class="rsu-date__tbd">TBD</span>
-						<?php endif; ?>
-					</span>
+					<?php if ( $single_vehicle ) : ?>
+						<span class="rsu-date rsu-date--vehicle">
+							<span class="rsu-date__label">Available for</span>
+							<span class="rsu-date__vehicle"><?php echo esc_html( $solo_label ); ?></span>
+						</span>
+					<?php endif; ?>
 				</div>
 
 			<?php if ( '' !== $intro ) : ?>
