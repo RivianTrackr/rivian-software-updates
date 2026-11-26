@@ -2,6 +2,14 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.39.0] - 2026-11-25
+
+### Changed
+- **Simpler `[rsu_history]` page.** A card for the newest release with a "Read the release notes" button, then one line per release grouped by year: version, hotfix count, vehicles and a short release date. Gold appears only on the button; versions are heading color in mono, vehicles are plain text.
+- **Hotfixes fold into their release** ("2 hotfixes") instead of getting rows of their own. Per-platform build numbers and the first-noticed date stay on each update post.
+- **No year accordions.** The first two years show; older years sit behind a "Show 2024 and earlier" button (new `years` attribute, `0` shows all). Without JavaScript every year shows.
+- **Vehicle filter removed** from the history page. The update page tabs still remember the reader's vehicle.
+
 ## [2.38.2] - 2026-11-17
 
 ### Changed
