@@ -453,7 +453,7 @@ class RSU_Frontend {
 		if ( $noticed ) {
 			$meta[] = 'First noticed: ' . RSU_Dates::format( $noticed );
 		}
-		$meta[] = 'Public release: ' . ( $released ? RSU_Dates::format( $released ) : 'TBD' );
+		$meta[] = $released ? 'Released: ' . RSU_Dates::format( $released ) : 'Public release: TBD';
 		$out   .= '<p>' . esc_html( implode( ' · ', $meta ) ) . '</p>' . "\n";
 
 		foreach ( $active_vehicles as $slug ) {

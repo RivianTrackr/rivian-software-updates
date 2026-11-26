@@ -194,7 +194,7 @@ class RSU_Widget extends WP_Widget {
 					</span>
 				<?php endif; ?>
 				<span class="rsu-widget-latest__meta">
-					<span class="rsu-widget-latest__meta-label">Public release</span>
+					<span class="rsu-widget-latest__meta-label"><?php echo $date_released ? 'Released' : 'Public release'; ?></span>
 					<span class="rsu-widget-latest__meta-value"><?php echo esc_html( $released_display ); ?></span>
 				</span>
 			</span>

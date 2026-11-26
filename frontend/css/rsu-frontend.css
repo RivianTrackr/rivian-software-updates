@@ -306,12 +306,6 @@
 	white-space: nowrap;
 }
 
-.rsu-patch__arrow {
-	margin-inline-start: auto;
-	color: var(--rsu-text-muted);
-}
-
-
 /* === Per-generation build numbers === */
 
 /* Plain text: "Gen 1 2026.36.02   Gen 2 2026.36.02". */
@@ -1103,10 +1097,9 @@
 
 /* === Latest Update Widget === */
 
-/* Built to sit beside the site's other sidebar cards: eyebrow inside the
-   body (no header band), the same generous padding, a gold eyebrow icon,
-   a headline on the stat-value scale, and a full-size call to action. The
-   mono version and solid gold vehicle tags are what make it about software. */
+/* Built to sit beside the site's other sidebar cards: heading inside the
+   body (no header band), the same generous padding, a mono version on the
+   stat-value scale, and a full-size call to action. */
 .rsu-widget-latest {
 	display: block;
 	width: 100%;
@@ -1133,13 +1126,6 @@
 	align-items: center;
 	gap: 8px;
 	margin-bottom: 16px;
-}
-
-.rsu-widget-latest__icon {
-	flex-shrink: 0;
-	font-size: 16px;
-	line-height: 1;
-	color: var(--rsu-accent-text);
 }
 
 .rsu-widget-latest__title {
@@ -1285,15 +1271,6 @@
 	color: var(--rsu-accent-text);
 }
 
-.rsu-widget-entry__cta-arrow {
-	transition: transform 0.2s ease;
-}
-
-.rsu-widget-entry:hover .rsu-widget-entry__cta-arrow {
-	transform: translateX(3px);
-}
-
-
 /* === Reduced Motion === */
 
 @media (prefers-reduced-motion: reduce) {
@@ -1307,7 +1284,6 @@
 
 
 	.rsu-widget-latest,
-	.rsu-widget-entry__cta-arrow,
 	.rsu-history__row,
 	.rsu-history__latest-btn,
 	.rsu-history__more-btn {
