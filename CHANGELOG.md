@@ -2,6 +2,11 @@
 
 All notable changes to the Rivian Software Updates plugin will be documented in this file.
 
+## [2.41.1] - 2026-11-26
+
+### Fixed
+- **Vehicle bar no longer slides under the site header.** The sticky offset measured Blocksy's fixed header wrapper (52px), but the floating header card hangs 16px below it, and with the admin bar showing the card floats below a gap the measurement stopped at. It now probes past small gaps under the admin bar and walks down to the header's visible edge: 68px signed out, 100px signed in on desktop, 64px on phones.
+
 ## [2.41.0] - 2026-11-26
 
 ### Changed
