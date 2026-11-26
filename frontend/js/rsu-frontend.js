@@ -250,28 +250,54 @@
   function setupOffset(container) {
     if (stickyOffset(container) > 0) return;
 
+    // A pinned header's content can hang below its own box (Blocksy's
+    // floating header card is 16px taller than its fixed wrapper), so walk
+    // down from the box edge while the point is still inside the header.
+    function visibleBottom(node, x, bottom) {
+      var limit = window.innerHeight / 3;
+      var y = Math.ceil(bottom);
+      while (y < limit) {
+        var hit = document.elementsFromPoint(x, y + 1).some(function (el) {
+          return node.contains(el);
+        });
+        if (!hit) break;
+        y += 2;
+      }
+      return y;
+    }
+
+    // The fixed or sticky element (outside this update) covering point
+    // (x, py), if it is short enough to be a header.
+    function pinnedAt(x, py) {
+      var stack = document.elementsFromPoint(x, py);
+      for (var j = 0; j < stack.length; j++) {
+        if (container.contains(stack[j])) continue;
+        for (var node = stack[j]; node && node !== document.body; node = node.parentElement) {
+          var pos = getComputedStyle(node).position;
+          if (pos === 'fixed' || pos === 'sticky') {
+            var rect = node.getBoundingClientRect();
+            if (rect.top <= py && rect.bottom > py && rect.height < window.innerHeight / 3) {
+              return node;
+            }
+            break;
+          }
+        }
+      }
+      return null;
+    }
+
+    // Stack up everything pinned at the top: the admin bar, then a header
+    // that may float a few pixels below it.
     function pinnedBottom() {
       var x = Math.round(window.innerWidth / 2);
       var y = 0;
       for (var i = 0; i < 4; i++) {
-        var stack = document.elementsFromPoint(x, y + 1);
-        var found = 0;
-        for (var j = 0; j < stack.length && !found; j++) {
-          var el = stack[j];
-          if (container.contains(el)) continue;
-          for (var node = el; node && node !== document.body; node = node.parentElement) {
-            var pos = getComputedStyle(node).position;
-            if (pos === 'fixed' || pos === 'sticky') {
-              var rect = node.getBoundingClientRect();
-              if (rect.top <= y + 1 && rect.bottom > y + 1 && rect.height < window.innerHeight / 3) {
-                found = rect.bottom;
-              }
-              break;
-            }
-          }
+        var node = null;
+        for (var d = 1; d <= 25 && !node; d += 4) {
+          node = pinnedAt(x, y + d);
         }
-        if (!found) break;
-        y = Math.ceil(found);
+        if (!node) break;
+        y = visibleBottom(node, x, node.getBoundingClientRect().bottom);
       }
       return y;
     }
